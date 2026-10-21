@@ -1,0 +1,28 @@
+# --- Python & Django ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# --- Ambiente Virtual ---
+venv/
+env/
+ENV/
+.venv/
+
+# --- Configurações Sensíveis ---
+.env
+
+# --- IDEs e Editores (VS Code / PyCharm) ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Sistema Operativo ---
+Thumbs.db
+.DS_Store
+Desktop.ini

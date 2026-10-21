@@ -3,13 +3,9 @@
 ## 🎯 Objetivo do Marco
 Configurar a conexão segura com a base de dados PostgreSQL utilizando variáveis de ambiente (`.env`), criar a aplicação principal `restaurante` e implementar os modelos de dados (*Models*) para as Mesas (com UUID para QR Code) e para o Cardápio (Categorias, Produtos e Adicionais), além do registo no Django Admin.
 
-## 🛠️ Tecnologias e Dependências Utilizadas
-- **Django 5.2** e **Django REST Framework**
-- **PostgreSQL** com driver `psycopg[binary]`
-- **django-environ** para gestão segura de variáveis de ambiente (`.env` e `.env.example`)
-- **Pillow** para suporte a imagens de produtos (`ImageField`)
+> **Contexto para execução:** Atua como um desenvolvedor Full Stack especialista em Django, Python e PostgreSQL. Preciso que implementes o **Marco 2** do projeto "MesaFácil" (uma PWA para restaurantes), executando os seguintes passos de forma estruturada:
 
-## 📝 Passos Executados
+## 📝 Passos a Serem Executados
 1. **Configuração de Ambiente:** Criação dos ficheiros `.env` e `.env.example` protegendo a `SECRET_KEY` e as credenciais de acesso ao PostgreSQL (`DATABASE_URL`).
 2. **Atualização do `settings.py`:** Configuração do idioma para Português do Brasil (`pt-br`), fuso horário (`America/Sao_Paulo`), diretórios de ficheiros estáticos/mídia e integração com o `django-environ`.
 3. **Criação da App `restaurante`:** Estruturação da aplicação modular no projeto.
