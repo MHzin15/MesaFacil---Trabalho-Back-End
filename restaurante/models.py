@@ -38,3 +38,42 @@ class Adicional(models.Model):
 
     def __str__(self):
         return f"{self.nome} (+R$ {self.preco})"
+
+class Pedido(models.Model):
+    STATUS_CHOICES = [
+        ('PENDENTE', 'Pendente'),
+        ('EM_PREPARO', 'Em Preparo'),
+        ('PRONTO', 'Pronto'),
+        ('ENTREGUE', 'Entregue'),
+        ('CANCELADO', 'Cancelado'),
+    ]
+
+    mesa = models.ForeignKey(Mesa, on_delete=models.CASCADE, related_name='pedidos')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Criado em")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Atualizado em")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDENTE')
+    observacao = models.TextField(blank=True, null=True, verbose_name="Observação Geral")
+
+    class Meta:
+        verbose_name = "Pedido"
+        verbose_name_plural = "Pedidos"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Pedido #{self.id} - Mesa {self.mesa.numero} ({self.get_status_display()})"
+
+
+class ItemPedido(models.Model):
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='itens')
+    produto = models.ForeignKey(Produto, on_delete=models.PROTECT, related_name='itens_pedido')
+    quantidade = models.PositiveIntegerField(default=1)
+    preco_unitario = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Preço Unitário")
+    adicionais = models.ManyToManyField(Adicional, blank=True, related_name='itens_pedido')
+    observacao = models.CharField(max_length=255, blank=True, null=True, verbose_name="Observação do Item")
+
+    class Meta:
+        verbose_name = "Item do Pedido"
+        verbose_name_plural = "Itens do Pedido"
+
+    def __str__(self):
+        return f"{self.quantidade}x {self.produto.nome} (Pedido #{self.pedido.id})"
