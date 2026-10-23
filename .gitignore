@@ -6,6 +6,7 @@ __pycache__/
 db.sqlite3
 db.sqlite3-journal
 media/
+staticfiles/
 
 # --- Ambiente Virtual ---
 venv/
@@ -26,3 +27,9 @@ ENV/
 Thumbs.db
 .DS_Store
 Desktop.ini
+.tmp/
+.pytest_cache/
+.coverage
+htmlcov/
+node_modules/
+test-results/

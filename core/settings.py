@@ -1,9 +1,11 @@
 import os
+import sys
 import environ
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+TESTING = 'test' in sys.argv or 'pytest' in sys.modules
 
 # Inicializa o django-environ
 env = environ.Env(
@@ -14,7 +16,7 @@ env = environ.Env(
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Configurações de Segurança lidas do .env
-SECRET_KEY = env('SECRET_KEY')
+SECRET_KEY = env('SECRET_KEY', default='mesa-facil-test-only' if TESTING else environ.Env.NOTSET)
 DEBUG = env.bool('DEBUG', default=False)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost'])
@@ -33,6 +35,8 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'corsheaders',
+    'django_filters',
+    'drf_spectacular',
 
     # Minhas Apps
     'restaurante',
@@ -41,6 +45,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -71,9 +76,17 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 # Database - Conexão via PostgreSQL usando a URL do .env
 # Exemplo no .env: DATABASE_URL=postgres://postgres:senha@localhost:5432/mesa_facil
-DATABASES = {
-    'default': env.db('DATABASE_URL')
-}
+if TESTING:
+    # Não lê DATABASE_URL nem exige PostgreSQL/.env durante os testes.
+    DATABASES = {'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:',
+        'TEST': {'NAME': ':memory:'},
+    }}
+else:
+    DATABASES = {
+        'default': env.db('DATABASE_URL'),
+    }
 
 
 # Password validation
@@ -104,11 +117,46 @@ USE_TZ = True
 # Static & Media files (Imagens dos produtos e QR Codes)
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# WhiteNoise para servir estáticos em produção
+STORAGES = {
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
+
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = DEBUG
+
+# Django REST Framework
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 50,
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+}
+
+# drf-spectacular (Documentação da API — Swagger / OpenAPI)
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'MesaFácil API',
+    'DESCRIPTION': 'API REST do sistema MesaFácil — Pedidos por QR Code',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'LANGUAGE': 'pt-br',
+}

@@ -1,0 +1,30 @@
+# Core
+Django>=5.2,<5.3
+djangorestframework>=3.15,<4.0
+psycopg[binary]>=3.1,<4.0
+
+# Configuração
+django-environ>=0.11,<1.0
+
+# Imagens e QR Code
+Pillow>=10.0,<14.0
+qrcode>=7.4,<9.0
+
+# Documentação da API
+drf-spectacular>=0.27,<1.0
+
+# Filtros
+django-filter>=24.0,<25.0
+
+# CORS
+django-cors-headers>=4.3,<5.0
+
+# Arquivos estáticos
+whitenoise>=6.5,<7.0
+
+# Servidor de aplicação
+gunicorn>=21.0,<23.0
+
+# Testes
+pytest>=8.0,<9.0
+pytest-django>=4.8,<5.0
