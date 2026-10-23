@@ -5,6 +5,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
+from restaurante import pages
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
@@ -12,6 +14,12 @@ from drf_spectacular.views import (
 )
 
 urlpatterns = [
+    path('', pages.inicio, name='inicio'),
+    path('mesa/<uuid:uuid>/', pages.cliente, name='cliente'),
+    path('cozinha/', pages.cozinha, name='cozinha'),
+    path('painel/', pages.painel, name='painel'),
+    path('entrar/', auth_views.LoginView.as_view(), name='login'),
+    path('sair/', auth_views.LogoutView.as_view(), name='logout'),
     path('admin/', admin.site.urls),
     path('api/', include('restaurante.urls')),
 

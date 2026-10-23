@@ -72,6 +72,9 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
+LOGIN_URL = '/entrar/'
+LOGIN_REDIRECT_URL = '/painel/'
+LOGOUT_REDIRECT_URL = '/'
 
 
 # Database - Conexão via PostgreSQL usando a URL do .env
@@ -124,8 +127,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # WhiteNoise para servir estáticos em produção
 STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
     'staticfiles': {
-        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        'BACKEND': ('django.contrib.staticfiles.storage.StaticFilesStorage' if TESTING
+                    else 'whitenoise.storage.CompressedManifestStaticFilesStorage'),
     },
 }
 

@@ -1,0 +1,9 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}Cozinha · MesaFácil{% endblock %}
+{% block page %}cozinha{% endblock %}
+{% block scripts %}<script src="{% static 'js/cozinha.js' %}" defer></script>{% endblock %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">DAQUI SAEM BONS MOMENTOS</p><h1>Na <em>cozinha.</em></h1><p class="muted">Cada pedido no seu ritmo. Cada detalhe no lugar.</p></div><div class="sync-box"><span class="live-dot"></span><span id="last-sync">Atualizando pedidos…</span><button id="refresh" class="icon-button" aria-label="Atualizar agora">↻</button></div></section>
+<div class="kanban"><section class="kanban-column"><div class="column-heading"><h2><span class="status-dot received"></span>Recebidos</h2><span id="count-RECEBIDO" class="count-badge">0</span></div><div id="RECEBIDO"></div></section><section class="kanban-column"><div class="column-heading"><h2><span class="status-dot preparing"></span>Em preparação</h2><span id="count-EM_PREPARACAO" class="count-badge">0</span></div><div id="EM_PREPARACAO"></div></section><section class="kanban-column"><div class="column-heading"><h2><span class="status-dot ready"></span>Prontos</h2><span id="count-PRONTO" class="count-badge">0</span></div><div id="PRONTO"></div></section></div>
+<section class="section-space"><div class="section-title"><div><p class="eyebrow">CARDÁPIO EM DIA</p><h2>Disponibilidade dos produtos</h2></div><span class="small muted">Alterações aparecem imediatamente para os clientes.</span></div><div id="disponibilidade" class="availability-grid"></div></section>
+{% endblock %}
