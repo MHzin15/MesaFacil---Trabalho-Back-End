@@ -6,7 +6,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
-from restaurante import pages
+from restaurante import pages, pwa
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
@@ -14,6 +14,9 @@ from drf_spectacular.views import (
 )
 
 urlpatterns = [
+    path('manifest.webmanifest', pwa.manifest, name='manifest'),
+    path('service-worker.js', pwa.service_worker, name='service-worker'),
+    path('offline/', pwa.offline, name='offline'),
     path('', pages.inicio, name='inicio'),
     path('mesa/<uuid:uuid>/', pages.cliente, name='cliente'),
     path('cozinha/', pages.cozinha, name='cozinha'),

@@ -9,6 +9,10 @@
   <title>{% block title %}MesaFácil · Seu pedido, no seu tempo{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'vendor/bootstrap.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="manifest" href="{% url 'manifest' %}">
+  <link rel="icon" href="{% static 'icons/icon-192.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'icons/icon-192.png' %}">
+  <script src="{% static 'js/pwa.js' %}" defer></script>
   {% block head %}{% endblock %}
   <script src="{% static 'js/app.js' %}" defer></script>
   {% block scripts %}{% endblock %}
@@ -18,6 +22,7 @@
   <header class="topbar">
     <a class="brand" href="/" aria-label="MesaFácil, início"><span class="brand-mark" aria-hidden="true">m.</span>Mesa<span>Fácil</span></a>
     <nav aria-label="Navegação principal" class="topnav">
+      <button id="install-app" class="nav-button" type="button" hidden>Instalar app</button>
       {% block nav %}<a href="/">Início</a>{% endblock %}
       {% if user.is_authenticated %}
       <a href="/painel/">Meu painel</a>

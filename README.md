@@ -117,11 +117,11 @@ A identificação GET /api/mesa/<UUID>/ estabelece o contexto e cookie CSRF;
 criar pedido exige também sessao_id. Envie X-CSRFToken nas escritas Fetch.
 QR Code é baixado por GET /api/mesas/<id>/qr-code/ com perfil ADMIN.
 O garçom acessa /garcom/: mapa de mesas, entregas, contas e pagamento simulado.
-O PWA está na etapa 5.
+O PWA tem manifesto, instalação e página offline; consulte [docs/PWA.md](docs/PWA.md).
 
 No celular, localhost refere-se ao próprio celular. Configure PUBLIC_BASE_URL,
 ALLOWED_HOSTS e CSRF_TRUSTED_ORIGINS para um endereço alcançável e HTTPS.
-Com DEBUG=False os cookies exigem HTTPS. O futuro service worker também exige
+Com DEBUG=False os cookies exigem HTTPS. O service worker também exige
 HTTPS ou localhost. Não exponha runserver como servidor de produção.
 
 ## Organização e colaboração

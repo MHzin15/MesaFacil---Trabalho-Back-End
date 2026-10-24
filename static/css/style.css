@@ -5,3 +5,5 @@
 
 /* Salão: os mesmos componentes do cliente e da cozinha. */
 .table-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}.table-card{padding:1.25rem;border-top:4px solid #448060}.table-ocupada{border-top-color:#ae452c}.table-aguardando_conta{border-top-color:#b98116}.table-card h3{font-size:1.2rem}.table-card .section-title{flex-wrap:wrap;gap:.5rem}#conta-dialog{max-width:760px}#conta-itens .bill-row{align-items:flex-start;gap:1rem}#conta-itens .order-item{margin-top:.4rem}
+
+.offline-card{max-width:760px;margin:5vh auto;padding:clamp(1rem,4vw,3rem)}
