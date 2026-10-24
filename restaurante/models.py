@@ -1,5 +1,6 @@
 from decimal import Decimal
 from django.core.validators import MinValueValidator
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.conf import settings
 import uuid
@@ -55,6 +56,11 @@ class Mesa(models.Model):
         verbose_name_plural = 'Mesas'
         ordering = ['numero']
         constraints = [models.CheckConstraint(condition=models.Q(numero__gte=1), name='mesa_numero_positivo')]
+
+    def clean(self):
+        super().clean()
+        if self.pk and not self.ativa and self.sessoes.filter(ativa=True).exists():
+            raise ValidationError({'ativa': 'Encerre a sessão antes de desativar a mesa.'})
 
     def __str__(self):
         return f"Mesa {self.numero}"

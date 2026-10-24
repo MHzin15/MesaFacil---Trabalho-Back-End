@@ -4,7 +4,6 @@ URL configuration for core project.
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from restaurante import pages, pwa
 from drf_spectacular.views import (
@@ -17,6 +16,7 @@ urlpatterns = [
     path('manifest.webmanifest', pwa.manifest, name='manifest'),
     path('service-worker.js', pwa.service_worker, name='service-worker'),
     path('offline/', pwa.offline, name='offline'),
+    path('media/produtos/<path:path>', pages.foto_produto, name='foto-produto'),
     path('', pages.inicio, name='inicio'),
     path('mesa/<uuid:uuid>/', pages.cliente, name='cliente'),
     path('cozinha/', pages.cozinha, name='cozinha'),
@@ -32,7 +32,3 @@ urlpatterns = [
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
-
-# Servir media files em desenvolvimento
-if settings.DEBUG:
-    urlpatterns += static('/media/produtos/', document_root=settings.MEDIA_ROOT / 'produtos')

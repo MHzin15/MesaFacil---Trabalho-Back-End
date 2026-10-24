@@ -60,7 +60,7 @@ window.MF = (() => {
     return pedido.itens.map(item => `<div class="order-item"><strong>${item.quantidade}× ${escape(item.produto_nome)}</strong>${item.itens_adicionais.length ? `<div class="extras">+ ${item.itens_adicionais.map(a => escape(a.nome)).join(', ')}</div>` : ''}${item.observacao ? `<div class="item-note">${escape(item.observacao)}</div>` : ''}</div>`).join('');
   }
   function orderCard(pedido, action = '') {
-    return `<article class="surface order-card"><div class="order-header"><strong>Mesa ${String(pedido.mesa_numero).padStart(2,'0')}</strong><span class="muted small">#${pedido.id} · ${new Date(pedido.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span></div>${itemList(pedido)}${pedido.observacao ? `<p class="order-note">${escape(pedido.observacao)}</p>` : ''}${action}</article>`;
+    return `<article class="surface order-card"><div class="order-header"><strong>Mesa ${String(pedido.mesa_numero).padStart(2,'0')}</strong><span class="muted small">#${pedido.id} · ${new Date(pedido.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'})}</span></div>${itemList(pedido)}${pedido.observacao ? `<p class="order-note">${escape(pedido.observacao)}</p>` : ''}${action}</article>`;
   }
   document.addEventListener('click', event => {
     const button = event.target.closest('[data-close]');

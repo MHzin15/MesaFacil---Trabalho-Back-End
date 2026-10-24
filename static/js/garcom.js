@@ -35,7 +35,7 @@
         if (table) showBill(await api(billUrl(selected)));
         else { selected = null; byId('conta-dialog').close(); feedback('Esta sessão já foi encerrada.'); }
       }
-      byId('last-sync').textContent = `Atualizado às ${new Date().toLocaleTimeString('pt-BR')}`;
+      byId('last-sync').textContent = `Atualizado às ${new Date().toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo'})}`;
     } finally { refreshing = false; }
   }
 

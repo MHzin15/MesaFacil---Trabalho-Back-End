@@ -10,7 +10,7 @@ em `/api/redoc/`. Para regenerar: `python manage.py spectacular --file docs/open
    na sessão anônima e envia o cookie `csrftoken`.
 2. Nas escritas, envie esse valor em `X-CSRFToken`, com `credentials: same-origin`.
 3. Leia `/api/cardapio/`; envie `/api/pedidos/criar/` com `mesa_uuid`, `sessao_id`,
-   `itens` e, preferencialmente, `chave_envio` (UUID gerado por tentativa).
+   `itens`, `total_esperado` e, preferencialmente, `chave_envio` (UUID gerado por tentativa).
 4. Cada item contém `produto_id`, `quantidade` (1–99), `adicionais_ids` sem repetição
    e `observacao` de até 255 caracteres. Um pedido aceita até 100 itens.
 5. Reutilize a mesma chave e o mesmo conteúdo se a resposta se perder. O servidor
@@ -49,3 +49,7 @@ QR privado: GET `/api/mesas/<id>/qr-code/`, perfil ADMIN. A ação POST
 
 Respostas de pedidos, contas e equipe têm `Cache-Control: no-store`. Apenas
 cardápio e recursos públicos podem ser candidatos ao cache offline do PWA.
+
+O frontend envia `total_esperado` como valor de confirmação: o servidor compara
+com seu próprio cálculo e rejeita divergências, sem aceitar esse campo como preço.
+Na API ele é opcional para compatibilidade; no cliente do projeto é sempre enviado.

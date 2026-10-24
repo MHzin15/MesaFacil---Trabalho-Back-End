@@ -4,6 +4,7 @@ from unittest import skipUnless
 from django.contrib.auth.models import User
 from django.db import connection, connections
 from django.test import TransactionTestCase
+from django.http import Http404
 from rest_framework.exceptions import APIException
 from .models import Mesa, SessaoMesa, Perfil, Pedido, HistoricoStatusPedido, Produto, Categoria, Conta
 from . import services
@@ -24,7 +25,7 @@ class ConcurrencyTests(TransactionTestCase):
                 barrier.wait(timeout=10)
                 function()
                 return 'ok'
-            except APIException:
+            except (APIException, Http404):
                 return 'rejeitado'
             finally:
                 connections.close_all()
@@ -55,3 +56,25 @@ class ConcurrencyTests(TransactionTestCase):
         else:
             self.assertFalse(Conta.objects.exists())
             self.assertEqual(sessao.pedidos.count(), 1)
+
+    def test_request_account_racing_payment_never_reopens_paid_session(self):
+        sessao = services.abrir(self.mesa.pk, self.admin)
+        results = self.race([
+            lambda: services.pedir_conta(self.mesa.token_uuid, sessao.pk),
+            lambda: services.pagar(sessao.pk, 'PIX', self.admin),
+        ])
+        self.assertIn('ok', results)
+        sessao.refresh_from_db()
+        self.assertFalse(sessao.ativa)
+        self.assertFalse(sessao.conta_solicitada)
+        self.assertTrue(Conta.objects.get(sessao=sessao).pago)
+
+    def test_duplicate_submission_race_creates_one_order_and_one_initial_event(self):
+        from uuid import uuid4
+        sessao = services.abrir(self.mesa.pk, self.admin)
+        product = Produto.objects.create(categoria=Categoria.objects.create(nome='Lanches'), nome='Item', preco='10.00')
+        data = {'mesa_uuid': self.mesa.token_uuid, 'sessao_id': sessao.pk, 'chave_envio': uuid4(),
+                'itens': [{'produto_id': product.pk, 'quantidade': 1}]}
+        self.assertEqual(self.race([lambda: services.criar(data, self.admin)] * 2), ['ok', 'ok'])
+        self.assertEqual(Pedido.objects.filter(sessao=sessao).count(), 1)
+        self.assertEqual(HistoricoStatusPedido.objects.count(), 1)

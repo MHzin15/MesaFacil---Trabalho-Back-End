@@ -79,6 +79,8 @@ def criar(dados, user):
                 from django.http import Http404
                 raise Http404('Adicional não pertence ao produto.')
             ItemPedidoAdicional.objects.create(item_pedido=saved, adicional=adicional, preco=adicional.preco)
+    if dados.get('total_esperado') is not None and pedido.valor_total != dados['total_esperado']:
+        erro('Os preços mudaram. Atualize o cardápio e confirme novamente o total.')
     total = sum((p.valor_total for p in sessao.pedidos.exclude(status='CANCELADO')), Decimal('0.00'))
     if total > Decimal('99999999.99'):
         erro('O total ultrapassa o limite da conta. Peça ajuda ao atendimento.')

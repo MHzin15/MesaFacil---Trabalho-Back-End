@@ -57,6 +57,11 @@ class CategoriaComProdutosSerializer(serializers.ModelSerializer):
 # Mesa
 # ============================================================
 class MesaSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        if self.instance and attrs.get('ativa') is False and self.instance.sessoes.filter(ativa=True).exists():
+            raise serializers.ValidationError('Encerre a sessão antes de desativar a mesa.')
+        return attrs
+
     status = serializers.ReadOnlyField(source='status_display')
     sessao_ativa_id = serializers.SerializerMethodField()
     qr_code = serializers.SerializerMethodField()
@@ -154,6 +159,7 @@ class PedidoCriarSerializer(serializers.Serializer):
     observacao = serializers.CharField(required=False, default='', allow_blank=True)
     itens = ItemPedidoCriarSerializer(many=True, min_length=1, max_length=100)
     chave_envio = serializers.UUIDField(required=False)
+    total_esperado = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=0, required=False)
 
 
 class PedidoSerializer(serializers.ModelSerializer):

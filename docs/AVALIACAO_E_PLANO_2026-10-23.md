@@ -302,3 +302,7 @@ checklist sem itens obrigatórios pendentes. Opcionais só depois dessa aprovaç
 
 Próxima ação proposta, quando a implementação for solicitada: executar **Etapa 1**,
 sem avançar automaticamente a opcionais nem considerar os 43 testes atuais como aceite do MVP.
+
+## Execução posterior
+
+Este documento preserva o diagnóstico do commit 7c6ce3a. Consulte [ACEITE_FINAL.md](ACEITE_FINAL.md) para a conferência após a implementação, testes e limitações do aceite presencial.

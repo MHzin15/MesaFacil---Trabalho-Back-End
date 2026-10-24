@@ -1,15 +1,16 @@
 # MesaFácil
 
 Pedidos por QR Code em um restaurante, com Python, Django, DRF e PostgreSQL.
-O código atual já possui cardápio, carrinho, pedidos, auditoria e cozinha.
-A conclusão de garçom, segurança, contratos e PWA segue [o plano](docs/AVALIACAO_E_PLANO_2026-10-23.md).
+O MVP inclui cardápio, carrinho, pedidos, cozinha, garçom, conta, pagamento
+simulado e PWA. A implementação seguiu [o plano](docs/AVALIACAO_E_PLANO_2026-10-23.md);
+consulte [o aceite final](docs/ACEITE_FINAL.md) para evidências e demonstrações ainda pendentes.
 Acompanhe as entregas em [docs/EXECUCAO.md](docs/EXECUCAO.md).
 
 ## Stack
 
 Python 3.12+ (validado em 3.13), Django 6.1.2, DRF, PostgreSQL 18 e psycopg 3.
 Dependências diretas estão fixadas em requirements.txt, com versões estáveis
-consultadas no PyPI em 23/10/2026. HTML/CSS, Bootstrap 5 e Fetch no frontend.
+consultadas no PyPI em 23/10/2026. HTML/CSS, Bootstrap 5.3.8 local e Fetch no frontend.
 
 Pacotes extras: drf-spectacular documenta a API; django-filter filtra consultas;
 django-environ lê o ambiente; qrcode/Pillow geram QR e imagens; WhiteNoise serve
@@ -99,8 +100,9 @@ precisam de codificação na URL; a senha hexadecimal sugerida evita essa difere
 ```
 
 A aplicação normal rejeita SQLite. core.test_settings é apenas para testes rápidos,
-nunca para runserver ou entrega. Etapa 1: 45 testes aprovados em PostgreSQL 18.6
-e na configuração rápida; nenhum pacote quebrado. Docker ainda requer validação
+nunca para runserver ou entrega. Validação final: 79 testes aprovados em PostgreSQL
+18.6, incluindo cinco corridas reais; schema estrito e dependências sem problemas.
+Use `python scripts/validate.py` para repetir os checks técnicos. Docker ainda requer validação
 em uma máquina com Docker disponível.
 
 ## Acesso e API
@@ -117,6 +119,7 @@ A identificação GET /api/mesa/<UUID>/ estabelece o contexto e cookie CSRF;
 criar pedido exige também sessao_id. Envie X-CSRFToken nas escritas Fetch.
 QR Code é baixado por GET /api/mesas/<id>/qr-code/ com perfil ADMIN.
 O garçom acessa /garcom/: mapa de mesas, entregas, contas e pagamento simulado.
+A cozinha também pode cancelar um pedido recebido, antes de iniciar o preparo.
 O PWA tem manifesto, instalação e página offline; consulte [docs/PWA.md](docs/PWA.md).
 
 No celular, localhost refere-se ao próprio celular. Configure PUBLIC_BASE_URL,
@@ -136,3 +139,11 @@ Cada etapa deve terminar com testes, commit, push e uma demonstração curta.
 Datas e nomes da dupla devem ser preenchidos pelos integrantes conforme o professor.
 O escopo obrigatório é um restaurante; sem gateway real, multi-tenant, nota fiscal
 ou impressão de comandas. Opcionais só após o MVP validado.
+
+## Evidências e demonstração
+
+[ACEITE_FINAL.md](docs/ACEITE_FINAL.md) mapeia todos os requisitos do enunciado às
+evidências. [VALIDACAO_NAVEGADOR.md](docs/VALIDACAO_NAVEGADOR.md) descreve testes
+reproduzíveis em banco isolado e sessões de navegador separadas, incluindo perda
+de resposta sem duplicar pedido. A demonstração em dois aparelhos físicos e a
+apresentação pela dupla continuam necessárias para o aceite do semestre.

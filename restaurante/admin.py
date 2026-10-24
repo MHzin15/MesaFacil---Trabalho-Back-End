@@ -20,6 +20,19 @@ class PerfilAdmin(admin.ModelAdmin):
     list_filter = ('role',)
     search_fields = ('user__username', 'user__first_name', 'user__last_name')
 
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset if request.user.is_superuser else queryset.filter(user__is_superuser=False)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'user' and not request.user.is_superuser:
+            kwargs['queryset'] = get_user_model().objects.filter(is_superuser=False)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_readonly_fields(self, request, obj=None):
+        # Trocar o usuário de um perfil deixaria permissões derivadas no usuário antigo.
+        return ('user',) if obj else ()
+
     def has_delete_permission(self, request, obj=None):
         return False
 
@@ -34,6 +47,13 @@ class MesaAdmin(admin.ModelAdmin):
     readonly_fields = ('token_uuid', 'baixar_qr')
     exclude = ('qr_code',)
     actions = ['abrir_mesas']
+
+    def get_object(self, request, object_id, from_field=None):
+        obj = super().get_object(request, object_id, from_field)
+        # O changeform POST do Django Admin já executa dentro de transaction.atomic.
+        if obj and request.method == 'POST':
+            return Mesa.objects.select_for_update().get(pk=obj.pk)
+        return obj
 
     @admin.display(description='QR Code')
     def baixar_qr(self, obj):

@@ -5,7 +5,8 @@
   const base = `/api/mesa/${token}/`;
   const byId = id => document.getElementById(id);
   let products = [], cart = [], sessionId = null, currentProduct = null, sending = false, selected = null;
-  let ended = false;
+  let ended = false, menuSignature = '', reviewSignature = '';
+  const cartSignature = () => JSON.stringify([sessionId, cart, byId('observacao-pedido').value]);
   let lastOrders = '', lastBill = '', refreshing = false, attempt = null;
   const attemptKey = () => `mf-attempt-${token}-${sessionId}`;
   function saveAttempt() { try { if (attempt) sessionStorage.setItem(attemptKey(), JSON.stringify(attempt)); else sessionStorage.removeItem(attemptKey()); } catch {} }
@@ -28,6 +29,9 @@
   }
   async function loadMenu() {
     const categories = await api('/api/cardapio/');
+    const signature = JSON.stringify(categories);
+    if (signature === menuSignature) return;
+    menuSignature = signature;
     products = categories.flatMap(c => c.produtos);
     if (!sending && !attempt) {
       let changed = false;
@@ -86,7 +90,7 @@
     const signature = JSON.stringify(orders);
     if (signature !== lastOrders) {
       lastOrders = signature;
-      byId('lista-pedidos').innerHTML = orders.length ? orders.map(p => `<article class="surface order-card"><div class="order-header"><strong>Pedido #${p.id}</strong><span class="status-label ${p.status.toLowerCase()}">${statusNames[p.status]}</span></div>${itemList(p)}<div class="order-bottom"><span class="small muted">${new Date(p.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span><strong>${money(p.valor_total)}</strong></div><div class="status-track" aria-label="Etapa: ${statusNames[p.status]}">${['RECEBIDO','EM_PREPARACAO','PRONTO','A_CAMINHO','ENTREGUE'].map((s,i) => `<span class="${i <= ['RECEBIDO','EM_PREPARACAO','PRONTO','A_CAMINHO','ENTREGUE'].indexOf(p.status) ? 'done' : ''}" title="${statusNames[s]}"></span>`).join('')}</div></article>`).join('') : '<p class="empty-state">Seus pedidos aparecerão aqui assim que você enviar o primeiro.</p>';
+      byId('lista-pedidos').innerHTML = orders.length ? orders.map(p => `<article class="surface order-card"><div class="order-header"><strong>Pedido #${p.id}</strong><span class="status-label ${p.status.toLowerCase()}">${statusNames[p.status]}</span></div>${itemList(p)}<div class="order-bottom"><span class="small muted">${new Date(p.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'})}</span><strong>${money(p.valor_total)}</strong></div><div class="status-track" aria-label="Etapa: ${statusNames[p.status]}">${['RECEBIDO','EM_PREPARACAO','PRONTO','A_CAMINHO','ENTREGUE'].map((s,i) => `<span class="${i <= ['RECEBIDO','EM_PREPARACAO','PRONTO','A_CAMINHO','ENTREGUE'].indexOf(p.status) ? 'done' : ''}" title="${statusNames[s]}"></span>`).join('')}</div></article>`).join('') : '<p class="empty-state">Seus pedidos aparecerão aqui assim que você enviar o primeiro.</p>';
     }
     if (JSON.stringify(bill) !== lastBill) {
       lastBill = JSON.stringify(bill);
@@ -128,21 +132,26 @@
     cart.push({produto_id: currentProduct.id, nome: currentProduct.nome, preco: currentProduct.preco, quantidade: Number(byId('produto-quantidade').value), adicionais: currentProduct.adicionais.filter(a => ids.includes(a.id)), observacao: byId('produto-observacao').value.trim()});
     saveCart(); renderCart(); byId('produto-dialog').close(); feedback('Adicionado ao carrinho.');
   });
-  byId('revisar').addEventListener('click', async () => {
-    await refresh().catch(e => feedback(e.message, true));
-    if (!cart.length || (!cartAvailable() && !attempt)) return;
+  function renderReview() {
     byId('revisao-itens').innerHTML = cart.map(i => `<div class="bill-row"><div><strong>${i.quantidade}× ${escape(i.nome)}</strong><p class="small muted mb-0">${i.adicionais.map(a => escape(a.nome)).join(', ')} ${escape(i.observacao)}</p></div><strong>${money(unit(i)*i.quantidade)}</strong></div>`).join('') + `<p class="small muted">${escape(byId('observacao-pedido').value)}</p>`;
     byId('revisao-total').textContent = money(total());
-    byId('revisao-dialog').showModal();
+    reviewSignature = cartSignature();
+    if (!byId('revisao-dialog').open) byId('revisao-dialog').showModal();
+  }
+  byId('revisar').addEventListener('click', async () => {
+    try { await refresh(); } catch (error) { feedback(error.message, true); return; }
+    if (!cart.length || (!cartAvailable() && !attempt)) return;
+    renderReview();
   });
   byId('confirmar').addEventListener('click', async () => {
     if (sending || !cart.length) return;
     try { await refresh(); } catch (error) { feedback(error.message, true); return; }
     if (!cart.length || (!cartAvailable() && !attempt)) return;
+    if (!attempt && cartSignature() !== reviewSignature) { renderReview(); feedback('O carrinho ou os preços mudaram. Confira o novo total e confirme novamente.', true); return; }
     sending = true; byId('confirmar').disabled = true; byId('confirmar').textContent = 'Enviando…';
     try {
       if (!attempt) {
-        attempt = {chave_envio:MF.uuid(), mesa_uuid:token, sessao_id:sessionId, observacao:byId('observacao-pedido').value, itens:cart.map(i => ({produto_id:i.produto_id, quantidade:i.quantidade, observacao:i.observacao, adicionais_ids:i.adicionais.map(a => a.id)}))};
+        attempt = {chave_envio:MF.uuid(), mesa_uuid:token, sessao_id:sessionId, total_esperado:total().toFixed(2), observacao:byId('observacao-pedido').value, itens:cart.map(i => ({produto_id:i.produto_id, quantidade:i.quantidade, observacao:i.observacao, adicionais_ids:i.adicionais.map(a => a.id)}))};
         saveAttempt();
       }
       await api('/api/pedidos/criar/', {method:'POST', body:JSON.stringify(attempt)});

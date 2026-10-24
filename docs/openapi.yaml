@@ -1662,9 +1662,8 @@ components:
           maxLength: 100
         ordem:
           type: integer
-          maximum: 9223372036854775807
-          minimum: -9223372036854775808
-          format: int64
+          maximum: 2147483647
+          minimum: -2147483648
           title: Ordem de Exibição
       required:
       - id
@@ -1681,9 +1680,8 @@ components:
           maxLength: 100
         ordem:
           type: integer
-          maximum: 9223372036854775807
-          minimum: -9223372036854775808
-          format: int64
+          maximum: 2147483647
+          minimum: -2147483648
           title: Ordem de Exibição
         produtos:
           type: array
@@ -1706,9 +1704,8 @@ components:
           title: Sessão
         mesa_numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
           readOnly: true
         valor_total:
@@ -1811,9 +1808,8 @@ components:
           readOnly: true
         quantidade:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
         preco_unitario:
           type: string
           format: decimal
@@ -1909,9 +1905,8 @@ components:
           readOnly: true
         numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
         token_uuid:
           type: string
@@ -1947,9 +1942,8 @@ components:
           readOnly: true
         numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
         status:
           type: string
@@ -1968,9 +1962,8 @@ components:
           readOnly: true
         numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
         status:
           type: string
@@ -2147,9 +2140,8 @@ components:
           maxLength: 100
         ordem:
           type: integer
-          maximum: 9223372036854775807
-          minimum: -9223372036854775808
-          format: int64
+          maximum: 2147483647
+          minimum: -2147483648
           title: Ordem de Exibição
     PatchedMesa:
       type: object
@@ -2159,9 +2151,8 @@ components:
           readOnly: true
         numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
         token_uuid:
           type: string
@@ -2238,9 +2229,8 @@ components:
           title: Sessão
         mesa_numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
           readOnly: true
         status:
@@ -2295,9 +2285,8 @@ components:
           title: Sessão
         mesa_numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
           readOnly: true
         status:
@@ -2371,6 +2360,10 @@ components:
         chave_envio:
           type: string
           format: uuid
+        total_esperado:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
       required:
       - itens
       - mesa_uuid
@@ -2471,9 +2464,8 @@ components:
           type: integer
         mesa_numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
           readOnly: true
         ativa:

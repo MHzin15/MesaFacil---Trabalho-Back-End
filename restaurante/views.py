@@ -107,6 +107,13 @@ class MesaViewSet(viewsets.ModelViewSet):
     queryset = Mesa.objects.all()
     serializer_class = MesaSerializer
 
+    @transaction.atomic
+    def perform_update(self, serializer):
+        serializer.instance = get_object_or_404(Mesa.objects.select_for_update(), pk=serializer.instance.pk)
+        if serializer.validated_data.get('ativa') is False and serializer.instance.sessao_ativa:
+            raise serializers.ValidationError('Encerre a sessão antes de desativar a mesa.')
+        serializer.save()
+
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
             return [IsEquipe()]

@@ -1,6 +1,6 @@
 {% load static %}
 'use strict';
-const CACHE = 'mesafacil-public-v1';
+const CACHE = 'mesafacil-public-v2';
 const OFFLINE = '/offline/';
 const ASSETS = [OFFLINE, '/manifest.webmanifest',
   '{% static "js/offline.js" %}', '{% static "css/style.css" %}', '{% static "vendor/bootstrap.min.css" %}',

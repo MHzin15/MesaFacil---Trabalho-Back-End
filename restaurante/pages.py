@@ -4,10 +4,17 @@ from functools import wraps
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
+from django.conf import settings
+from django.views.static import serve
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 from .models import Mesa
 from .security import vincular_mesa
+
+
+def foto_produto(request, path):
+    """Apenas fotos públicas; nunca o diretório de QR Codes ou o restante da mídia."""
+    return serve(request, path, document_root=settings.MEDIA_ROOT / 'produtos')
 
 
 def equipe(*roles):
