@@ -34,6 +34,12 @@ e avançam preparo. Garçom/admin consultam `/api/garcom/`, `/api/garcom/mapa-me
 abrem sessões, avançam entrega e confirmam pagamento. Todos exigem perfil correto.
 As transições válidas e permissões são verificadas novamente pelo serviço.
 
+Garçom/admin consultam GET `/api/sessoes/<id>/conta/` e solicitam a conta com
+POST `/api/sessoes/<id>/solicitar-conta/`, sem usar o contexto anônimo do cliente.
+O pagamento usa POST `/api/sessoes/<id>/pagamento/` com `meio_pagamento` igual a
+PIX, CARTAO ou DINHEIRO. Se aprovado, a sessão fecha na mesma transação.
+POST `/api/sessoes/<id>/fechar/` serve para sessão sem cobrança e sem pendências.
+
 Admin consulta `/api/admin/pedidos/` e `/api/admin/contas/` por `data_inicio` e
 `data_fim` no formato YYYY-MM-DD; pedidos também aceitam `status`. Entradas inválidas
 retornam 400. A consulta de contas é limitada a contas pagas.

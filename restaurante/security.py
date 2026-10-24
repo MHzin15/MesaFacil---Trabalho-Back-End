@@ -40,4 +40,3 @@ class CsrfSessionSchemaExtension(OpenApiAuthenticationExtension):
     def get_security_definition(self, auto_schema):
         from django.conf import settings
         return {'type': 'apiKey', 'in': 'cookie', 'name': settings.SESSION_COOKIE_NAME}
-

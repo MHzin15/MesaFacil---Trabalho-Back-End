@@ -50,3 +50,9 @@ def painel(request):
     if not perfil:
         raise PermissionDenied('Peça ao administrador para definir seu perfil.')
     return redirect(destinos[perfil.role])
+
+
+@equipe('ADMIN', 'GARCOM')
+@ensure_csrf_cookie
+def garcom(request):
+    return render(request, 'restaurante/garcom.html')

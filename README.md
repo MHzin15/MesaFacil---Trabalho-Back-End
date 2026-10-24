@@ -86,7 +86,8 @@ precisam de codificação na URL; a senha hexadecimal sugerida evita essa difere
 ## Testes e validação
 
 ```powershell
-# Integração: usa PostgreSQL, sem fallback automático para SQLite.
+# Integração: usa PostgreSQL; primeiro atualize os estáticos de produção.
+.\.venv\Scripts\python.exe manage.py collectstatic --noinput
 .\.venv\Scripts\python.exe manage.py test
 # Equivalente com pytest:
 .\.venv\Scripts\python.exe -m pytest --ds=core.settings -q
@@ -115,7 +116,8 @@ A API usa sessões Django e exige CSRF em toda escrita, inclusive anônima.
 A identificação GET /api/mesa/<UUID>/ estabelece o contexto e cookie CSRF;
 criar pedido exige também sessao_id. Envie X-CSRFToken nas escritas Fetch.
 QR Code é baixado por GET /api/mesas/<id>/qr-code/ com perfil ADMIN.
-A página do garçom e o PWA ainda estão previstos nas etapas seguintes.
+O garçom acessa /garcom/: mapa de mesas, entregas, contas e pagamento simulado.
+O PWA está na etapa 5.
 
 No celular, localhost refere-se ao próprio celular. Configure PUBLIC_BASE_URL,
 ALLOWED_HOSTS e CSRF_TRUSTED_ORIGINS para um endereço alcançável e HTTPS.

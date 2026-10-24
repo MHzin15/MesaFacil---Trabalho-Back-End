@@ -17,6 +17,7 @@ urlpatterns = [
     path('', pages.inicio, name='inicio'),
     path('mesa/<uuid:uuid>/', pages.cliente, name='cliente'),
     path('cozinha/', pages.cozinha, name='cozinha'),
+    path('garcom/', pages.garcom, name='garcom'),
     path('painel/', pages.painel, name='painel'),
     path('entrar/', auth_views.LoginView.as_view(), name='login'),
     path('sair/', auth_views.LogoutView.as_view(), name='logout'),

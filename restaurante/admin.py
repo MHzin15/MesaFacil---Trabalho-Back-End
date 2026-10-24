@@ -150,7 +150,8 @@ class PedidoAdmin(admin.ModelAdmin):
 @admin.register(Conta)
 class ContaAdmin(admin.ModelAdmin):
     list_display = ('sessao', 'valor_total', 'meio_pagamento', 'pago', 'pago_em')
-    list_filter = ('pago', 'meio_pagamento')
+    list_filter = ('pago', 'meio_pagamento', 'pago_em')
+    date_hierarchy = 'pago_em'
     readonly_fields = ('sessao', 'valor_total', 'meio_pagamento', 'pago', 'pago_em', 'criado_em')
 
     def has_add_permission(self, request):

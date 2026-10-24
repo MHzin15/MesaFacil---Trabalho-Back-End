@@ -1445,6 +1445,92 @@ paths:
               schema:
                 $ref: '#/components/schemas/SessaoMesa'
           description: ''
+  /api/sessoes/{id}/conta/:
+    get:
+      operationId: sessoes_conta_retrieve
+      description: Listagem de sessões. Garçom ou Admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Sessão da Mesa.
+        required: true
+      tags:
+      - sessoes
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContaMesa'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/sessoes/{id}/solicitar-conta/:
+    post:
+      operationId: sessoes_solicitar_conta_create
+      description: Listagem de sessões. Garçom ou Admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Sessão da Mesa.
+        required: true
+      tags:
+      - sessoes
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/sessoes/{sessao_id}/fechar/:
     post:
       operationId: sessoes_fechar_create

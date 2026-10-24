@@ -151,6 +151,25 @@ class SessaoMesaViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SessaoMesaSerializer
     permission_classes = [IsGarcomOuAdmin]
 
+    @extend_schema(responses={200: ContaMesaSerializer, **ERROS})
+    @action(detail=True, methods=['get'])
+    def conta(self, request, pk=None):
+        sessao = self.get_object()
+        pedidos = sessao.pedidos.prefetch_related('itens__produto', 'itens__itens_adicionais__adicional')
+        return Response({
+            'mesa': MesaClienteSerializer(sessao.mesa).data, 'sessao_id': sessao.pk,
+            'pedidos': PedidoSerializer(pedidos, many=True).data,
+            'valor_total': str(sum((p.valor_total for p in pedidos if p.status != 'CANCELADO'), Decimal('0.00'))),
+            'conta_solicitada': sessao.conta_solicitada,
+        })
+
+    @extend_schema(request=None, responses={200: MensagemSerializer, **ERROS})
+    @action(detail=True, methods=['post'], url_path='solicitar-conta')
+    def solicitar_conta(self, request, pk=None):
+        sessao = self.get_object()
+        services.pedir_conta(sessao.mesa.token_uuid, sessao.pk)
+        return Response({'mensagem': 'Conta solicitada.'})
+
 
 @extend_schema(request=None, responses={201: SessaoMesaSerializer, **ERROS})
 @api_view(['POST'])

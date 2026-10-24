@@ -5,6 +5,7 @@
   const base = `/api/mesa/${token}/`;
   const byId = id => document.getElementById(id);
   let products = [], cart = [], sessionId = null, currentProduct = null, sending = false, selected = null;
+  let ended = false;
   let lastOrders = '', lastBill = '', refreshing = false, attempt = null;
   const attemptKey = () => `mf-attempt-${token}-${sessionId}`;
   function saveAttempt() { try { if (attempt) sessionStorage.setItem(attemptKey(), JSON.stringify(attempt)); else sessionStorage.removeItem(attemptKey()); } catch {} }
@@ -54,6 +55,8 @@
     await loadMenu();
     const mesa = await api(base);
     if (mesa.sessao_id !== sessionId) {
+      if (sessionId && !mesa.sessao_id) { ended = true; feedback('Sua sessão foi encerrada. Obrigado pela visita!'); }
+      if (mesa.sessao_id) ended = false;
       sessionId = mesa.sessao_id;
       attempt = null;
       try { attempt = JSON.parse(sessionStorage.getItem(attemptKey()) || 'null'); } catch {}
@@ -65,9 +68,9 @@
       renderCart();
       renderProducts();
     }
-    byId('session-label').textContent = sessionId ? 'Sessão aberta' : 'Aguardando abertura';
+    byId('session-label').textContent = sessionId ? 'Sessão aberta' : ended ? 'Sessão encerrada' : 'Aguardando abertura';
     byId('session-warning').hidden = Boolean(sessionId);
-    byId('session-warning').textContent = 'Esta mesa está sem sessão aberta. Peça ao garçom para abrir antes de enviar pedidos.';
+    byId('session-warning').textContent = ended ? 'Sua sessão foi encerrada. Obrigado pela visita!' : 'Esta mesa está sem sessão aberta. Peça ao garçom para abrir antes de enviar pedidos.';
     byId('pedir-conta').disabled = !sessionId || !navigator.onLine;
     if (!sessionId) {
       byId('lista-pedidos').innerHTML = '<p class="empty-state">Nenhuma sessão aberta nesta mesa.</p>';
