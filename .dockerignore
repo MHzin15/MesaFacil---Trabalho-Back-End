@@ -1,0 +1,11 @@
+.git
+.venv
+venv
+.tmp
+.local
+.env
+__pycache__
+*.pyc
+.pytest_cache
+media
+staticfiles

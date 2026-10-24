@@ -1,11 +1,10 @@
 import os
-import sys
 import environ
 from pathlib import Path
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-TESTING = 'test' in sys.argv or 'pytest' in sys.modules
 
 # Inicializa o django-environ
 env = environ.Env(
@@ -16,7 +15,7 @@ env = environ.Env(
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Configurações de Segurança lidas do .env
-SECRET_KEY = env('SECRET_KEY', default='mesa-facil-test-only' if TESTING else environ.Env.NOTSET)
+SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', default=False)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost'])
@@ -79,17 +78,9 @@ LOGOUT_REDIRECT_URL = '/'
 
 # Database - Conexão via PostgreSQL usando a URL do .env
 # Exemplo no .env: DATABASE_URL=postgres://postgres:senha@localhost:5432/mesa_facil
-if TESTING:
-    # Não lê DATABASE_URL nem exige PostgreSQL/.env durante os testes.
-    DATABASES = {'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': ':memory:',
-        'TEST': {'NAME': ':memory:'},
-    }}
-else:
-    DATABASES = {
-        'default': env.db('DATABASE_URL'),
-    }
+DATABASES = {'default': env.db('DATABASE_URL')}
+if DATABASES['default']['ENGINE'] != 'django.db.backends.postgresql':
+    raise ImproperlyConfigured('A aplicação exige PostgreSQL. SQLite só é permitido em core.test_settings.')
 
 
 # Password validation
@@ -129,8 +120,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 STORAGES = {
     'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
     'staticfiles': {
-        'BACKEND': ('django.contrib.staticfiles.storage.StaticFilesStorage' if TESTING
-                    else 'whitenoise.storage.CompressedManifestStaticFilesStorage'),
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
     },
 }
 
@@ -165,3 +155,10 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
     'LANGUAGE': 'pt-br',
 }
+
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
+PUBLIC_BASE_URL = env('PUBLIC_BASE_URL', default='http://localhost:8000').rstrip('/')
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'

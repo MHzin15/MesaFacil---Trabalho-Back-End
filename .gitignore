@@ -33,3 +33,5 @@ Desktop.ini
 htmlcov/
 node_modules/
 test-results/
+
+.local/

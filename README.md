@@ -1,208 +1,132 @@
-# MesaFácil 🍽️📱
+# MesaFácil
 
-O **MesaFácil** é uma aplicação web progressiva (PWA) desenvolvida em Django para gerir pedidos
-através de QR Code em restaurantes. O sistema elimina a necessidade de o garçom anotar os pedidos
-manualmente, permitindo que o cliente escaneie o QR Code da mesa, consulte o cardápio, monte o
-pedido, envie-o diretamente para a cozinha e acompanhe o status em tempo real até o fechamento
-da conta.
+Pedidos por QR Code em um restaurante, com Python, Django, DRF e PostgreSQL.
+O código atual já possui cardápio, carrinho, pedidos, auditoria e cozinha.
+A conclusão de garçom, segurança, contratos e PWA segue [o plano](docs/AVALIACAO_E_PLANO_2026-10-23.md).
+Acompanhe as entregas em [docs/EXECUCAO.md](docs/EXECUCAO.md).
 
-## 🛠️ Tecnologias Utilizadas
+## Stack
 
-| Camada | Tecnologia |
-|--------|-----------|
-| Linguagem | Python 3 |
-| Framework | Django 5.2 |
-| API REST | Django REST Framework |
-| Banco de Dados | PostgreSQL (psycopg v3) |
-| QR Code | qrcode + Pillow |
-| Documentação API | drf-spectacular (Swagger/OpenAPI) |
-| Filtros | django-filter |
-| Frontend | HTML5, CSS3, Bootstrap 5, JavaScript (Fetch API) |
-| PWA | manifest.json, Service Worker, Cache API |
-| Arquivos Estáticos | WhiteNoise |
-| Testes | pytest + pytest-django |
+Python 3.12+ (validado em 3.13), Django 6.1.2, DRF, PostgreSQL 18 e psycopg 3.
+Dependências diretas estão fixadas em requirements.txt, com versões estáveis
+consultadas no PyPI em 23/10/2026. HTML/CSS, Bootstrap 5 e Fetch no frontend.
 
-## 👥 Divisão de Tarefas
+Pacotes extras: drf-spectacular documenta a API; django-filter filtra consultas;
+django-environ lê o ambiente; qrcode/Pillow geram QR e imagens; WhiteNoise serve
+estáticos; pytest/pytest-django executam testes. CORS tem configuração explícita
+para integração futura. Gunicorn é instalado apenas em Linux/container.
 
-* **Membro 1 (Backend & Banco de Dados):** Modelação de dados (Django ORM), API REST,
-  autenticação, lógica de sessões de mesa e painéis de controlo.
-* **Membro 2 (Frontend, PWA & UX):** Interfaces mobile-first (Cliente), painéis responsivos
-  (Cozinha/Garçom), integração via Fetch API, Service Worker e testes automatizados.
+## Instalação local — Windows/PowerShell
 
-## 🚀 Como Executar o Projeto
-
-### Pré-requisitos
-
-- Python 3.11+
-- PostgreSQL 15+
-- Git
-
-### 1. Clonar o repositório
-
-```bash
+```powershell
 git clone https://github.com/MHzin15/MesaFacil---Trabalho-Back-End.git
 cd MesaFacil---Trabalho-Back-End
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Copy-Item .env.example .env
+.\.venv\Scripts\python.exe -c "import secrets; print(secrets.token_urlsafe(50)); print(secrets.token_hex(24))"
 ```
 
-### 2. Criar ambiente virtual e instalar dependências
+Coloque a primeira saída em SECRET_KEY. Use a segunda como POSTGRES_PASSWORD e
+na senha de DATABASE_URL. Não publique .env. Em instalações existentes, preserve
+os segredos: acrescente DATABASE_URL sem substituir o arquivo inteiro.
 
-```bash
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# Linux/Mac
-source venv/bin/activate
+DATABASE_URL deve apontar para um banco e usuário próprios, por exemplo:
+`postgresql://mesafacil:SENHA@127.0.0.1:5432/mesafacil`.
+Crie o usuário e o banco na sua instalação PostgreSQL. Para testar, o usuário
+precisa de CREATEDB em um servidor exclusivo de desenvolvimento.
 
-pip install -r requirements.txt
+Alternativamente, com PostgreSQL instalado no Windows, o projeto pode manter um
+cluster próprio em .local/postgres, sem alterar seus outros bancos:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/dev_postgres.py start
 ```
 
-### 3. Configurar variáveis de ambiente
+O script lê DATABASE_URL, inicia na porta configurada, cria o banco se necessário
+e usa os binários de `C:\Program Files\PostgreSQL\18\bin` (ou --bin CAMINHO).
+Escolha uma porta livre na URL, como 55432, para evitar conflito com outro servidor.
+Esse cluster exclusivo de desenvolvimento usa o usuário do projeto também para
+administrar os bancos de testes. Para parar: substitua start por stop.
+Não armazene bancos de produção em diretórios sincronizados por OneDrive.
 
-Copie o arquivo `.env.example` para `.env` e ajuste os valores:
-
-```bash
-cp .env.example .env
+```powershell
+.\.venv\Scripts\python.exe manage.py migrate
+.\.venv\Scripts\python.exe manage.py seed_data --demo-images
+.\.venv\Scripts\python.exe manage.py createsuperuser
+.\.venv\Scripts\python.exe manage.py runserver
 ```
 
-Edite o `.env` com as credenciais do seu PostgreSQL:
+O seed cria 10 mesas, 6 categorias e 15 produtos com adicionais. É repetível:
+não redefine preços ou senhas existentes. --demo-images cria ilustrações locais
+para produtos sem foto; substitua pelas fotos do restaurante no admin.
+Por padrão nenhum usuário é criado. Somente em demonstração local, execute
+`python manage.py seed_data --demo-users` para criar admin/admin123,
+cozinha/cozinha123 e garcom/garcom123. Não use essas credenciais em publicação.
+Um superusuário criado manualmente ainda precisa de Perfil ADMIN para APIs da equipe.
 
-```
-DEBUG=True
-SECRET_KEY=sua-chave-secreta-aqui
-DATABASE_URL=postgres://postgres:sua_senha@localhost:5432/mesa_facil
-ALLOWED_HOSTS=127.0.0.1,localhost
-```
+## Docker Compose
 
-### 4. Criar o banco de dados
+Configure .env a partir do exemplo, com uma senha hexadecimal, e execute:
 
-```bash
-# No terminal do PostgreSQL (psql):
-CREATE DATABASE mesa_facil;
-```
-
-### 5. Executar migrations
-
-```bash
-python manage.py migrate
+```powershell
+docker compose up --build -d
+docker compose exec web python manage.py seed_data --demo-images
+docker compose exec web python manage.py createsuperuser
 ```
 
-### 6. Carregar dados de exemplo
+Compose executa Django com Gunicorn e PostgreSQL em serviços separados, aplica
+migrations e collectstatic ao iniciar. Não cria usuários automaticamente.
+Para executar Django fora do container, suba apenas o banco com
+`docker compose up -d db` e use DATABASE_URL local. Senhas com caracteres reservados
+precisam de codificação na URL; a senha hexadecimal sugerida evita essa diferença.
 
-```bash
-python manage.py seed_data
+## Testes e validação
+
+```powershell
+# Integração: usa PostgreSQL, sem fallback automático para SQLite.
+.\.venv\Scripts\python.exe manage.py test
+# Equivalente com pytest:
+.\.venv\Scripts\python.exe -m pytest --ds=core.settings -q
+# Rápidos: SQLite em memória selecionado explicitamente no pytest.ini.
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe manage.py check
+.\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
+.\.venv\Scripts\python.exe manage.py collectstatic --noinput
 ```
 
-Isso cria:
-- 10 mesas
-- Cardápio completo com 6 categorias e 15 produtos com adicionais
-- Usuários de teste (veja abaixo)
+A aplicação normal rejeita SQLite. core.test_settings é apenas para testes rápidos,
+nunca para runserver ou entrega. Etapa 1: 45 testes aprovados em PostgreSQL 18.6
+e na configuração rápida; nenhum pacote quebrado. Docker ainda requer validação
+em uma máquina com Docker disponível.
 
-### 7. Rodar o servidor
+## Acesso e API
 
-```bash
-python manage.py runserver
-```
+- Entrada: http://localhost:8000/
+- Login da equipe: /entrar/; administração: /admin/.
+- Cliente: /mesa/<UUID>/; cozinha: /cozinha/.
+- API: /api/; Swagger: /api/docs/; ReDoc: /api/redoc/.
+- Contratos e pendências detalhados no plano e no registro de execução.
 
-Acesse:
-- **API:** http://localhost:8000/api/
-- **Documentação Swagger:** http://localhost:8000/api/docs/
-- **Admin Django:** http://localhost:8000/admin/
+A geração atual de QR é POST /api/mesas/<id>/gerar_qrcode/.
+A API usa sessões Django e CSRF nas escritas autenticadas; a proteção anônima
+está sendo completada na etapa 2. Não publique a aplicação antes dessa etapa.
+A página do garçom e o PWA ainda estão previstos nas etapas seguintes.
 
-## 👤 Usuários de Teste
+No celular, localhost refere-se ao próprio celular. Configure PUBLIC_BASE_URL,
+ALLOWED_HOSTS e CSRF_TRUSTED_ORIGINS para um endereço alcançável e HTTPS.
+Com DEBUG=False os cookies exigem HTTPS. O futuro service worker também exige
+HTTPS ou localhost. Não exponha runserver como servidor de produção.
 
-| Usuário | Senha | Perfil |
-|---------|-------|--------|
-| `admin` | `admin123` | Administrador |
-| `cozinha` | `cozinha123` | Cozinha |
-| `garcom` | `garcom123` | Garçom |
+## Organização e colaboração
 
-## 📡 Endpoints da API
+- core/: configurações e URLs; restaurante/: domínio, API, admin e testes.
+- templates/ e static/: interface e consumo de API com Fetch.
+- docs/prompts/: prompts adaptados por etapa, com critérios e correções.
+- Membro 1: backend, banco, integridade e API.
+- Membro 2: interface, PWA, testes de uso e demonstração em dois aparelhos.
 
-### Públicos (sem login)
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/api/cardapio/` | Cardápio completo agrupado por categorias |
-| GET | `/api/mesa/<uuid>/` | Dados da mesa pelo QR Code (UUID) |
-| POST | `/api/pedidos/criar/` | Enviar um pedido |
-| GET | `/api/mesa/<uuid>/pedidos/` | Acompanhar pedidos da mesa |
-| GET | `/api/mesa/<uuid>/conta/` | Ver conta da mesa |
-| POST | `/api/mesa/<uuid>/solicitar-conta/` | Solicitar fechamento da conta |
-
-### Cozinha (login obrigatório)
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/api/cozinha/` | Pedidos agrupados por status |
-| PATCH | `/api/pedidos/<id>/status/` | Alterar status do pedido |
-| PATCH | `/api/produtos/<id>/disponibilidade/` | Marcar produto indisponível |
-
-### Garçom (login obrigatório)
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/api/garcom/` | Pedidos prontos + mesas aguardando conta |
-| GET | `/api/garcom/mapa-mesas/` | Situação de todas as mesas |
-| POST | `/api/mesas/<id>/abrir-sessao/` | Abrir sessão de uma mesa |
-| POST | `/api/sessoes/<id>/fechar/` | Fechar sessão |
-| POST | `/api/sessoes/<id>/pagamento/` | Processar pagamento simulado |
-
-### Administração (login obrigatório)
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/api/admin/pedidos/` | Consultar pedidos (filtros por data) |
-| GET | `/api/admin/contas/` | Consultar contas fechadas |
-| POST | `/api/mesas/<id>/gerar-qrcode/` | Gerar QR Code da mesa |
-
-### Documentação Interativa
-| URL | Descrição |
-|-----|-----------|
-| `/api/docs/` | Swagger UI |
-| `/api/redoc/` | ReDoc |
-| `/api/schema/` | Schema OpenAPI (JSON) |
-
-## 🧪 Executar Testes
-
-```bash
-python -m pytest -q
-# Alternativa com o runner do Django:
-python manage.py test restaurante
-```
-
-Os testes usam SQLite em memória, com migrations reais e isolamento por teste.
-Não exigem PostgreSQL em execução, `.env` ou carga prévia de `seed_data`.
-Cobrem RN01–RN08, RNF08 e as respostas do painel da cozinha, incluindo as 36
-combinações de status, auditoria, rollback, permissões e atualização por polling.
-Os cenários estão detalhados em [docs/prompts/06-marco3-pedidos-e-testes.md](docs/prompts/06-marco3-pedidos-e-testes.md).
-
-Após atualizar uma instalação existente, execute `python manage.py migrate`
-para aplicar a restrição de uma sessão ativa por mesa (`0002_sessao_ativa_unica`).
-
-## 📁 Estrutura do Projeto
-
-```
-MesaFácil/
-├── core/                  # Configurações do projeto Django
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py
-├── restaurante/           # App principal
-│   ├── management/
-│   │   └── commands/
-│   │       └── seed_data.py    # Dados de exemplo
-│   ├── migrations/
-│   ├── admin.py           # Admin customizado
-│   ├── models.py          # Modelos de dados
-│   ├── permissions.py     # Permissões por perfil
-│   ├── serializers.py     # Serializers da API
-│   ├── urls.py            # Rotas da API
-│   └── views.py           # Views / lógica de negócio
-├── docs/
-│   ├── esboco-telas.md
-│   └── prompts/           # Histórico de prompts de IA
-├── static/                # Arquivos estáticos
-├── templates/             # Templates HTML
-├── .env.example
-├── .gitignore
-├── manage.py
-├── pytest.ini
-├── requirements.txt
-└── README.md
-```
+Cada etapa deve terminar com testes, commit, push e uma demonstração curta.
+Datas e nomes da dupla devem ser preenchidos pelos integrantes conforme o professor.
+O escopo obrigatório é um restaurante; sem gateway real, multi-tenant, nota fiscal
+ou impressão de comandas. Opcionais só após o MVP validado.

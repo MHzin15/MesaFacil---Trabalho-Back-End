@@ -15,21 +15,25 @@ from restaurante.models import Mesa, Categoria, Produto, Adicional, Perfil
 class Command(BaseCommand):
     help = 'Popula o banco com dados de exemplo do restaurante MesaFácil'
 
+    def add_arguments(self, parser):
+        parser.add_argument('--demo-users', action='store_true', help='Cria usuários locais de demonstração; nunca usar em produção.')
+        parser.add_argument('--demo-images', action='store_true', help='Cria ilustrações de exemplo para produtos sem foto.')
+
     def handle(self, *args, **options):
         self.stdout.write(self.style.NOTICE('  Populando dados do MesaFácil...'))
 
-        self._criar_usuarios()
+        if options['demo_users']:
+            self._criar_usuarios()
         self._criar_mesas()
         self._criar_cardapio()
 
         self.stdout.write(self.style.SUCCESS(' Dados de exemplo criados com sucesso!'))
         self.stdout.write('')
-        self.stdout.write(self.style.NOTICE(' Usuários de teste:'))
-        self.stdout.write('   admin   / admin123   (Administrador)')
-        self.stdout.write('   cozinha / cozinha123  (Cozinha)')
-        self.stdout.write('   garcom  / garcom123   (Garçom)')
-        self.stdout.write('')
-        self.stdout.write(self.style.NOTICE(f' Mesas criadas: 10'))
+        if options['demo_images']:
+            from restaurante.demo_images import criar_imagens
+            criar_imagens()
+        if options['demo_users']:
+            self.stdout.write('Demonstração local: admin/admin123, cozinha/cozinha123, garcom/garcom123')
 
     def _criar_usuarios(self):
         """Cria usuários de teste com perfis."""
