@@ -101,7 +101,7 @@
     if (sending || !cart.length) return;
     sending = true; byId('confirmar').disabled = true; byId('confirmar').textContent = 'Enviando…';
     try {
-      await api('/api/pedidos/criar/', {method:'POST', body:JSON.stringify({mesa_uuid:token, observacao:byId('observacao-pedido').value, itens:cart.map(i => ({produto_id:i.produto_id, quantidade:i.quantidade, observacao:i.observacao, adicionais_ids:i.adicionais.map(a => a.id)}))})});
+      await api('/api/pedidos/criar/', {method:'POST', body:JSON.stringify({mesa_uuid:token, sessao_id:sessionId, observacao:byId('observacao-pedido').value, itens:cart.map(i => ({produto_id:i.produto_id, quantidade:i.quantidade, observacao:i.observacao, adicionais_ids:i.adicionais.map(a => a.id)}))})});
       cart = []; saveCart(); byId('observacao-pedido').value = ''; byId('revisao-dialog').close();
       feedback('Pedido enviado! A cozinha já recebeu.'); await refresh();
       byId('pedidos').scrollIntoView({behavior:'smooth'});

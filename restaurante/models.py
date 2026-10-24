@@ -1,3 +1,5 @@
+from decimal import Decimal
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.conf import settings
 import uuid
@@ -36,7 +38,7 @@ class Perfil(models.Model):
 # Mesa
 # ============================================================
 class Mesa(models.Model):
-    numero = models.IntegerField(unique=True, verbose_name='Número da Mesa')
+    numero = models.IntegerField(unique=True, verbose_name='Número da Mesa', validators=[MinValueValidator(1)])
     # UUID aleatório para garantir a segurança do QR Code (RNF05)
     token_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     ativa = models.BooleanField(default=True, verbose_name='Mesa Ativa')
@@ -52,6 +54,7 @@ class Mesa(models.Model):
         verbose_name = 'Mesa'
         verbose_name_plural = 'Mesas'
         ordering = ['numero']
+        constraints = [models.CheckConstraint(condition=models.Q(numero__gte=1), name='mesa_numero_positivo')]
 
     def __str__(self):
         return f"Mesa {self.numero}"
@@ -78,7 +81,7 @@ class Mesa(models.Model):
 class SessaoMesa(models.Model):
     mesa = models.ForeignKey(
         Mesa,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='sessoes',
         verbose_name='Mesa',
     )
@@ -133,7 +136,7 @@ class Categoria(models.Model):
 class Produto(models.Model):
     categoria = models.ForeignKey(
         Categoria,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='produtos',
     )
     nome = models.CharField(max_length=150)
@@ -141,7 +144,7 @@ class Produto(models.Model):
     preco = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        verbose_name='Preço (R$)',
+        verbose_name='Preço (R$)', validators=[MinValueValidator(Decimal('0.00'))],
     )
     foto = models.ImageField(
         upload_to='produtos/',
@@ -158,6 +161,7 @@ class Produto(models.Model):
         verbose_name = 'Produto'
         verbose_name_plural = 'Produtos'
         ordering = ['categoria__ordem', 'nome']
+        constraints = [models.CheckConstraint(condition=models.Q(preco__gte=0), name='produto_preco_valido')]
 
     def __str__(self):
         return f"{self.nome} — R$ {self.preco}"
@@ -173,12 +177,13 @@ class Adicional(models.Model):
     preco = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        verbose_name='Preço (R$)',
+        verbose_name='Preço (R$)', validators=[MinValueValidator(Decimal('0.00'))],
     )
 
     class Meta:
         verbose_name = 'Adicional'
         verbose_name_plural = 'Adicionais'
+        constraints = [models.CheckConstraint(condition=models.Q(preco__gte=0), name='adicional_preco_valido')]
 
     def __str__(self):
         return f"{self.nome} (+R$ {self.preco})"
@@ -209,7 +214,7 @@ class Pedido(models.Model):
 
     sessao = models.ForeignKey(
         SessaoMesa,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='pedidos',
         verbose_name='Sessão',
     )
@@ -240,7 +245,7 @@ class Pedido(models.Model):
     @property
     def valor_total(self):
         """Soma de todos os itens do pedido."""
-        return sum(item.subtotal for item in self.itens.all())
+        return sum((item.subtotal for item in self.itens.all()), Decimal('0.00'))
 
     def pode_transitar_para(self, novo_status):
         """Verifica se a transição de status é permitida (RN01)."""
@@ -262,12 +267,12 @@ class ItemPedido(models.Model):
         on_delete=models.PROTECT,
         related_name='itens_pedido',
     )
-    quantidade = models.PositiveIntegerField(default=1)
+    quantidade = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
     # Preço gravado no momento do pedido (RNF08)
     preco_unitario = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        verbose_name='Preço Unitário (gravado)',
+        verbose_name='Preço Unitário (gravado)', validators=[MinValueValidator(Decimal('0.00'))],
     )
     observacao = models.CharField(
         max_length=255,
@@ -279,6 +284,10 @@ class ItemPedido(models.Model):
     class Meta:
         verbose_name = 'Item do Pedido'
         verbose_name_plural = 'Itens do Pedido'
+        constraints = [
+            models.CheckConstraint(condition=models.Q(quantidade__gte=1), name='item_quantidade_positiva'),
+            models.CheckConstraint(condition=models.Q(preco_unitario__gte=0), name='item_preco_valido'),
+        ]
 
     def __str__(self):
         return f"{self.quantidade}x {self.produto.nome} (Pedido #{self.pedido_id})"
@@ -314,12 +323,13 @@ class ItemPedidoAdicional(models.Model):
     preco = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        verbose_name='Preço do Adicional (gravado)',
+        verbose_name='Preço do Adicional (gravado)', validators=[MinValueValidator(Decimal('0.00'))],
     )
 
     class Meta:
         verbose_name = 'Adicional do Item'
         verbose_name_plural = 'Adicionais dos Itens'
+        constraints = [models.CheckConstraint(condition=models.Q(preco__gte=0), name='item_adicional_preco_valido')]
 
     def __str__(self):
         return f"{self.adicional.nome} — R$ {self.preco}"
@@ -370,7 +380,7 @@ class Conta(models.Model):
 
     sessao = models.OneToOneField(
         SessaoMesa,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='conta',
         verbose_name='Sessão',
     )
@@ -378,7 +388,7 @@ class Conta(models.Model):
         max_digits=10,
         decimal_places=2,
         default=0,
-        verbose_name='Valor Total (R$)',
+        verbose_name='Valor Total (R$)', validators=[MinValueValidator(Decimal('0.00'))],
     )
     meio_pagamento = models.CharField(
         max_length=10,
@@ -399,6 +409,7 @@ class Conta(models.Model):
         verbose_name = 'Conta'
         verbose_name_plural = 'Contas'
         ordering = ['-criado_em']
+        constraints = [models.CheckConstraint(condition=models.Q(valor_total__gte=0), name='conta_total_valido')]
 
     def __str__(self):
         status = 'Pago' if self.pago else 'Em aberto'

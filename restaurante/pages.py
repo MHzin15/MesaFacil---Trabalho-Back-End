@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 from .models import Mesa
+from .security import vincular_mesa
 
 
 def equipe(*roles):
@@ -29,7 +30,11 @@ def inicio(request):
 @ensure_csrf_cookie
 def cliente(request, uuid):
     mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
-    return render(request, 'restaurante/cliente.html', {'mesa': mesa})
+    vincular_mesa(request, mesa)
+    response = render(request, 'restaurante/cliente.html', {'mesa': mesa})
+    response['Cache-Control'] = 'no-store'
+    response['Referrer-Policy'] = 'same-origin'
+    return response
 
 
 @equipe('ADMIN', 'COZINHA')

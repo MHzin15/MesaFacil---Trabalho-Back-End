@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import views
+from . import views, qr
 
 router = DefaultRouter()
 router.register(r'categorias', views.CategoriaViewSet)
@@ -10,6 +10,7 @@ router.register(r'mesas', views.MesaViewSet)
 router.register(r'sessoes', views.SessaoMesaViewSet)
 
 urlpatterns = [
+    path('mesas/<int:mesa_id>/qr-code/', qr.download, name='qr-download'),
     # Router padrão (CRUD)
     path('', include(router.urls)),
 

@@ -75,10 +75,12 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
         url = reverse('criar-pedido')
         payload = {
             'mesa_uuid': str(self.mesa.token_uuid),
+            'sessao_id': self.mesa.sessao_ativa.pk if self.mesa.sessao_ativa else None,
             'itens': [
                 {'produto_id': self.produto_hamburguer.id, 'quantidade': 1}
             ]
         }
+        self.client.get(reverse('mesa-por-uuid', args=[self.mesa.token_uuid]))
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('não possui uma sessão aberta', response.data.get('erro', ''))
@@ -110,6 +112,7 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
         url = reverse('criar-pedido')
         payload = {
             'mesa_uuid': str(self.mesa.token_uuid),
+            'sessao_id': self.mesa.sessao_ativa.pk if self.mesa.sessao_ativa else None,
             'itens': [
                 {
                     'produto_id': self.produto_hamburguer.id,
@@ -119,6 +122,7 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
                 }
             ]
         }
+        self.client.get(reverse('mesa-por-uuid', args=[self.mesa.token_uuid]))
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -146,10 +150,12 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
         url = reverse('criar-pedido')
         payload = {
             'mesa_uuid': str(self.mesa.token_uuid),
+            'sessao_id': self.mesa.sessao_ativa.pk if self.mesa.sessao_ativa else None,
             'itens': [
                 {'produto_id': self.produto_esgotado.id, 'quantidade': 1}
             ]
         }
+        self.client.get(reverse('mesa-por-uuid', args=[self.mesa.token_uuid]))
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -275,9 +281,11 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
         url = reverse('criar-pedido')
         payload = {
             'mesa_uuid': str(self.mesa.token_uuid),
+            'sessao_id': self.mesa.sessao_ativa.pk if self.mesa.sessao_ativa else None,
             'itens': [{'produto_id': self.produto_hamburguer.id, 'quantidade': 1}]
         }
         # Como a sessão não está ativa, mesa.sessao_ativa é None (RN04)
+        self.client.get(reverse('mesa-por-uuid', args=[self.mesa.token_uuid]))
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -287,11 +295,13 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
     def enviar_pedido(self, itens=None, **campos):
         payload = {
             'mesa_uuid': str(self.mesa.token_uuid),
+            'sessao_id': self.mesa.sessao_ativa.pk if self.mesa.sessao_ativa else None,
             'itens': itens if itens is not None else [{
                 'produto_id': self.produto_hamburguer.id, 'quantidade': 1,
             }],
             **campos,
         }
+        self.client.get(reverse('mesa-por-uuid', args=[self.mesa.token_uuid]))
         return self.client.post(reverse('criar-pedido'), payload, format='json')
 
     def mudar_status(self, pedido, status_novo):

@@ -63,7 +63,9 @@ para produtos sem foto; substitua pelas fotos do restaurante no admin.
 Por padrão nenhum usuário é criado. Somente em demonstração local, execute
 `python manage.py seed_data --demo-users` para criar admin/admin123,
 cozinha/cozinha123 e garcom/garcom123. Não use essas credenciais em publicação.
-Um superusuário criado manualmente ainda precisa de Perfil ADMIN para APIs da equipe.
+Superusuários novos recebem Perfil ADMIN. Após atualizar uma instalação existente,
+execute `python manage.py sync_roles`. Administradores comuns usam perfil ADMIN,
+sem privilégios de superusuário; cadastre usuários e perfis no admin.
 
 ## Docker Compose
 
@@ -109,8 +111,10 @@ em uma máquina com Docker disponível.
 - Contratos e pendências detalhados no plano e no registro de execução.
 
 A geração atual de QR é POST /api/mesas/<id>/gerar_qrcode/.
-A API usa sessões Django e CSRF nas escritas autenticadas; a proteção anônima
-está sendo completada na etapa 2. Não publique a aplicação antes dessa etapa.
+A API usa sessões Django e exige CSRF em toda escrita, inclusive anônima.
+A identificação GET /api/mesa/<UUID>/ estabelece o contexto e cookie CSRF;
+criar pedido exige também sessao_id. Envie X-CSRFToken nas escritas Fetch.
+QR Code é baixado por GET /api/mesas/<id>/qr-code/ com perfil ADMIN.
 A página do garçom e o PWA ainda estão previstos nas etapas seguintes.
 
 No celular, localhost refere-se ao próprio celular. Configure PUBLIC_BASE_URL,

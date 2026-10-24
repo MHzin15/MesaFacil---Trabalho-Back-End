@@ -1,3 +1,9 @@
+from django.conf import settings
+from django.urls import reverse
+from django.db.models.deletion import ProtectedError
+from . import services
+from .security import vincular_mesa, validar_mesa
+from .serializers import FiltroDatasSerializer
 import io
 import qrcode
 from decimal import Decimal
@@ -35,7 +41,15 @@ from .permissions import IsAdmin, IsCozinha, IsGarcom, IsEquipe, IsCozinhaOuAdmi
 # ============================================================
 # Cardápio — Público (RF05–RF07)
 # ============================================================
-class CategoriaViewSet(viewsets.ModelViewSet):
+class CatalogoViewSet(viewsets.ModelViewSet):
+    def perform_destroy(self, instance):
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise serializers.ValidationError({'erro': 'Cadastro utilizado em histórico; não pode ser excluído.'})
+
+
+class CategoriaViewSet(CatalogoViewSet):
     """CRUD de categorias. Leitura pública, escrita para Admin."""
     queryset = Categoria.objects.all()
     serializer_class = CategoriaSerializer
@@ -46,7 +60,7 @@ class CategoriaViewSet(viewsets.ModelViewSet):
         return [IsAdmin()]
 
 
-class ProdutoViewSet(viewsets.ModelViewSet):
+class ProdutoViewSet(CatalogoViewSet):
     """CRUD de produtos. Leitura pública, escrita para Admin."""
     queryset = Produto.objects.select_related('categoria').prefetch_related('adicionais').all()
     serializer_class = ProdutoSerializer
@@ -57,7 +71,7 @@ class ProdutoViewSet(viewsets.ModelViewSet):
         return [IsAdmin()]
 
 
-class AdicionalViewSet(viewsets.ModelViewSet):
+class AdicionalViewSet(CatalogoViewSet):
     """CRUD de adicionais. Leitura pública, escrita para Admin."""
     queryset = Adicional.objects.select_related('produto').all()
     serializer_class = AdicionalSerializer
@@ -99,29 +113,11 @@ class MesaViewSet(viewsets.ModelViewSet):
     def gerar_qrcode(self, request, pk=None):
         """RF02 — Gera o QR Code da mesa com URL baseada no UUID."""
         mesa = self.get_object()
-        # URL que o QR Code vai apontar (ajustar conforme o deploy)
-        base_url = request.build_absolute_uri('/').rstrip('/')
-        url = f"{base_url}/mesa/{mesa.token_uuid}/"
-
-        # Gera o QR Code
-        qr = qrcode.QRCode(version=1, box_size=10, border=4)
-        qr.add_data(url)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color='black', back_color='white')
-
-        # Salva como imagem
-        buffer = io.BytesIO()
-        img.save(buffer, format='PNG')
-        buffer.seek(0)
-
-        filename = f"mesa_{mesa.numero}_qrcode.png"
-        mesa.qr_code.save(filename, ContentFile(buffer.read()), save=True)
-
         return Response({
-            'mensagem': f'QR Code gerado para Mesa {mesa.numero}',
-            'qr_code_url': request.build_absolute_uri(mesa.qr_code.url),
-            'mesa_url': url,
+            'qr_code_url': request.build_absolute_uri(reverse('qr-download', args=[mesa.pk])),
+            'mesa_url': settings.PUBLIC_BASE_URL + reverse('cliente', args=[mesa.token_uuid]),
         })
+
 
 
 @api_view(['GET'])
@@ -132,7 +128,7 @@ def mesa_por_uuid(request, uuid):
     Não requer login (cliente acessa).
     """
     mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
-    sessao = mesa.sessao_ativa
+    sessao = vincular_mesa(request, mesa)
 
     data = MesaClienteSerializer(mesa).data
     data['sessao_ativa'] = sessao is not None
@@ -154,67 +150,15 @@ class SessaoMesaViewSet(viewsets.ReadOnlyModelViewSet):
 @api_view(['POST'])
 @permission_classes([IsGarcomOuAdmin])
 def abrir_sessao(request, mesa_id):
-    """RF03 — Garçom abre a sessão de uma mesa."""
-    try:
-        with transaction.atomic():
-            mesa = get_object_or_404(
-                Mesa.objects.select_for_update(), id=mesa_id, ativa=True,
-            )
-            # RN05 — A restrição no banco protege também gravações concorrentes.
-            if mesa.sessao_ativa:
-                return Response(
-                    {'erro': f'Mesa {mesa.numero} já possui uma sessão aberta.'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            sessao = SessaoMesa.objects.create(mesa=mesa, aberta_por=request.user)
-    except IntegrityError:
-        if not SessaoMesa.objects.filter(mesa_id=mesa_id, ativa=True).exists():
-            raise
-        return Response(
-            {'erro': f'Mesa {mesa.numero} já possui uma sessão aberta.'},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    return Response(
-        SessaoMesaSerializer(sessao).data,
-        status=status.HTTP_201_CREATED,
-    )
+    return Response(SessaoMesaSerializer(services.abrir(mesa_id, request.user)).data, status=201)
 
 
 @api_view(['POST'])
 @permission_classes([IsGarcomOuAdmin])
 @transaction.atomic
 def fechar_sessao(request, sessao_id):
-    """RF03 — Garçom fecha a sessão. Só se todos os pedidos estiverem entregues ou cancelados."""
-    sessao = get_object_or_404(SessaoMesa.objects.select_for_update(), id=sessao_id, ativa=True)
-
-    # RN09 — Verifica se todos os pedidos estão entregues ou cancelados
-    pedidos_pendentes = sessao.pedidos.exclude(
-        status__in=['ENTREGUE', 'CANCELADO']
-    ).exists()
-
-    if pedidos_pendentes:
-        return Response(
-            {'erro': 'Não é possível fechar a sessão. Há pedidos que ainda não foram entregues ou cancelados.'},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    # Verifica se a conta foi paga
-    conta = getattr(sessao, 'conta', None)
-    total = sum(p.valor_total for p in sessao.pedidos.exclude(status='CANCELADO'))
-    if total > 0 and (not conta or not conta.pago):
-        return Response(
-            {'erro': 'A conta ainda não foi paga.'},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    sessao.ativa = False
-    sessao.fechada_em = timezone.now()
-    sessao.save()
-
-    return Response(
-        {'mensagem': f'Sessão da Mesa {sessao.mesa.numero} encerrada com sucesso.'},
-    )
+    services.fechar(sessao_id, request.user)
+    return Response({'mensagem': 'Sessão encerrada com sucesso.'})
 
 
 # ============================================================
@@ -224,145 +168,24 @@ def fechar_sessao(request, sessao_id):
 @permission_classes([AllowAny])
 @transaction.atomic
 def criar_pedido(request):
-    """
-    RF08–RF11 — Cliente envia um pedido com itens e adicionais.
-    Recebe mesa_uuid, observacao e lista de itens.
-    """
     serializer = PedidoCriarSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-
     dados = serializer.validated_data
-    mesa_uuid = dados['mesa_uuid']
-
-    # Busca a mesa
-    mesa = get_object_or_404(Mesa, token_uuid=mesa_uuid, ativa=True)
-
-    # RN04 — Só é possível enviar pedido para uma mesa com sessão aberta
-    sessao = SessaoMesa.objects.select_for_update().filter(mesa=mesa, ativa=True).first()
-    if not sessao:
-        return Response(
-            {'erro': 'Esta mesa não possui uma sessão aberta. Peça ao garçom para abrir.'},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    # RN10 — Sessão encerrada não aceita novos pedidos
-    if not sessao.ativa:
-        return Response(
-            {'erro': 'A sessão desta mesa foi encerrada.'},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    with transaction.atomic():
-        # Cria o pedido
-        pedido = Pedido.objects.create(
-            sessao=sessao,
-            observacao=dados.get('observacao', ''),
-        )
-
-        # Registra status inicial (RN03)
-        HistoricoStatusPedido.objects.create(
-            pedido=pedido,
-            status_anterior='',
-            status_novo='RECEBIDO',
-            alterado_por=request.user if request.user.is_authenticated else None,
-        )
-
-        # Processa cada item
-        for item_data in dados['itens']:
-            produto = get_object_or_404(Produto.objects.select_for_update(), id=item_data['produto_id'])
-
-            # RN08 — Produto indisponível não pode entrar no pedido
-            if not produto.disponivel:
-                raise serializers.ValidationError(
-                    f'O produto "{produto.nome}" está indisponível.'
-                )
-
-            # Grava o preço do produto no momento do pedido (RNF08)
-            item_pedido = ItemPedido.objects.create(
-                pedido=pedido,
-                produto=produto,
-                quantidade=item_data['quantidade'],
-                preco_unitario=produto.preco,
-                observacao=item_data.get('observacao', ''),
-            )
-
-            # Processa adicionais
-            for adicional_id in item_data.get('adicionais_ids', []):
-                adicional = get_object_or_404(
-                    Adicional,
-                    id=adicional_id,
-                    produto=produto,
-                )
-                # Grava o preço do adicional no momento do pedido (RNF08)
-                ItemPedidoAdicional.objects.create(
-                    item_pedido=item_pedido,
-                    adicional=adicional,
-                    preco=adicional.preco,
-                )
-
-    # Retorna o pedido criado
-    pedido.refresh_from_db()
-    return Response(
-        PedidoSerializer(pedido).data,
-        status=status.HTTP_201_CREATED,
-    )
+    mesa = get_object_or_404(Mesa, token_uuid=dados['mesa_uuid'], ativa=True)
+    # Sem sessão aberta, a regra de negócio retorna um erro claro antes do contexto.
+    if mesa.sessao_ativa:
+        validar_mesa(request, mesa, dados.get('sessao_id'))
+    pedido = services.criar(dados, request.user)
+    return Response(PedidoSerializer(pedido).data, status=201)
 
 
 @api_view(['PATCH'])
 @permission_classes([IsEquipe])
 @transaction.atomic
 def alterar_status_pedido(request, pedido_id):
-    """
-    RN01 — Altera o status do pedido respeitando a sequência válida.
-    RN02 — Cancelamento só antes de entrar em preparação.
-    RN03 — Registra a mudança com data, hora e quem a fez.
-    """
-    pedido = get_object_or_404(Pedido.objects.select_for_update(), id=pedido_id)
     serializer = PedidoStatusSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-
-    novo_status = serializer.validated_data['status']
-
-    # RN01 — Verifica se a transição é válida
-    if not pedido.pode_transitar_para(novo_status):
-        return Response(
-            {
-                'erro': (
-                    f'Transição inválida: {pedido.get_status_display()} → '
-                    f'{dict(Pedido.STATUS_CHOICES).get(novo_status, novo_status)}. '
-                    f'Transições permitidas: {pedido.TRANSICOES_VALIDAS.get(pedido.status, [])}'
-                ),
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    papel = request.user.perfil.role
-    acoes = {
-        'COZINHA': {'EM_PREPARACAO', 'PRONTO', 'CANCELADO'},
-        'GARCOM': {'A_CAMINHO', 'ENTREGUE', 'CANCELADO'},
-    }
-    if papel != 'ADMIN' and novo_status not in acoes.get(papel, set()):
-        return Response({'erro': 'Seu perfil não pode executar esta etapa.'}, status=403)
-
-    # RN02 — Cancelamento só antes do preparo
-    if novo_status == 'CANCELADO' and not pedido.pode_cancelar():
-        return Response(
-            {'erro': 'Este pedido só poderia ser cancelado antes de entrar em preparação.'},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    status_anterior = pedido.status
-    pedido.status = novo_status
-    pedido.save()
-
-    # RN03 — Registra auditoria
-    HistoricoStatusPedido.objects.create(
-        pedido=pedido,
-        status_anterior=status_anterior,
-        status_novo=novo_status,
-        alterado_por=request.user if request.user.is_authenticated else None,
-    )
-
+    pedido = services.transitar(pedido_id, serializer.validated_data['status'], request.user)
     return Response(PedidoSerializer(pedido).data)
 
 
@@ -371,7 +194,7 @@ def alterar_status_pedido(request, pedido_id):
 def pedidos_da_mesa(request, uuid):
     """RF12 — Cliente acompanha os pedidos da mesa pela UUID."""
     mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
-    sessao = mesa.sessao_ativa
+    sessao = validar_mesa(request, mesa)
 
     if not sessao:
         return Response({'pedidos': [], 'mensagem': 'Nenhuma sessão ativa.'})
@@ -473,7 +296,7 @@ def mapa_mesas(request):
 def ver_conta(request, uuid):
     """RF19 — Cliente vê a conta da mesa com todos os pedidos."""
     mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
-    sessao = mesa.sessao_ativa
+    sessao = validar_mesa(request, mesa)
 
     if not sessao:
         return Response(
@@ -502,19 +325,11 @@ def ver_conta(request, uuid):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def solicitar_conta(request, uuid):
-    """RF20 — Cliente ou garçom solicita o fechamento da conta."""
     mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
-    sessao = mesa.sessao_ativa
-
+    sessao = validar_mesa(request, mesa)
     if not sessao:
-        return Response(
-            {'erro': 'Nenhuma sessão ativa nesta mesa.'},
-            status=status.HTTP_404_NOT_FOUND,
-        )
-
-    sessao.conta_solicitada = True
-    sessao.save()
-
+        return Response({'erro': 'Nenhuma sessão ativa nesta mesa.'}, status=404)
+    services.pedir_conta(uuid, sessao.pk)
     return Response({'mensagem': 'Conta solicitada com sucesso.'})
 
 
@@ -522,45 +337,10 @@ def solicitar_conta(request, uuid):
 @permission_classes([IsGarcomOuAdmin])
 @transaction.atomic
 def processar_pagamento(request, sessao_id):
-    """
-    RF21–RF22 — Pagamento simulado.
-    RN09 — Só pode fechar se todos entregues ou cancelados.
-    """
-    sessao = get_object_or_404(SessaoMesa.objects.select_for_update(), id=sessao_id, ativa=True)
-
     serializer = PagamentoSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-
-    # RN09 — Verifica se todos os pedidos estão entregues ou cancelados
-    pedidos_pendentes = sessao.pedidos.exclude(
-        status__in=['ENTREGUE', 'CANCELADO']
-    ).exists()
-
-    if pedidos_pendentes:
-        return Response(
-            {'erro': 'Todos os pedidos devem estar entregues ou cancelados para fechar a conta.'},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    with transaction.atomic():
-        # Cria ou atualiza a conta
-        conta, _ = Conta.objects.get_or_create(sessao=sessao)
-        conta.calcular_total()
-        conta.meio_pagamento = serializer.validated_data['meio_pagamento']
-        conta.pago = True
-        conta.pago_em = timezone.now()
-        conta.save()
-
-        # RF22 — Encerra a sessão e a mesa volta a ficar livre
-        sessao.ativa = False
-        sessao.fechada_em = timezone.now()
-        sessao.conta_solicitada = False
-        sessao.save()
-
-    return Response({
-        'mensagem': 'Pagamento aprovado! Sessão encerrada.',
-        'conta': ContaSerializer(conta).data,
-    })
+    conta = services.pagar(sessao_id, serializer.validated_data['meio_pagamento'], request.user)
+    return Response({'mensagem': 'Pagamento aprovado! Sessão encerrada.', 'conta': ContaSerializer(conta).data})
 
 
 # ============================================================
@@ -578,8 +358,10 @@ def consultar_pedidos(request):
     )
 
     # Filtros por data
-    data_inicio = request.query_params.get('data_inicio')
-    data_fim = request.query_params.get('data_fim')
+    filtros = FiltroDatasSerializer(data=request.query_params)
+    filtros.is_valid(raise_exception=True)
+    data_inicio = filtros.validated_data.get('data_inicio')
+    data_fim = filtros.validated_data.get('data_fim')
     status_filtro = request.query_params.get('status')
 
     if data_inicio:
@@ -596,10 +378,12 @@ def consultar_pedidos(request):
 @permission_classes([IsAdmin])
 def consultar_contas(request):
     """RF25 — Consulta de contas fechadas com filtros por data."""
-    contas = Conta.objects.select_related('sessao__mesa')
+    contas = Conta.objects.filter(pago=True).select_related('sessao__mesa')
 
-    data_inicio = request.query_params.get('data_inicio')
-    data_fim = request.query_params.get('data_fim')
+    filtros = FiltroDatasSerializer(data=request.query_params)
+    filtros.is_valid(raise_exception=True)
+    data_inicio = filtros.validated_data.get('data_inicio')
+    data_fim = filtros.validated_data.get('data_fim')
 
     if data_inicio:
         contas = contas.filter(criado_em__date__gte=data_inicio)

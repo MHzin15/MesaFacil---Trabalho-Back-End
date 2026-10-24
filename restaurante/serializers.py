@@ -59,6 +59,11 @@ class CategoriaComProdutosSerializer(serializers.ModelSerializer):
 class MesaSerializer(serializers.ModelSerializer):
     status = serializers.ReadOnlyField(source='status_display')
     sessao_ativa_id = serializers.SerializerMethodField()
+    qr_code = serializers.SerializerMethodField()
+
+    def get_qr_code(self, obj) -> str:
+        from django.urls import reverse
+        return reverse('qr-download', args=[obj.pk])
 
     class Meta:
         model = Mesa
@@ -145,6 +150,7 @@ class PedidoCriarSerializer(serializers.Serializer):
     Recebe o token_uuid da mesa e uma lista de itens.
     """
     mesa_uuid = serializers.UUIDField()
+    sessao_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
     observacao = serializers.CharField(required=False, default='', allow_blank=True)
     itens = ItemPedidoCriarSerializer(many=True, min_length=1)
 
@@ -227,3 +233,13 @@ class ContaSerializer(serializers.ModelSerializer):
 class PagamentoSerializer(serializers.Serializer):
     """Serializer para processar pagamento simulado."""
     meio_pagamento = serializers.ChoiceField(choices=Conta.MEIO_PAGAMENTO_CHOICES)
+
+
+class FiltroDatasSerializer(serializers.Serializer):
+    data_inicio = serializers.DateField(required=False)
+    data_fim = serializers.DateField(required=False)
+
+    def validate(self, attrs):
+        if attrs.get('data_inicio') and attrs.get('data_fim') and attrs['data_inicio'] > attrs['data_fim']:
+            raise serializers.ValidationError('A data inicial deve ser anterior ou igual à final.')
+        return attrs
