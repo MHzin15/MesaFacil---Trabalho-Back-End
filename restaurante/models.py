@@ -65,7 +65,7 @@ class Mesa(models.Model):
         return self.sessoes.filter(ativa=True).first()
 
     @property
-    def status_display(self):
+    def status_display(self) -> str:
         """Retorna o status visual da mesa."""
         sessao = self.sessao_ativa
         if not sessao:
@@ -212,6 +212,9 @@ class Pedido(models.Model):
         'CANCELADO': [],
     }
 
+    chave_envio = models.UUIDField(null=True, blank=True, editable=False)
+    envio_hash = models.CharField(max_length=64, default='', editable=False)
+
     sessao = models.ForeignKey(
         SessaoMesa,
         on_delete=models.PROTECT,
@@ -235,6 +238,7 @@ class Pedido(models.Model):
         verbose_name = 'Pedido'
         verbose_name_plural = 'Pedidos'
         ordering = ['-created_at']
+        constraints = [models.UniqueConstraint(fields=['sessao', 'chave_envio'], name='pedido_envio_unico')]
 
     def __str__(self):
         return (

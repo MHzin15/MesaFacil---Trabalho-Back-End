@@ -1,3 +1,5 @@
+import hashlib
+import json
 """Regras transacionais compartilhadas pela API e pelo admin."""
 from decimal import Decimal
 from django.db import IntegrityError, transaction
@@ -48,11 +50,19 @@ def criar(dados, user):
         erro('Esta mesa não possui uma sessão aberta. Peça ao garçom para abrir.')
     if dados.get('sessao_id') != sessao.pk:
         erro('A sessão mudou ou foi encerrada. Atualize a mesa e revise o pedido.')
+    key = dados.get('chave_envio')
+    digest = hashlib.sha256(json.dumps(dados, sort_keys=True, default=str).encode()).hexdigest()
+    if key:
+        anterior = sessao.pedidos.filter(chave_envio=key).first()
+        if anterior:
+            if anterior.envio_hash != digest:
+                erro('Esta chave de envio já foi usada com outro pedido. Revise e envie novamente.')
+            return anterior
     products = {p.pk: p for p in Produto.objects.select_for_update().filter(
         pk__in=[i['produto_id'] for i in dados['itens']]).order_by('pk')}
     addons = {a.pk: a for a in Adicional.objects.select_for_update().filter(
         pk__in=[a for i in dados['itens'] for a in i.get('adicionais_ids', [])]).order_by('pk')}
-    pedido = Pedido.objects.create(sessao=sessao, observacao=dados.get('observacao', ''))
+    pedido = Pedido.objects.create(sessao=sessao, observacao=dados.get('observacao', ''), chave_envio=key, envio_hash=digest)
     HistoricoStatusPedido.objects.create(pedido=pedido, status_novo='RECEBIDO',
         alterado_por=user if user.is_authenticated else None)
     for item in dados['itens']:
@@ -69,6 +79,9 @@ def criar(dados, user):
                 from django.http import Http404
                 raise Http404('Adicional não pertence ao produto.')
             ItemPedidoAdicional.objects.create(item_pedido=saved, adicional=adicional, preco=adicional.preco)
+    total = sum((p.valor_total for p in sessao.pedidos.exclude(status='CANCELADO')), Decimal('0.00'))
+    if total > Decimal('99999999.99'):
+        erro('O total ultrapassa o limite da conta. Peça ajuda ao atendimento.')
     return pedido
 
 

@@ -1,3 +1,5 @@
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
+from .api_schema import *
 from django.conf import settings
 from django.urls import reverse
 from django.db.models.deletion import ProtectedError
@@ -82,6 +84,7 @@ class AdicionalViewSet(CatalogoViewSet):
         return [IsAdmin()]
 
 
+@extend_schema(request=None, responses={200: CategoriaComProdutosSerializer(many=True)})
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def cardapio(request):
@@ -109,6 +112,7 @@ class MesaViewSet(viewsets.ModelViewSet):
             return [IsEquipe()]
         return [IsAdmin()]
 
+    @extend_schema(request=None, responses={200: QrLinksSerializer, **ERROS})
     @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
     def gerar_qrcode(self, request, pk=None):
         """RF02 — Gera o QR Code da mesa com URL baseada no UUID."""
@@ -120,6 +124,7 @@ class MesaViewSet(viewsets.ModelViewSet):
 
 
 
+@extend_schema(request=None, responses={200: MesaContextoSerializer, **ERROS})
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def mesa_por_uuid(request, uuid):
@@ -147,12 +152,14 @@ class SessaoMesaViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsGarcomOuAdmin]
 
 
+@extend_schema(request=None, responses={201: SessaoMesaSerializer, **ERROS})
 @api_view(['POST'])
 @permission_classes([IsGarcomOuAdmin])
 def abrir_sessao(request, mesa_id):
     return Response(SessaoMesaSerializer(services.abrir(mesa_id, request.user)).data, status=201)
 
 
+@extend_schema(request=None, responses={200: MensagemSerializer, **ERROS})
 @api_view(['POST'])
 @permission_classes([IsGarcomOuAdmin])
 @transaction.atomic
@@ -164,6 +171,7 @@ def fechar_sessao(request, sessao_id):
 # ============================================================
 # Pedido — Criação e Fluxo (RF08–RF12, RN01–RN08)
 # ============================================================
+@extend_schema(request=PedidoCriarSerializer, responses={201: PedidoSerializer, **ERROS})
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @transaction.atomic
@@ -179,6 +187,7 @@ def criar_pedido(request):
     return Response(PedidoSerializer(pedido).data, status=201)
 
 
+@extend_schema(request=PedidoStatusSerializer, responses={200: PedidoSerializer, **ERROS})
 @api_view(['PATCH'])
 @permission_classes([IsEquipe])
 @transaction.atomic
@@ -189,6 +198,7 @@ def alterar_status_pedido(request, pedido_id):
     return Response(PedidoSerializer(pedido).data)
 
 
+@extend_schema(request=None, responses={200: PedidoSerializer(many=True), **ERROS})
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def pedidos_da_mesa(request, uuid):
@@ -197,7 +207,7 @@ def pedidos_da_mesa(request, uuid):
     sessao = validar_mesa(request, mesa)
 
     if not sessao:
-        return Response({'pedidos': [], 'mensagem': 'Nenhuma sessão ativa.'})
+        return Response([])
 
     pedidos = sessao.pedidos.prefetch_related(
         'itens__produto',
@@ -210,6 +220,7 @@ def pedidos_da_mesa(request, uuid):
 # ============================================================
 # Painel da Cozinha (RF13–RF16)
 # ============================================================
+@extend_schema(request=None, responses={200: CozinhaSerializer, **ERROS})
 @api_view(['GET'])
 @permission_classes([IsCozinhaOuAdmin])
 def painel_cozinha(request):
@@ -235,6 +246,7 @@ def painel_cozinha(request):
     return Response(resultado)
 
 
+@extend_schema(request=ProdutoDisponibilidadeSerializer, responses={200: ProdutoSerializer, **ERROS})
 @api_view(['PATCH'])
 @permission_classes([IsCozinhaOuAdmin])
 def marcar_disponibilidade_produto(request, produto_id):
@@ -251,6 +263,7 @@ def marcar_disponibilidade_produto(request, produto_id):
 # ============================================================
 # Painel do Garçom (RF17–RF18)
 # ============================================================
+@extend_schema(request=None, responses={200: GarcomSerializer, **ERROS})
 @api_view(['GET'])
 @permission_classes([IsGarcomOuAdmin])
 def painel_garcom(request):
@@ -280,6 +293,7 @@ def painel_garcom(request):
     })
 
 
+@extend_schema(request=None, responses={200: MesaSerializer(many=True), **ERROS})
 @api_view(['GET'])
 @permission_classes([IsGarcomOuAdmin])
 def mapa_mesas(request):
@@ -291,6 +305,7 @@ def mapa_mesas(request):
 # ============================================================
 # Conta e Pagamento Simulado (RF19–RF22, RN09–RN10)
 # ============================================================
+@extend_schema(request=None, responses={200: ContaMesaSerializer, **ERROS})
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def ver_conta(request, uuid):
@@ -304,14 +319,12 @@ def ver_conta(request, uuid):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    pedidos = sessao.pedidos.exclude(
-        status='CANCELADO',
-    ).prefetch_related(
+    pedidos = sessao.pedidos.prefetch_related(
         'itens__produto',
         'itens__itens_adicionais__adicional',
     )
 
-    total = sum(p.valor_total for p in pedidos)
+    total = sum((p.valor_total for p in pedidos if p.status != 'CANCELADO'), Decimal('0.00'))
 
     return Response({
         'mesa': MesaClienteSerializer(mesa).data,
@@ -322,6 +335,7 @@ def ver_conta(request, uuid):
     })
 
 
+@extend_schema(request=None, responses={200: MensagemSerializer, **ERROS})
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def solicitar_conta(request, uuid):
@@ -333,6 +347,7 @@ def solicitar_conta(request, uuid):
     return Response({'mensagem': 'Conta solicitada com sucesso.'})
 
 
+@extend_schema(request=PagamentoSerializer, responses={200: PagamentoResultadoSerializer, **ERROS})
 @api_view(['POST'])
 @permission_classes([IsGarcomOuAdmin])
 @transaction.atomic
@@ -346,6 +361,7 @@ def processar_pagamento(request, sessao_id):
 # ============================================================
 # Administração (RF24–RF25)
 # ============================================================
+@extend_schema(request=None, parameters=FILTROS + [OpenApiParameter('status', str, enum=[s[0] for s in Pedido.STATUS_CHOICES])], responses={200: PedidoSerializer(many=True), **ERROS})
 @api_view(['GET'])
 @permission_classes([IsAdmin])
 def consultar_pedidos(request):
@@ -362,7 +378,7 @@ def consultar_pedidos(request):
     filtros.is_valid(raise_exception=True)
     data_inicio = filtros.validated_data.get('data_inicio')
     data_fim = filtros.validated_data.get('data_fim')
-    status_filtro = request.query_params.get('status')
+    status_filtro = filtros.validated_data.get('status')
 
     if data_inicio:
         pedidos = pedidos.filter(created_at__date__gte=data_inicio)
@@ -374,6 +390,7 @@ def consultar_pedidos(request):
     return Response(PedidoSerializer(pedidos, many=True).data)
 
 
+@extend_schema(request=None, parameters=FILTROS, responses={200: ContaSerializer(many=True), **ERROS})
 @api_view(['GET'])
 @permission_classes([IsAdmin])
 def consultar_contas(request):
@@ -396,6 +413,7 @@ def consultar_contas(request):
 # ============================================================
 # Autenticação simples
 # ============================================================
+@extend_schema(request=None, responses={200: UsuarioSerializer, **ERROS})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def usuario_atual(request):

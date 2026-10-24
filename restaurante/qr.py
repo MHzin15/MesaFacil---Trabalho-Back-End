@@ -1,5 +1,6 @@
 from io import BytesIO
 import qrcode
+from drf_spectacular.utils import extend_schema, OpenApiTypes
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -9,6 +10,7 @@ from .models import Mesa
 from .permissions import IsAdmin
 
 
+@extend_schema(responses={(200, 'image/png'): OpenApiTypes.BINARY, 403: OpenApiTypes.OBJECT})
 @api_view(['GET'])
 @permission_classes([IsAdmin])
 def download(request, mesa_id):

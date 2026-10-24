@@ -1,6 +1,13 @@
 /* Funções compartilhadas. Dados vindos da API sempre são escapados antes do HTML. */
 'use strict';
 window.MF = (() => {
+  const uuid = () => {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 15) | 64; bytes[8] = (bytes[8] & 63) | 128;
+    const h = [...bytes].map(n => n.toString(16).padStart(2, '0')).join('');
+    return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+  };
   const money = value => new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'}).format(Number(value));
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));
   const statusNames = {RECEBIDO:'Recebido', EM_PREPARACAO:'Em preparação', PRONTO:'Pronto', A_CAMINHO:'A caminho', ENTREGUE:'Entregue', CANCELADO:'Cancelado'};
@@ -31,7 +38,9 @@ window.MF = (() => {
       if (response.status === 403 && document.body.dataset.page !== 'cliente') {
         throw new Error('Acesso negado ou sessão expirada. Entre novamente na área da equipe.');
       }
-      throw new Error(message(data) || 'Não foi possível concluir a ação.');
+      const error = new Error(message(data) || 'Não foi possível concluir a ação.');
+      error.status = response.status;
+      throw error;
     }
     return data;
   }
@@ -61,5 +70,5 @@ window.MF = (() => {
   window.addEventListener('online', connection);
   window.addEventListener('offline', connection);
   connection();
-  return {money, escape, statusNames, api, feedback, poll, itemList, orderCard};
+  return {uuid, money, escape, statusNames, api, feedback, poll, itemList, orderCard};
 })();

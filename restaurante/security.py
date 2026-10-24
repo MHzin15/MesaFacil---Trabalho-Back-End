@@ -28,3 +28,16 @@ def validar_mesa(request, mesa, sessao_id=None):
     if sessao_id is not None and (not actual or actual.pk != sessao_id):
         raise PermissionDenied('Este pedido pertence a outra sessão da mesa.')
     return actual
+
+
+from drf_spectacular.extensions import OpenApiAuthenticationExtension
+
+
+class CsrfSessionSchemaExtension(OpenApiAuthenticationExtension):
+    target_class = 'restaurante.security.CsrfSessionAuthentication'
+    name = 'cookieAuth'
+
+    def get_security_definition(self, auto_schema):
+        from django.conf import settings
+        return {'type': 'apiKey', 'in': 'cookie', 'name': settings.SESSION_COOKIE_NAME}
+

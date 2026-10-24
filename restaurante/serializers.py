@@ -10,7 +10,7 @@ from .models import (
 # ============================================================
 class PerfilSerializer(serializers.ModelSerializer):
     username = serializers.ReadOnlyField(source='user.username')
-    nome_completo = serializers.ReadOnlyField(source='user.get_full_name')
+    nome_completo = serializers.CharField(source='user.get_full_name', read_only=True)
 
     class Meta:
         model = Perfil
@@ -70,7 +70,7 @@ class MesaSerializer(serializers.ModelSerializer):
         fields = ['id', 'numero', 'token_uuid', 'ativa', 'qr_code', 'status', 'sessao_ativa_id']
         read_only_fields = ['token_uuid', 'qr_code']
 
-    def get_sessao_ativa_id(self, obj):
+    def get_sessao_ativa_id(self, obj) -> int | None:
         sessao = obj.sessao_ativa
         return sessao.id if sessao else None
 
@@ -114,7 +114,7 @@ class ItemPedidoAdicionalSerializer(serializers.ModelSerializer):
 class ItemPedidoSerializer(serializers.ModelSerializer):
     produto_nome = serializers.ReadOnlyField(source='produto.nome')
     itens_adicionais = ItemPedidoAdicionalSerializer(many=True, read_only=True)
-    subtotal = serializers.ReadOnlyField()
+    subtotal = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
 
     class Meta:
         model = ItemPedido
@@ -128,7 +128,7 @@ class ItemPedidoSerializer(serializers.ModelSerializer):
 class ItemPedidoCriarSerializer(serializers.Serializer):
     """Serializer para criar item dentro de um pedido (nested)."""
     produto_id = serializers.IntegerField()
-    quantidade = serializers.IntegerField(min_value=1, default=1)
+    quantidade = serializers.IntegerField(min_value=1, max_value=99, default=1)
     observacao = serializers.CharField(
         required=False, default='', allow_blank=True, max_length=255,
     )
@@ -152,20 +152,21 @@ class PedidoCriarSerializer(serializers.Serializer):
     mesa_uuid = serializers.UUIDField()
     sessao_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
     observacao = serializers.CharField(required=False, default='', allow_blank=True)
-    itens = ItemPedidoCriarSerializer(many=True, min_length=1)
+    itens = ItemPedidoCriarSerializer(many=True, min_length=1, max_length=100)
+    chave_envio = serializers.UUIDField(required=False)
 
 
 class PedidoSerializer(serializers.ModelSerializer):
     itens = ItemPedidoSerializer(many=True, read_only=True)
     mesa_numero = serializers.ReadOnlyField(source='sessao.mesa.numero')
-    valor_total = serializers.ReadOnlyField()
+    valor_total = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
 
     class Meta:
         model = Pedido
         fields = [
             'id', 'sessao', 'mesa_numero', 'status',
             'observacao', 'created_at', 'updated_at',
-            'itens', 'valor_total',
+            'itens', 'valor_total', 'chave_envio',
         ]
         read_only_fields = ['sessao', 'created_at', 'updated_at']
 
@@ -192,7 +193,7 @@ class PedidoCozinhaSerializer(PedidoSerializer):
     class Meta(PedidoSerializer.Meta):
         fields = PedidoSerializer.Meta.fields + ['status_display', 'proximo_status']
 
-    def get_proximo_status(self, obj):
+    def get_proximo_status(self, obj) -> str | None:
         return {'RECEBIDO': 'EM_PREPARACAO', 'EM_PREPARACAO': 'PRONTO'}.get(obj.status)
 
 
@@ -209,7 +210,7 @@ class HistoricoStatusPedidoSerializer(serializers.ModelSerializer):
             'alterado_em', 'alterado_por', 'alterado_por_nome',
         ]
 
-    def get_alterado_por_nome(self, obj):
+    def get_alterado_por_nome(self, obj) -> str:
         if obj.alterado_por:
             return obj.alterado_por.get_full_name() or obj.alterado_por.username
         return 'Cliente'
@@ -236,6 +237,7 @@ class PagamentoSerializer(serializers.Serializer):
 
 
 class FiltroDatasSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=Pedido.STATUS_CHOICES, required=False)
     data_inicio = serializers.DateField(required=False)
     data_fim = serializers.DateField(required=False)
 

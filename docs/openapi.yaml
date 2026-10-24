@@ -1,0 +1,2457 @@
+openapi: 3.0.3
+info:
+  title: MesaFácil API
+  version: 1.0.0
+  description: API REST do sistema MesaFácil — Pedidos por QR Code
+paths:
+  /api/adicionais/:
+    get:
+      operationId: adicionais_list
+      description: CRUD de adicionais. Leitura pública, escrita para Admin.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Um termo de busca.
+        schema:
+          type: string
+      tags:
+      - adicionais
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdicionalList'
+          description: ''
+    post:
+      operationId: adicionais_create
+      description: CRUD de adicionais. Leitura pública, escrita para Admin.
+      tags:
+      - adicionais
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Adicional'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Adicional'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Adicional'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Adicional'
+          description: ''
+  /api/adicionais/{id}/:
+    get:
+      operationId: adicionais_retrieve
+      description: CRUD de adicionais. Leitura pública, escrita para Admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Adicional.
+        required: true
+      tags:
+      - adicionais
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Adicional'
+          description: ''
+    put:
+      operationId: adicionais_update
+      description: CRUD de adicionais. Leitura pública, escrita para Admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Adicional.
+        required: true
+      tags:
+      - adicionais
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Adicional'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Adicional'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Adicional'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Adicional'
+          description: ''
+    patch:
+      operationId: adicionais_partial_update
+      description: CRUD de adicionais. Leitura pública, escrita para Admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Adicional.
+        required: true
+      tags:
+      - adicionais
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAdicional'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAdicional'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAdicional'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Adicional'
+          description: ''
+    delete:
+      operationId: adicionais_destroy
+      description: CRUD de adicionais. Leitura pública, escrita para Admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Adicional.
+        required: true
+      tags:
+      - adicionais
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/admin/contas/:
+    get:
+      operationId: admin_contas_list
+      description: RF25 — Consulta de contas fechadas com filtros por data.
+      parameters:
+      - in: query
+        name: data_fim
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: data_inicio
+        schema:
+          type: string
+          format: date
+      tags:
+      - admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conta'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/admin/pedidos/:
+    get:
+      operationId: admin_pedidos_list
+      description: RF25 — Consulta de pedidos com filtros por data.
+      parameters:
+      - in: query
+        name: data_fim
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: data_inicio
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - A_CAMINHO
+          - CANCELADO
+          - EM_PREPARACAO
+          - ENTREGUE
+          - PRONTO
+          - RECEBIDO
+      tags:
+      - admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pedido'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/usuario/:
+    get:
+      operationId: auth_usuario_retrieve
+      description: Retorna dados do usuário logado e seu perfil.
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/cardapio/:
+    get:
+      operationId: cardapio_list
+      description: |-
+        RF05 — Retorna o cardápio completo organizado por categorias,
+        com produtos e adicionais.
+      tags:
+      - cardapio
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoriaComProdutos'
+          description: ''
+  /api/categorias/:
+    get:
+      operationId: categorias_list
+      description: CRUD de categorias. Leitura pública, escrita para Admin.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Um termo de busca.
+        schema:
+          type: string
+      tags:
+      - categorias
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoriaList'
+          description: ''
+    post:
+      operationId: categorias_create
+      description: CRUD de categorias. Leitura pública, escrita para Admin.
+      tags:
+      - categorias
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Categoria'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Categoria'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Categoria'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Categoria'
+          description: ''
+  /api/categorias/{id}/:
+    get:
+      operationId: categorias_retrieve
+      description: CRUD de categorias. Leitura pública, escrita para Admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Categoria.
+        required: true
+      tags:
+      - categorias
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Categoria'
+          description: ''
+    put:
+      operationId: categorias_update
+      description: CRUD de categorias. Leitura pública, escrita para Admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Categoria.
+        required: true
+      tags:
+      - categorias
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Categoria'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Categoria'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Categoria'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Categoria'
+          description: ''
+    patch:
+      operationId: categorias_partial_update
+      description: CRUD de categorias. Leitura pública, escrita para Admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Categoria.
+        required: true
+      tags:
+      - categorias
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoria'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoria'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoria'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Categoria'
+          description: ''
+    delete:
+      operationId: categorias_destroy
+      description: CRUD de categorias. Leitura pública, escrita para Admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Categoria.
+        required: true
+      tags:
+      - categorias
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/cozinha/:
+    get:
+      operationId: cozinha_retrieve
+      description: |-
+        RF13 — Pedidos agrupados por status para a cozinha.
+        Mostra RECEBIDO, EM_PREPARACAO e PRONTO.
+      tags:
+      - cozinha
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cozinha'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/garcom/:
+    get:
+      operationId: garcom_retrieve
+      description: |-
+        RF17 — Pedidos prontos e a caminho para o garçom.
+        RF18 — Mesas que pediram a conta.
+      tags:
+      - garcom
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Garcom'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/garcom/mapa-mesas/:
+    get:
+      operationId: garcom_mapa_mesas_list
+      description: RF04 — Situação de cada mesa (livre, ocupada, aguardando conta).
+      tags:
+      - garcom
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Mesa'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/mesa/{uuid}/:
+    get:
+      operationId: mesa_retrieve
+      description: |-
+        RF01 — Acessada pelo QR Code. Retorna os dados da mesa pelo UUID.
+        Não requer login (cliente acessa).
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - mesa
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesaContexto'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/mesa/{uuid}/conta/:
+    get:
+      operationId: mesa_conta_retrieve
+      description: RF19 — Cliente vê a conta da mesa com todos os pedidos.
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - mesa
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContaMesa'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/mesa/{uuid}/pedidos/:
+    get:
+      operationId: mesa_pedidos_list
+      description: RF12 — Cliente acompanha os pedidos da mesa pela UUID.
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - mesa
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pedido'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/mesa/{uuid}/solicitar-conta/:
+    post:
+      operationId: mesa_solicitar_conta_create
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - mesa
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/mesas/:
+    get:
+      operationId: mesas_list
+      description: CRUD de mesas. Admin gerencia; garçom pode ver.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Um termo de busca.
+        schema:
+          type: string
+      tags:
+      - mesas
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMesaList'
+          description: ''
+    post:
+      operationId: mesas_create
+      description: CRUD de mesas. Admin gerencia; garçom pode ver.
+      tags:
+      - mesas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Mesa'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Mesa'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Mesa'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mesa'
+          description: ''
+  /api/mesas/{mesa_id}/abrir-sessao/:
+    post:
+      operationId: mesas_abrir_sessao_create
+      parameters:
+      - in: path
+        name: mesa_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - mesas
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessaoMesa'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/mesas/{mesa_id}/qr-code/:
+    get:
+      operationId: mesas_qr_code_retrieve
+      parameters:
+      - in: path
+        name: mesa_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - mesas
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/mesas/{id}/:
+    get:
+      operationId: mesas_retrieve
+      description: CRUD de mesas. Admin gerencia; garçom pode ver.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Mesa.
+        required: true
+      tags:
+      - mesas
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mesa'
+          description: ''
+    put:
+      operationId: mesas_update
+      description: CRUD de mesas. Admin gerencia; garçom pode ver.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Mesa.
+        required: true
+      tags:
+      - mesas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Mesa'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Mesa'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Mesa'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mesa'
+          description: ''
+    patch:
+      operationId: mesas_partial_update
+      description: CRUD de mesas. Admin gerencia; garçom pode ver.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Mesa.
+        required: true
+      tags:
+      - mesas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMesa'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMesa'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMesa'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mesa'
+          description: ''
+    delete:
+      operationId: mesas_destroy
+      description: CRUD de mesas. Admin gerencia; garçom pode ver.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Mesa.
+        required: true
+      tags:
+      - mesas
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/mesas/{id}/gerar_qrcode/:
+    post:
+      operationId: mesas_gerar_qrcode_create
+      description: RF02 — Gera o QR Code da mesa com URL baseada no UUID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Mesa.
+        required: true
+      tags:
+      - mesas
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QrLinks'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/pedidos/{pedido_id}/status/:
+    patch:
+      operationId: pedidos_status_partial_update
+      parameters:
+      - in: path
+        name: pedido_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - pedidos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPedidoStatus'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPedidoStatus'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPedidoStatus'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/pedidos/criar/:
+    post:
+      operationId: pedidos_criar_create
+      tags:
+      - pedidos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PedidoCriar'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PedidoCriar'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PedidoCriar'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/produtos/:
+    get:
+      operationId: produtos_list
+      description: CRUD de produtos. Leitura pública, escrita para Admin.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Um termo de busca.
+        schema:
+          type: string
+      tags:
+      - produtos
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProdutoList'
+          description: ''
+    post:
+      operationId: produtos_create
+      description: CRUD de produtos. Leitura pública, escrita para Admin.
+      tags:
+      - produtos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Produto'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Produto'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Produto'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Produto'
+          description: ''
+  /api/produtos/{id}/:
+    get:
+      operationId: produtos_retrieve
+      description: CRUD de produtos. Leitura pública, escrita para Admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Produto.
+        required: true
+      tags:
+      - produtos
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Produto'
+          description: ''
+    put:
+      operationId: produtos_update
+      description: CRUD de produtos. Leitura pública, escrita para Admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Produto.
+        required: true
+      tags:
+      - produtos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Produto'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Produto'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Produto'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Produto'
+          description: ''
+    patch:
+      operationId: produtos_partial_update
+      description: CRUD de produtos. Leitura pública, escrita para Admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Produto.
+        required: true
+      tags:
+      - produtos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProduto'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProduto'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProduto'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Produto'
+          description: ''
+    delete:
+      operationId: produtos_destroy
+      description: CRUD de produtos. Leitura pública, escrita para Admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Produto.
+        required: true
+      tags:
+      - produtos
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/produtos/{produto_id}/disponibilidade/:
+    patch:
+      operationId: produtos_disponibilidade_partial_update
+      description: RF15 — A cozinha pode marcar um produto como indisponível.
+      parameters:
+      - in: path
+        name: produto_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - produtos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProdutoDisponibilidade'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProdutoDisponibilidade'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProdutoDisponibilidade'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Produto'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/sessoes/:
+    get:
+      operationId: sessoes_list
+      description: Listagem de sessões. Garçom ou Admin.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Um termo de busca.
+        schema:
+          type: string
+      tags:
+      - sessoes
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSessaoMesaList'
+          description: ''
+  /api/sessoes/{id}/:
+    get:
+      operationId: sessoes_retrieve
+      description: Listagem de sessões. Garçom ou Admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Sessão da Mesa.
+        required: true
+      tags:
+      - sessoes
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessaoMesa'
+          description: ''
+  /api/sessoes/{sessao_id}/fechar/:
+    post:
+      operationId: sessoes_fechar_create
+      parameters:
+      - in: path
+        name: sessao_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - sessoes
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/sessoes/{sessao_id}/pagamento/:
+    post:
+      operationId: sessoes_pagamento_create
+      parameters:
+      - in: path
+        name: sessao_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - sessoes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pagamento'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Pagamento'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Pagamento'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagamentoResultado'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+components:
+  schemas:
+    Adicional:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 100
+        preco:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          title: Preço (R$)
+        produto:
+          type: integer
+      required:
+      - id
+      - nome
+      - preco
+      - produto
+    BlankEnum:
+      enum:
+      - ''
+    Categoria:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 100
+        ordem:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          title: Ordem de Exibição
+      required:
+      - id
+      - nome
+    CategoriaComProdutos:
+      type: object
+      description: Serializer para exibir o cardápio completo agrupado por categoria.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 100
+        ordem:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          title: Ordem de Exibição
+        produtos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Produto'
+          readOnly: true
+      required:
+      - id
+      - nome
+      - produtos
+    Conta:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        sessao:
+          type: integer
+          readOnly: true
+          title: Sessão
+        mesa_numero:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+          title: Número da Mesa
+          readOnly: true
+        valor_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          title: Valor Total (R$)
+        meio_pagamento:
+          title: Meio de Pagamento
+          oneOf:
+          - $ref: '#/components/schemas/MeioPagamentoEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        pago:
+          type: boolean
+          readOnly: true
+        pago_em:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        criado_em:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - criado_em
+      - id
+      - mesa_numero
+      - pago
+      - pago_em
+      - sessao
+      - valor_total
+    ContaMesa:
+      type: object
+      properties:
+        mesa:
+          $ref: '#/components/schemas/MesaCliente'
+        sessao_id:
+          type: integer
+        pedidos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pedido'
+        valor_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        conta_solicitada:
+          type: boolean
+      required:
+      - conta_solicitada
+      - mesa
+      - pedidos
+      - sessao_id
+      - valor_total
+    Cozinha:
+      type: object
+      properties:
+        RECEBIDO:
+          type: array
+          items:
+            $ref: '#/components/schemas/PedidoCozinha'
+        EM_PREPARACAO:
+          type: array
+          items:
+            $ref: '#/components/schemas/PedidoCozinha'
+        PRONTO:
+          type: array
+          items:
+            $ref: '#/components/schemas/PedidoCozinha'
+      required:
+      - EM_PREPARACAO
+      - PRONTO
+      - RECEBIDO
+    Garcom:
+      type: object
+      properties:
+        pedidos_prontos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pedido'
+        mesas_aguardando_conta:
+          type: array
+          items:
+            $ref: '#/components/schemas/Mesa'
+      required:
+      - mesas_aguardando_conta
+      - pedidos_prontos
+    ItemPedido:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        produto:
+          type: integer
+        produto_nome:
+          type: string
+          readOnly: true
+        quantidade:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+        preco_unitario:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          title: Preço Unitário (gravado)
+        observacao:
+          type: string
+          title: Observação do Item
+          maxLength: 255
+        itens_adicionais:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemPedidoAdicional'
+          readOnly: true
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - id
+      - itens_adicionais
+      - preco_unitario
+      - produto
+      - produto_nome
+      - subtotal
+    ItemPedidoAdicional:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        adicional:
+          type: integer
+        nome:
+          type: string
+          readOnly: true
+        preco:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          title: Preço do Adicional (gravado)
+      required:
+      - adicional
+      - id
+      - nome
+      - preco
+    ItemPedidoCriar:
+      type: object
+      description: Serializer para criar item dentro de um pedido (nested).
+      properties:
+        produto_id:
+          type: integer
+        quantidade:
+          type: integer
+          maximum: 99
+          minimum: 1
+          default: 1
+        observacao:
+          type: string
+          default: ''
+          maxLength: 255
+        adicionais_ids:
+          type: array
+          items:
+            type: integer
+      required:
+      - produto_id
+    MeioPagamentoEnum:
+      enum:
+      - PIX
+      - CARTAO
+      - DINHEIRO
+      type: string
+      description: |-
+        * `PIX` - Pix
+        * `CARTAO` - Cartão
+        * `DINHEIRO` - Dinheiro no Caixa
+    Mensagem:
+      type: object
+      properties:
+        mensagem:
+          type: string
+      required:
+      - mensagem
+    Mesa:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        numero:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+          title: Número da Mesa
+        token_uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        ativa:
+          type: boolean
+          title: Mesa Ativa
+        qr_code:
+          type: string
+          readOnly: true
+        status:
+          type: string
+          description: Retorna o status visual da mesa.
+          readOnly: true
+        sessao_ativa_id:
+          type: integer
+          nullable: true
+          readOnly: true
+      required:
+      - id
+      - numero
+      - qr_code
+      - sessao_ativa_id
+      - status
+      - token_uuid
+    MesaCliente:
+      type: object
+      description: Serializer para o cliente — não expõe dados sensíveis.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        numero:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+          title: Número da Mesa
+        status:
+          type: string
+          description: Retorna o status visual da mesa.
+          readOnly: true
+      required:
+      - id
+      - numero
+      - status
+    MesaContexto:
+      type: object
+      description: Serializer para o cliente — não expõe dados sensíveis.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        numero:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+          title: Número da Mesa
+        status:
+          type: string
+          description: Retorna o status visual da mesa.
+          readOnly: true
+        sessao_ativa:
+          type: boolean
+        sessao_id:
+          type: integer
+          nullable: true
+      required:
+      - id
+      - numero
+      - sessao_ativa
+      - sessao_id
+      - status
+    Pagamento:
+      type: object
+      description: Serializer para processar pagamento simulado.
+      properties:
+        meio_pagamento:
+          $ref: '#/components/schemas/MeioPagamentoEnum'
+      required:
+      - meio_pagamento
+    PagamentoResultado:
+      type: object
+      properties:
+        mensagem:
+          type: string
+        conta:
+          $ref: '#/components/schemas/Conta'
+      required:
+      - conta
+      - mensagem
+    PaginatedAdicionalList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Adicional'
+    PaginatedCategoriaList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Categoria'
+    PaginatedMesaList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Mesa'
+    PaginatedProdutoList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Produto'
+    PaginatedSessaoMesaList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessaoMesa'
+    PatchedAdicional:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 100
+        preco:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          title: Preço (R$)
+        produto:
+          type: integer
+    PatchedCategoria:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 100
+        ordem:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          title: Ordem de Exibição
+    PatchedMesa:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        numero:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+          title: Número da Mesa
+        token_uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        ativa:
+          type: boolean
+          title: Mesa Ativa
+        qr_code:
+          type: string
+          readOnly: true
+        status:
+          type: string
+          description: Retorna o status visual da mesa.
+          readOnly: true
+        sessao_ativa_id:
+          type: integer
+          nullable: true
+          readOnly: true
+    PatchedPedidoStatus:
+      type: object
+      description: Serializer para alterar o status de um pedido.
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+    PatchedProduto:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 150
+        descricao:
+          type: string
+          title: Descrição
+        preco:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          title: Preço (R$)
+        foto:
+          type: string
+          format: uri
+          nullable: true
+        disponivel:
+          type: boolean
+          title: Disponível no Cardápio
+        categoria:
+          type: integer
+        categoria_nome:
+          type: string
+          readOnly: true
+        adicionais:
+          type: array
+          items:
+            $ref: '#/components/schemas/Adicional'
+          readOnly: true
+    PatchedProdutoDisponibilidade:
+      type: object
+      properties:
+        disponivel:
+          type: boolean
+    Pedido:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        sessao:
+          type: integer
+          readOnly: true
+          title: Sessão
+        mesa_numero:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+          title: Número da Mesa
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        observacao:
+          type: string
+          title: Observação Geral
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Criado em
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Atualizado em
+        itens:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemPedido'
+          readOnly: true
+        valor_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        chave_envio:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - chave_envio
+      - created_at
+      - id
+      - itens
+      - mesa_numero
+      - sessao
+      - updated_at
+      - valor_total
+    PedidoCozinha:
+      type: object
+      description: Dados do cartão e ações de preparo para atualização por polling.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        sessao:
+          type: integer
+          readOnly: true
+          title: Sessão
+        mesa_numero:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+          title: Número da Mesa
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        observacao:
+          type: string
+          title: Observação Geral
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Criado em
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Atualizado em
+        itens:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemPedido'
+          readOnly: true
+        valor_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        chave_envio:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        status_display:
+          type: string
+          readOnly: true
+        proximo_status:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - chave_envio
+      - created_at
+      - id
+      - itens
+      - mesa_numero
+      - proximo_status
+      - sessao
+      - status_display
+      - updated_at
+      - valor_total
+    PedidoCriar:
+      type: object
+      description: |-
+        Serializer para criar um pedido completo com itens e adicionais.
+        Recebe o token_uuid da mesa e uma lista de itens.
+      properties:
+        mesa_uuid:
+          type: string
+          format: uuid
+        sessao_id:
+          type: integer
+          minimum: 1
+          nullable: true
+        observacao:
+          type: string
+          default: ''
+        itens:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemPedidoCriar'
+        chave_envio:
+          type: string
+          format: uuid
+      required:
+      - itens
+      - mesa_uuid
+    Perfil:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          title: Usuário
+          description: Obrigatório. 150 caracteres ou menos. Letras, números e @/./+/-/_
+            apenas.
+          readOnly: true
+        nome_completo:
+          type: string
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          title: Perfil
+      required:
+      - id
+      - nome_completo
+      - role
+      - username
+    Produto:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 150
+        descricao:
+          type: string
+          title: Descrição
+        preco:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          title: Preço (R$)
+        foto:
+          type: string
+          format: uri
+          nullable: true
+        disponivel:
+          type: boolean
+          title: Disponível no Cardápio
+        categoria:
+          type: integer
+        categoria_nome:
+          type: string
+          readOnly: true
+        adicionais:
+          type: array
+          items:
+            $ref: '#/components/schemas/Adicional'
+          readOnly: true
+      required:
+      - adicionais
+      - categoria
+      - categoria_nome
+      - id
+      - nome
+      - preco
+    QrLinks:
+      type: object
+      properties:
+        qr_code_url:
+          type: string
+          format: uri
+        mesa_url:
+          type: string
+          format: uri
+      required:
+      - mesa_url
+      - qr_code_url
+    RoleEnum:
+      enum:
+      - ADMIN
+      - COZINHA
+      - GARCOM
+      type: string
+      description: |-
+        * `ADMIN` - Administrador
+        * `COZINHA` - Cozinha
+        * `GARCOM` - Garçom
+    SessaoMesa:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        mesa:
+          type: integer
+        mesa_numero:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+          title: Número da Mesa
+          readOnly: true
+        ativa:
+          type: boolean
+          default: true
+          title: Sessão Ativa
+        conta_solicitada:
+          type: boolean
+        aberta_em:
+          type: string
+          format: date-time
+          readOnly: true
+        fechada_em:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        aberta_por:
+          type: integer
+          readOnly: true
+          nullable: true
+      required:
+      - aberta_em
+      - aberta_por
+      - fechada_em
+      - id
+      - mesa
+      - mesa_numero
+    StatusEnum:
+      enum:
+      - RECEBIDO
+      - EM_PREPARACAO
+      - PRONTO
+      - A_CAMINHO
+      - ENTREGUE
+      - CANCELADO
+      type: string
+      description: |-
+        * `RECEBIDO` - Recebido
+        * `EM_PREPARACAO` - Em Preparação
+        * `PRONTO` - Pronto
+        * `A_CAMINHO` - A Caminho
+        * `ENTREGUE` - Entregue
+        * `CANCELADO` - Cancelado
+    Usuario:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        nome:
+          type: string
+        is_staff:
+          type: boolean
+        perfil:
+          $ref: '#/components/schemas/Perfil'
+      required:
+      - id
+      - is_staff
+      - nome
+      - username
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
