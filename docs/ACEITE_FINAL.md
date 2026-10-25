@@ -11,7 +11,7 @@ depende da demonstração em dois aparelhos físicos e da apresentação pela du
 Não foi executado Docker/Gunicorn Linux nesta máquina, onde Docker não está disponível.
 O banco usado pela aplicação e pela validação final é PostgreSQL, não SQLite.
 
-- PostgreSQL 18.6: **79 testes aprovados**, incluindo cinco cenários de concorrência
+- PostgreSQL 18.6: **87 testes aprovados**, incluindo cinco cenários de concorrência
   com conexões reais. `check`, migrations, `collectstatic`, OpenAPI estrito e
   `pip check` também passaram.
 - Chrome 155, Playwright 1.62.1: cliente 390×844, cozinha 1280×800 e garçom 1024×768,
@@ -130,3 +130,17 @@ compartilham os serviços. Nenhum estado extra foi adicionado ao fluxo obrigató
 
 Docker/Gunicorn Linux é infraestrutura recomendada, preparada mas não executada
 neste ambiente Windows. A execução local com PostgreSQL real foi validada.
+
+## Continuação da aceitação — 25/10/2026
+
+Após 129e005, a suíte foi repetida em PostgreSQL e passou com 87 testes, sem skips:
+os 79 anteriores e oito cenários da nova pré-checagem `verificar_demonstracao`.
+Check, migrations, collectstatic, schema estrito e dependências também passaram.
+As evidências de navegador descritas acima continuam as da etapa anterior;
+esta continuação não altera a interface nem as regras de pedidos/pagamento.
+
+O comando somente de leitura confere dados, fotos, perfis, migrations e origens.
+O modo `--celular` exige HTTPS, cookies seguros, DEBUG desativado e troca das
+senhas conhecidas dos usuários de demonstração. Não verifica rede/certificado
+nem substitui o ensaio físico. A checagem local real passou; o roteiro operacional
+e a ficha em branco de evidências estão em [DEMONSTRACAO.md](DEMONSTRACAO.md).

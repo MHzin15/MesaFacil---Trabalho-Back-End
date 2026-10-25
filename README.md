@@ -5,6 +5,8 @@ O MVP inclui cardápio, carrinho, pedidos, cozinha, garçom, conta, pagamento
 simulado e PWA. A implementação seguiu [o plano](docs/AVALIACAO_E_PLANO_2026-10-23.md);
 consulte [o aceite final](docs/ACEITE_FINAL.md) para evidências e demonstrações ainda pendentes.
 Acompanhe as entregas em [docs/EXECUCAO.md](docs/EXECUCAO.md).
+Para ligar o projeto, conectar o pgAdmin e ensaiar cada papel pelas telas, siga
+[o guia de demonstração](docs/DEMONSTRACAO.md).
 
 ## Stack
 
@@ -100,10 +102,16 @@ precisam de codificação na URL; a senha hexadecimal sugerida evita essa difere
 ```
 
 A aplicação normal rejeita SQLite. core.test_settings é apenas para testes rápidos,
-nunca para runserver ou entrega. Validação final: 79 testes aprovados em PostgreSQL
+nunca para runserver ou entrega. Validação atual: 87 testes aprovados em PostgreSQL
 18.6, incluindo cinco corridas reais; schema estrito e dependências sem problemas.
 Use `python scripts/validate.py` para repetir os checks técnicos. Docker ainda requer validação
 em uma máquina com Docker disponível.
+
+Antes do ensaio, execute `python manage.py verificar_demonstracao`. A pré-checagem
+somente lê o banco e a configuração: aponta migrations, dados, fotos e acessos
+que faltam. No ambiente HTTPS dos dois aparelhos, use `--celular` para conferir
+também endereço, origens, cookies e troca de senhas demonstrativas. Esse comando
+não testa a rede nem substitui o fluxo presencial.
 
 ## Acesso e API
 
