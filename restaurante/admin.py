@@ -42,9 +42,9 @@ class PerfilAdmin(admin.ModelAdmin):
 # ============================================================
 @admin.register(Mesa)
 class MesaAdmin(admin.ModelAdmin):
-    list_display = ('numero', 'token_uuid', 'ativa', 'status_display')
+    list_display = ('numero', 'token_uuid', 'ativa', 'status_display', 'abrir_cardapio')
     list_filter = ('ativa',)
-    readonly_fields = ('token_uuid', 'baixar_qr')
+    readonly_fields = ('token_uuid', 'abrir_cardapio', 'baixar_qr')
     exclude = ('qr_code',)
     actions = ['abrir_mesas']
 
@@ -59,6 +59,12 @@ class MesaAdmin(admin.ModelAdmin):
     def baixar_qr(self, obj):
         if obj.pk:
             return format_html('<a href="{}">Baixar QR Code</a>', reverse('qr-download', args=[obj.pk]))
+        return 'Salve a mesa primeiro.'
+
+    @admin.display(description='Cardápio da mesa')
+    def abrir_cardapio(self, obj):
+        if obj.pk:
+            return format_html('<a href="{}" target="_blank" rel="noopener">Abrir cardápio</a>', reverse('cliente', args=[obj.token_uuid]))
         return 'Salve a mesa primeiro.'
 
     @admin.action(description='Abrir sessão das mesas selecionadas')

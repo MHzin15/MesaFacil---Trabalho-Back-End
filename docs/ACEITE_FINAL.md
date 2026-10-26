@@ -143,4 +143,5 @@ O comando somente de leitura confere dados, fotos, perfis, migrations e origens.
 O modo `--celular` exige HTTPS, cookies seguros, DEBUG desativado e troca das
 senhas conhecidas dos usuários de demonstração. Não verifica rede/certificado
 nem substitui o ensaio físico. A checagem local real passou; o roteiro operacional
-e a ficha em branco de evidências estão em [DEMONSTRACAO.md](DEMONSTRACAO.md).
+está em [DEMONSTRACAO.md](DEMONSTRACAO.md); o roteiro completo e a ficha em branco
+de evidências estão em [ENSAIO_COMPLETO.md](ENSAIO_COMPLETO.md).

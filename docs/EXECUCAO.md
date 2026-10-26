@@ -35,3 +35,15 @@ Validação repetida: **87 testes aprovados no PostgreSQL**, sem skips, incluind
 oito cenários da pré-checagem. Check, migrations, estáticos, OpenAPI estrito e
 dependências aprovados. Os oito testes novos também passaram na configuração
 rápida; a checagem local real passou após o preparo dos acessos demonstrativos.
+
+## Uso local simplificado — 25/10/2026
+
+A pedido do usuário, senhas de admin, cozinha e garçom cadastradas/redefinidas no
+banco local e verificadas por formulário com CSRF. A relação com a credencial
+real do PostgreSQL ficou somente em `.local/ACESSOS_LOCAIS.md`, ignorado pelo Git.
+
+O guia DEMONSTRACAO.md foi simplificado para o primeiro uso no computador; o
+roteiro detalhado foi preservado em ENSAIO_COMPLETO.md. A lista e o cadastro de
+mesas no admin agora têm link para abrir o cardápio diretamente, sem leitor de QR.
+Verificados: os três logins, os links autenticados, a página anônima da mesa,
+a proteção do admin e o check do Django. Nenhuma regra de negócio foi alterada.
