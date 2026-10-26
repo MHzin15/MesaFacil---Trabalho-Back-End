@@ -65,3 +65,8 @@ O ajuste manual já existente em DEMONSTRACAO.md foi preservado fora desta entre
 Incluído botão Baixar QR Code diretamente na lista de mesas do admin, além do
 cadastro individual. Validado botão no HTML autenticado, PNG válido e acesso
 anônimo bloqueado. A geração continua na hora, com endereço público configurado.
+
+O usuário esclareceu que procurava a ação na tela `/mesa/<uuid>/`. Adicionado
+também botão no cabeçalho dessa página, abaixo da identificação da mesa, para
+perfil ADMIN. Verificado no Chrome contra a URL local indicada: login com retorno
+à mesa, botão visível e download PNG real. Anônimo e cozinha permanecem sem acesso.

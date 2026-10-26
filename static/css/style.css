@@ -65,6 +65,8 @@
 .table-actions{display:grid;gap:10px}
 .table-actions .text-link{text-align:center;font-size:.85rem}
 .table-hint{font-size:.8rem;color:var(--muted);margin-bottom:12px}
+.table-tools{display:grid;gap:10px;flex-shrink:0}
+.table-tools .btn{font-size:.8rem;padding:10px 12px}
 .order-item{font-size:.95rem}
 .column-heading h2{font-size:1rem}
 @media(min-width:1200px){
