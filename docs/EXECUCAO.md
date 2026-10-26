@@ -59,3 +59,9 @@ PWA aprovadas no Chrome, em banco isolado. A revisão inclui cinco resoluções,
 recuperação de falhas, preços do carrinho restaurado e mensagens dentro do modal.
 Reprodução e resultados em [REVISAO_FRONT_DESKTOP.md](REVISAO_FRONT_DESKTOP.md).
 O ajuste manual já existente em DEMONSTRACAO.md foi preservado fora desta entrega.
+
+## Acesso ao QR Code — 25/10/2026
+
+Incluído botão Baixar QR Code diretamente na lista de mesas do admin, além do
+cadastro individual. Validado botão no HTML autenticado, PNG válido e acesso
+anônimo bloqueado. A geração continua na hora, com endereço público configurado.
