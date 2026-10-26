@@ -47,3 +47,15 @@ roteiro detalhado foi preservado em ENSAIO_COMPLETO.md. A lista e o cadastro de
 mesas no admin agora têm link para abrir o cardápio diretamente, sem leitor de QR.
 Verificados: os três logins, os links autenticados, a página anônima da mesa,
 a proteção do admin e o check do Django. Nenhuma regra de negócio foi alterada.
+
+## Revisão do frontend no desktop — 25/10/2026
+
+Defeito de clique reproduzido em 1920×1080: a foto extrapolava a área reservada e
+interceptava o botão de adicionar. Corrigida a contenção da imagem e revisados
+cardápio, personalização, carrinho, revisão, navegação da equipe e layout do salão.
+
+87 testes PostgreSQL aprovados. Baterias de fluxo completo, regressões, desktop e
+PWA aprovadas no Chrome, em banco isolado. A revisão inclui cinco resoluções,
+recuperação de falhas, preços do carrinho restaurado e mensagens dentro do modal.
+Reprodução e resultados em [REVISAO_FRONT_DESKTOP.md](REVISAO_FRONT_DESKTOP.md).
+O ajuste manual já existente em DEMONSTRACAO.md foi preservado fora desta entrega.

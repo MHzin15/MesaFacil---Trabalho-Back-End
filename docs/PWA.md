@@ -21,6 +21,11 @@ Ao reconectar, o cliente consulta disponibilidade e preços atuais. Dados salvos
 são identificados como sujeitos a confirmação, sem permitir realizar pedidos offline.
 Ao alterar a política de cache, incremente a versão em `templates/service-worker.js`.
 
+Na revisão de desktop, o cache passou para `mesafacil-public-v3`. Arquivos estáticos
+com hash continuam imutáveis e preferem cache. CSS/JS sem hash consultam a rede
+primeiro e usam o cache se estiver offline, para que mudanças locais não fiquem
+presas numa versão anterior. Dados privados continuam fora do Cache API.
+
 ## Verificação realizada
 
 Chrome 155, perfil exclusivo de teste e viewport 390×844: nenhum erro de manifesto

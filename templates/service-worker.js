@@ -1,6 +1,6 @@
 {% load static %}
 'use strict';
-const CACHE = 'mesafacil-public-v2';
+const CACHE = 'mesafacil-public-v3';
 const OFFLINE = '/offline/';
 const ASSETS = [OFFLINE, '/manifest.webmanifest',
   '{% static "js/offline.js" %}', '{% static "css/style.css" %}', '{% static "vendor/bootstrap.min.css" %}',
@@ -40,10 +40,14 @@ self.addEventListener('fetch', event => {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE);
       const stored = await cache.match(request);
-      if (stored) return stored;
-      const response = await fetch(request);
-      if (response.ok && response.type === 'basic') await cache.put(request, response.clone());
-      return response;
+      // Arquivos com hash são imutáveis. Sem hash, buscar a versão atual evita
+      // manter CSS/JS antigos durante o desenvolvimento local.
+      if (stored && /\.[a-f0-9]{12}\./.test(url.pathname)) return stored;
+      try {
+        const response = await fetch(request);
+        if (response.ok && response.type === 'basic') await cache.put(request, response.clone());
+        return response;
+      } catch { return stored || Response.error(); }
     })());
   }
   // API privada, imagens de QR e qualquer escrita nunca entram no Cache API.

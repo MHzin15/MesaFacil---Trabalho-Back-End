@@ -3,7 +3,7 @@
 <section class="hero">
   <div><p class="eyebrow">MENOS ESPERA. MAIS CONVERSA.</p><h1>Seu próximo<br>bom momento<br>começa <em>à mesa.</em></h1>
   <p class="hero-description">Escaneie o QR Code da sua mesa, escolha seus favoritos e acompanhe cada etapa. O resto é com a gente.</p>
-  <div class="hero-actions"><a href="/entrar/" class="btn btn-primary">Entrar como equipe <span aria-hidden="true">↗</span></a><a href="#como-funciona" class="text-link">Como funciona ↓</a></div>
+  <div class="hero-actions">{% if user.is_authenticated %}<a href="/painel/" class="btn btn-primary">Acessar meu painel →</a>{% else %}<a href="/entrar/" class="btn btn-primary">Entrar como equipe <span aria-hidden="true">↗</span></a>{% endif %}<a href="#como-funciona" class="text-link">Como funciona ↓</a></div>
   <p class="muted small mt-4">Já está no restaurante? Aponte a câmera para o QR Code na sua mesa.</p></div>
   <div class="hero-art" aria-label="Ilustração de um prato servido à mesa"><div class="art-orbit"></div><div class="art-plate"><span class="art-leaf one"></span><span class="art-leaf two"></span><span class="art-burger"><i></i><b></b><i></i></span></div><div class="art-note"><span class="live-dot"></span> Feito na hora, para você.<small>DA COZINHA PARA A SUA MESA</small></div><span class="art-caption">SABOR QUE CONECTA.</span></div>
 </section>

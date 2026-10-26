@@ -24,6 +24,7 @@ Em outro terminal:
 $env:PLAYWRIGHT_MODULE = (Resolve-Path .tmp/browser-tools/node_modules/playwright).Path
 node scripts/check_flow.cjs
 node scripts/check_regressions.cjs
+node scripts/check_desktop.cjs
 node scripts/check_pwa.cjs
 ```
 
@@ -43,6 +44,11 @@ no cluster de desenvolvimento para inspeção; não são dados de produção.
 - `check_pwa`: perfil persistente exclusivo (instalação é bloqueada em navegação
   anônima), manifesto, critérios de instalabilidade, SW, offline, cardápio salvo,
   falha de POST sem conexão e ausência de respostas privadas no Cache API.
+- `check_desktop`: imagens contidas e cliques reais em todos os produtos no desktop;
+  inclusão/remoção em 1920×1080, 1440×900, 1366×768, 1024×768 e 390×844;
+  busca/categorias, teclado, total da personalização, indisponibilidade com diálogo
+  aberto, carrinho longo, recuperação de carregamento, preços restaurados,
+  erro de envio visível no diálogo e fluxo completo com Pix simulado.
 
 Os scripts não fazem chamadas externas de publicação. Resultados JSON, screenshots,
 downloads e perfis ficam em `.tmp/`. O cenário funcional foi validado com viewports

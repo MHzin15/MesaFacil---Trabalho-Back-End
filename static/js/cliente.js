@@ -4,8 +4,8 @@
   const token = document.body.dataset.mesa;
   const base = `/api/mesa/${token}/`;
   const byId = id => document.getElementById(id);
-  let products = [], cart = [], sessionId = null, currentProduct = null, sending = false, selected = null;
-  let ended = false, menuSignature = '', reviewSignature = '';
+  let products = [], cart = [], sessionId = null, currentProduct = null, sending = false, selected = null, search = '';
+  let ended = false, menuSignature = '', reviewSignature = '', cartInView = false;
   const cartSignature = () => JSON.stringify([sessionId, cart, byId('observacao-pedido').value]);
   let lastOrders = '', lastBill = '', refreshing = false, attempt = null;
   const attemptKey = () => `mf-attempt-${token}-${sessionId}`;
@@ -17,40 +17,59 @@
   const unit = item => (Math.round(Number(item.preco) * 100) + item.adicionais.reduce((sum, a) => sum + Math.round(Number(a.preco) * 100), 0)) / 100;
   const total = () => cart.reduce((sum, item) => sum + Math.round(unit(item) * 100) * item.quantidade, 0) / 100;
   function renderCart() {
-    byId('cart-items').innerHTML = cart.length ? cart.map((item, i) => `<div class="cart-item"><div><strong>${escape(item.nome)}</strong><button class="remove-button" data-remove="${i}" aria-label="Remover ${escape(item.nome)}">Remover</button></div><p class="small muted">${item.adicionais.map(a => escape(a.nome)).join(', ')}${item.observacao ? ` · ${escape(item.observacao)}` : ''}</p><div class="quantity-row"><div class="quantity-control"><button data-quantity="${i}" data-delta="-1" aria-label="Diminuir quantidade de ${escape(item.nome)}">−</button><span>${item.quantidade}</span><button data-quantity="${i}" data-delta="1" aria-label="Aumentar quantidade de ${escape(item.nome)}">+</button></div><strong>${money(unit(item) * item.quantidade)}</strong></div></div>`).join('') : '<p class="empty-state">Seu carrinho está esperando<br>o primeiro favorito.</p>';
+    byId('cart-items').innerHTML = cart.length ? cart.map((item, i) => `<div class="cart-item"><div><strong>${escape(item.nome)}</strong><button class="remove-button" data-remove="${i}" aria-label="Remover ${escape(item.nome)}">Remover</button></div><p class="small muted">${item.adicionais.map(a => escape(a.nome)).join(', ')}${item.observacao ? ` · ${escape(item.observacao)}` : ''}</p><div class="quantity-row"><div class="quantity-control"><button data-quantity="${i}" data-delta="-1" aria-label="Diminuir quantidade de ${escape(item.nome)}" ${item.quantidade <= 1 ? 'disabled' : ''}>−</button><span>${item.quantidade}</span><button data-quantity="${i}" data-delta="1" aria-label="Aumentar quantidade de ${escape(item.nome)}" ${item.quantidade >= 99 ? 'disabled' : ''}>+</button></div><strong>${money(unit(item) * item.quantidade)}</strong></div></div>`).join('') : '<p class="empty-state">Seu carrinho está vazio.<br>Use “Adicionar” em um produto.</p>';
     byId('cart-count').textContent = cart.reduce((sum, item) => sum + item.quantidade, 0);
     byId('cart-total').textContent = money(total());
     byId('revisar').disabled = !cart.length || !sessionId || !navigator.onLine || sending || (!cartAvailable() && !attempt);
     byId('cart-warning').hidden = !cart.length || cartAvailable();
+    byId('revisar-help').textContent = !sessionId ? 'A mesa precisa estar aberta pelo garçom para receber pedidos.' : !navigator.onLine ? 'Reconecte para revisar e enviar o pedido.' : attempt ? 'Aguardando confirmação de um envio. Confira seus pedidos antes de tentar novamente.' : !cart.length ? 'Adicione um produto para continuar.' : !cartAvailable() ? 'Remova os itens indisponíveis para continuar.' : 'Você ainda vai conferir os itens antes de enviar à cozinha.';
+    byId('cart-shortcut').hidden = !cart.length || cartInView;
+    byId('cart-shortcut-total').textContent = `${byId('cart-count').textContent} item(ns) · ${money(total())}`;
   }
+  const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   function renderProducts() {
-    const visible = selected === null ? products : products.filter(p => p.categoria === selected);
-    byId('produtos').innerHTML = visible.map(p => `<article class="product-card ${p.disponivel ? '' : 'unavailable'}"><div class="product-image">${p.foto ? `<img src="${escape(p.foto)}" alt="${escape(p.nome)}" loading="lazy">` : `<span aria-hidden="true" class="food-placeholder">${escape(p.nome.charAt(0))}</span>`}${!p.disponivel ? '<span class="unavailable-tag">Indisponível</span>' : ''}</div><div class="product-body"><h3>${escape(p.nome)}</h3><p>${escape(p.descricao)}</p><div class="product-footer"><strong>${money(p.preco)}</strong><button class="add-button" data-product="${p.id}" ${!p.disponivel || !sessionId ? 'disabled' : ''} aria-label="Adicionar ${escape(p.nome)}">+</button></div></div></article>`).join('') || '<p class="muted">Nenhum produto nesta categoria.</p>';
+    const visible = products.filter(p => (selected === null || p.categoria === selected) && normalize(`${p.nome} ${p.descricao}`).includes(normalize(search)));
+    byId('menu-results').textContent = `${visible.length} produto${visible.length === 1 ? '' : 's'}`;
+    byId('produtos').innerHTML = visible.map(p => `<article class="product-card ${p.disponivel ? '' : 'unavailable'}"><div class="product-image">${p.foto ? `<img src="${escape(p.foto)}" alt="${escape(p.nome)}" loading="lazy">` : `<span aria-hidden="true" class="food-placeholder">${escape(p.nome.charAt(0))}</span>`}${!p.disponivel ? '<span class="unavailable-tag">Indisponível</span>' : ''}</div><div class="product-body"><h3>${escape(p.nome)}</h3><p>${escape(p.descricao)}</p><div class="product-footer"><strong>${money(p.preco)}</strong><button type="button" class="add-button" data-product="${p.id}" ${!p.disponivel || !sessionId ? 'disabled' : ''} title="${!p.disponivel ? 'Produto indisponível' : !sessionId ? 'Aguarde o garçom abrir a mesa' : 'Personalizar e adicionar ao carrinho'}" aria-label="Adicionar ${escape(p.nome)}">${p.disponivel ? 'Adicionar' : 'Indisponível'}</button></div></div></article>`).join('') || '<div class="menu-empty"><h3>Nenhum produto encontrado</h3><p>Tente outro nome ou consulte todas as categorias.</p><button type="button" class="btn btn-outline-primary" data-clear-menu>Limpar busca e filtros</button></div>';
+  }
+  function syncCartPrices() {
+    if (sending || attempt) return;
+    let changed = false;
+    cart.forEach(item => {
+      const product = products.find(p => p.id === item.produto_id);
+      if (!product) return;
+      if (item.preco !== product.preco) changed = true;
+      item.preco = product.preco;
+      item.adicionais = item.adicionais.map(a => {
+        const current = product.adicionais.find(v => v.id === a.id);
+        if (current && current.preco !== a.preco) changed = true;
+        return current || a;
+      });
+    });
+    if (changed) { saveCart(); feedback('Os preços do cardápio foram atualizados. Revise seu carrinho.'); }
+    return changed;
   }
   async function loadMenu() {
     const categories = await api('/api/cardapio/');
     const signature = JSON.stringify(categories);
-    if (signature === menuSignature) return;
+    if (signature === menuSignature) { if (syncCartPrices()) renderCart(); return; }
     menuSignature = signature;
     products = categories.flatMap(c => c.produtos);
-    if (!sending && !attempt) {
-      let changed = false;
-      cart.forEach(item => {
-        const product = products.find(p => p.id === item.produto_id);
-        if (!product) return;
-        if (item.preco !== product.preco) changed = true;
-        item.preco = product.preco;
-        item.adicionais = item.adicionais.map(a => {
-          const current = product.adicionais.find(v => v.id === a.id);
-          if (current && current.preco !== a.preco) changed = true;
-          return current || a;
-        });
-      });
-      if (changed) { saveCart(); feedback('Os preços do cardápio foram atualizados. Revise seu carrinho.'); }
-    }
+    syncCartPrices();
     renderCart();
     byId('categorias').innerHTML = `<button data-category="" class="${selected === null ? 'active' : ''}">Todos</button>` + categories.map(c => `<button data-category="${c.id}" class="${selected === c.id ? 'active' : ''}">${escape(c.nome)}</button>`).join('');
     renderProducts();
+    if (byId('produto-dialog').open && currentProduct) {
+      const previous = currentProduct;
+      currentProduct = products.find(p => p.id === currentProduct.id);
+      byId('adicionar-item').disabled = !sessionId || !currentProduct?.disponivel;
+      if (!currentProduct?.disponivel) feedback('Este produto ficou indisponível. Feche esta janela e escolha outro item.', true);
+      else {
+        byId('produto-preco').textContent = money(currentProduct.preco);
+        updateProductTotal();
+        if (previous.preco !== currentProduct.preco) feedback('O preço deste produto foi atualizado. Confira o total antes de adicionar.');
+      }
+    }
   }
   async function refresh() {
     if (refreshing || sending) return;
@@ -69,12 +88,15 @@
         const stored = JSON.parse(sessionStorage.getItem(`mf-cart-${token}-${sessionId}`) || '[]');
         if (Array.isArray(stored)) cart = stored.filter(i => i && Number.isInteger(i.quantidade) && i.quantidade > 0 && Array.isArray(i.adicionais));
       } catch { cart = []; }
+      syncCartPrices();
       renderCart();
       renderProducts();
     }
     byId('session-label').textContent = sessionId ? 'Sessão aberta' : ended ? 'Sessão encerrada' : 'Aguardando abertura';
     byId('session-warning').hidden = Boolean(sessionId);
-    byId('session-warning').textContent = ended ? 'Sua sessão foi encerrada. Obrigado pela visita!' : 'Esta mesa está sem sessão aberta. Peça ao garçom para abrir antes de enviar pedidos.';
+    byId('session-warning').querySelector('strong').textContent = ended ? 'Atendimento encerrado' : 'Mesa sem sessão aberta';
+    byId('session-message').textContent = ended ? 'Sua sessão foi encerrada. Obrigado pela visita! Para fazer outro pedido, peça a abertura de uma nova sessão.' : 'Você pode consultar o cardápio. Para adicionar produtos e enviar pedidos, peça ao garçom para abrir esta mesa.';
+    byId('client-error').hidden = true;
     byId('pedir-conta').disabled = !sessionId || !navigator.onLine;
     if (!sessionId) {
       byId('lista-pedidos').innerHTML = '<p class="empty-state">Nenhuma sessão aberta nesta mesa.</p>';
@@ -98,11 +120,20 @@
     }
     byId('pedir-conta').disabled = bill.conta_solicitada || !navigator.onLine;
     byId('pedir-conta').textContent = bill.conta_solicitada ? 'Conta solicitada ✓' : 'Pedir a conta';
+    } catch (error) {
+      byId('client-error-message').textContent = error.message;
+      byId('client-error').hidden = false;
+      throw error;
     } finally { refreshing = false; }
   }
   document.addEventListener('click', event => {
     const button = event.target.closest('button');
     if (!button) return;
+    if (button.hasAttribute('data-clear-menu')) {
+      selected = null; search = ''; byId('buscar-produto').value = '';
+      document.querySelectorAll('[data-category]').forEach(b => b.classList.toggle('active', b.dataset.category === ''));
+      renderProducts();
+    }
     if (attempt && (button.dataset.product || button.dataset.remove !== undefined || button.dataset.quantity !== undefined)) { feedback('Há um envio aguardando confirmação. Revise e tente novamente antes de alterar o carrinho.', true); return; }
     if (button.hasAttribute('data-category')) {
       selected = button.dataset.category ? Number(button.dataset.category) : null;
@@ -114,8 +145,11 @@
       byId('produto-titulo').textContent = currentProduct.nome;
       byId('produto-descricao').textContent = currentProduct.descricao;
       byId('produto-quantidade').value = '1'; byId('produto-observacao').value = '';
+      byId('produto-preco').textContent = money(currentProduct.preco);
+      byId('adicionar-item').disabled = false;
       byId('produto-adicionais').innerHTML = currentProduct.adicionais.length ? '<h3 class="small-heading">Deixe do seu jeito</h3>' + currentProduct.adicionais.map(a => `<label class="extra-option"><span><input type="checkbox" name="adicional" value="${a.id}"> ${escape(a.nome)}</span><strong>+ ${money(a.preco)}</strong></label>`).join('') : '';
       byId('produto-dialog').showModal();
+      updateProductTotal();
     }
     if (button.dataset.remove !== undefined) { cart.splice(Number(button.dataset.remove),1); saveCart(); renderCart(); }
     if (button.dataset.quantity !== undefined) {
@@ -124,6 +158,14 @@
       saveCart(); renderCart();
     }
   });
+  function updateProductTotal() {
+    if (!currentProduct) return;
+    const ids = [...byId('produto-adicionais').querySelectorAll('input:checked')].map(n => Number(n.value));
+    byId('produto-total').textContent = money(unit({preco:currentProduct.preco, adicionais:currentProduct.adicionais.filter(a => ids.includes(a.id))}) * Number(byId('produto-quantidade').value || 0));
+  }
+  byId('produto-form').addEventListener('input', updateProductTotal);
+  byId('buscar-produto').addEventListener('input', event => { search = event.target.value.trim(); renderProducts(); });
+  byId('tentar-novamente').addEventListener('click', () => refresh().catch(e => feedback(e.message, true)));
   byId('produto-form').addEventListener('submit', event => {
     event.preventDefault();
     currentProduct = products.find(p => p.id === currentProduct?.id);
@@ -140,12 +182,14 @@
   }
   byId('revisar').addEventListener('click', async () => {
     try { await refresh(); } catch (error) { feedback(error.message, true); return; }
+    if (sending) return;
     if (!cart.length || (!cartAvailable() && !attempt)) return;
     renderReview();
   });
   byId('confirmar').addEventListener('click', async () => {
     if (sending || !cart.length) return;
     try { await refresh(); } catch (error) { feedback(error.message, true); return; }
+    if (sending) return;
     if (!cart.length || (!cartAvailable() && !attempt)) return;
     if (!attempt && cartSignature() !== reviewSignature) { renderReview(); feedback('O carrinho ou os preços mudaram. Confira o novo total e confirme novamente.', true); return; }
     sending = true; byId('confirmar').disabled = true; byId('confirmar').textContent = 'Enviando…';
@@ -169,5 +213,9 @@
   });
   window.addEventListener('offline', renderCart);
   window.addEventListener('online', () => { renderCart(); refresh().catch(e => feedback(e.message,true)); });
+  new IntersectionObserver(entries => {
+    cartInView = entries[0].isIntersecting;
+    byId('cart-shortcut').hidden = !cart.length || cartInView;
+  }).observe(byId('carrinho'));
   poll(refresh);
 })();

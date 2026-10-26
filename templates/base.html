@@ -25,7 +25,8 @@
       <button id="install-app" class="nav-button" type="button" hidden>Instalar app</button>
       {% block nav %}<a href="/">Início</a>{% endblock %}
       {% if user.is_authenticated %}
-      <a href="/painel/">Meu painel</a>
+      {% if user.perfil.role == 'ADMIN' %}<a href="/garcom/" {% if request.path == '/garcom/' %}aria-current="page"{% endif %}>Salão</a><a href="/cozinha/" {% if request.path == '/cozinha/' %}aria-current="page"{% endif %}>Cozinha</a><a href="/admin/">Administração</a>{% else %}<a href="/painel/">Meu painel</a>{% endif %}
+      <span class="staff-user">{{ user.username }}</span>
       <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="nav-button" type="submit">Sair</button></form>
       {% else %}<a href="{% url 'login' %}" class="nav-button">Área da equipe ↗</a>{% endif %}
     </nav>

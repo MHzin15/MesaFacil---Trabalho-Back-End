@@ -145,3 +145,11 @@ senhas conhecidas dos usuários de demonstração. Não verifica rede/certificad
 nem substitui o ensaio físico. A checagem local real passou; o roteiro operacional
 está em [DEMONSTRACAO.md](DEMONSTRACAO.md); o roteiro completo e a ficha em branco
 de evidências estão em [ENSAIO_COMPLETO.md](ENSAIO_COMPLETO.md).
+
+## Revisão adicional do frontend
+
+A [revisão desktop](REVISAO_FRONT_DESKTOP.md) registra a correção de fotos que
+interceptavam o botão de adicionar em 1920×1080, melhorias de uso e a nova bateria
+de cinco resoluções. Os 87 testes PostgreSQL e os cenários de navegador passaram;
+o fluxo completo foi repetido com cartão e Pix simulados. Os requisitos físicos
+e de infraestrutura anteriormente pendentes continuam com os mesmos limites.

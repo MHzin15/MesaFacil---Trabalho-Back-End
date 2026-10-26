@@ -14,9 +14,23 @@ window.MF = (() => {
   let noticeTimer;
   function feedback(message, error = false) {
     const node = document.querySelector('#feedback');
+    const dialog = document.querySelector('dialog[open]');
+    let inline = dialog?.querySelector('[data-dialog-feedback]');
+    if (dialog && !inline) {
+      inline = document.createElement('p');
+      inline.dataset.dialogFeedback = '';
+      inline.className = 'dialog-feedback';
+      dialog.prepend(inline);
+    }
+    if (inline) {
+      inline.textContent = message;
+      inline.classList.toggle('error', error);
+      inline.setAttribute('role', error ? 'alert' : 'status');
+      inline.hidden = false;
+    }
     node.textContent = message;
     node.classList.toggle('error', error);
-    node.hidden = false;
+    node.hidden = Boolean(dialog);
     clearTimeout(noticeTimer);
     noticeTimer = setTimeout(() => { node.hidden = true; }, error ? 12000 : 5000);
   }
@@ -66,6 +80,9 @@ window.MF = (() => {
     const button = event.target.closest('[data-close]');
     if (button) document.getElementById(button.dataset.close).close();
   });
+  document.addEventListener('close', event => {
+    event.target.querySelectorAll?.('[data-dialog-feedback]').forEach(node => { node.hidden = true; });
+  }, true);
   const connection = () => { document.querySelector('#connection').hidden = navigator.onLine; };
   window.addEventListener('online', connection);
   window.addEventListener('offline', connection);
