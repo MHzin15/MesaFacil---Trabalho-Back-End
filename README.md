@@ -9,6 +9,8 @@ Para ligar o projeto, conectar o pgAdmin e ensaiar cada papel pelas telas, siga
 [o guia de demonstração](docs/DEMONSTRACAO.md).
 Para publicar uma versão de testes com deploy automático a cada push,
 siga [o guia do Render Free](docs/RENDER.md).
+Consulte também a [auditoria de requisitos, domínio e decisões técnicas de 28/10](docs/RELATORIO_TECNICO_E_PRODUTO_2026-10-28.md)
+para o parecer atual e as pendências de aceite.
 
 ## Stack
 

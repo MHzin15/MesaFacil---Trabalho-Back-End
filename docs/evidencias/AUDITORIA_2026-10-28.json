@@ -1,0 +1,722 @@
+{
+  "date": "2026-10-28",
+  "code_commit_reviewed": "6ce926f24d1199c842df3054f75d803867bab62c",
+  "live_commit_verified": false,
+  "scope": "Source review, isolated local tests, anonymous live GET and public browser/PWA checks. No live business writes or authenticated workflow.",
+  "test_runtime": {
+    "python": "3.11.5",
+    "django": "5.2.17",
+    "database": "SQLite in memory"
+  },
+  "reported_deploy_runtime": {
+    "python": "3.13.18",
+    "django": "6.1.2"
+  },
+  "tests": {
+    "total": 96,
+    "passed": 90,
+    "failed": 1,
+    "skipped": 5,
+    "errors": 0,
+    "failure": "RenderBootstrapTests.test_missing_or_weak_initial_password_stops_without_creating_data",
+    "skipped_reason": "Five concurrency tests require PostgreSQL"
+  },
+  "local_checks": {
+    "django_check": "passed",
+    "migration_drift": "none",
+    "openapi_strict_generation": "passed",
+    "installed_dependencies_pip_check": "passed"
+  },
+  "isolated_diagnostics": [
+    {
+      "case": "Delete table with a session",
+      "observed_status": 500,
+      "table_preserved": true
+    },
+    {
+      "case": "Waiter map query growth",
+      "three_tables_queries": 8,
+      "ten_tables_queries": 22
+    },
+    {
+      "case": "Seed after deleting unused demo product",
+      "product_recreated": true
+    }
+  ],
+  "http": {
+    "at_utc": "2026-10-28T23:14:57.312537+00:00",
+    "base": "https://mesafacil-co9h.onrender.com",
+    "method": "GET only, anonymous, no redirects followed, no data writes",
+    "results": [
+      {
+        "path": "/",
+        "status": 200,
+        "seconds": 0.5,
+        "bytes": 3552,
+        "headers": {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": null,
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": [
+          {
+            "name": "csrftoken",
+            "secure": true,
+            "httponly": false,
+            "samesite": "Lax"
+          }
+        ]
+      },
+      {
+        "path": "/entrar/",
+        "status": 200,
+        "seconds": 0.922,
+        "bytes": 3001,
+        "headers": {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store",
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": [
+          {
+            "name": "csrftoken",
+            "secure": true,
+            "httponly": false,
+            "samesite": "Lax"
+          }
+        ]
+      },
+      {
+        "path": "/admin/",
+        "status": 302,
+        "seconds": 1.109,
+        "bytes": 0,
+        "headers": {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store",
+          "Location": "/admin/login/?next=/admin/",
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/painel/",
+        "status": 302,
+        "seconds": 0.718,
+        "bytes": 0,
+        "headers": {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store",
+          "Location": "/entrar/?next=/painel/",
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/cozinha/",
+        "status": 302,
+        "seconds": 0.328,
+        "bytes": 0,
+        "headers": {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store",
+          "Location": "/entrar/?next=/cozinha/",
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/garcom/",
+        "status": 302,
+        "seconds": 0.266,
+        "bytes": 0,
+        "headers": {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store",
+          "Location": "/entrar/?next=/garcom/",
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/manifest.webmanifest",
+        "status": 200,
+        "seconds": 0.297,
+        "bytes": 626,
+        "headers": {
+          "Content-Type": "application/manifest+json",
+          "Cache-Control": "public, max-age=600",
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": [],
+        "manifest": {
+          "id": "/",
+          "name": "MesaFácil",
+          "short_name": "MesaFácil",
+          "lang": "pt-BR",
+          "description": "Cardápio e acompanhamento de pedidos por QR Code.",
+          "start_url": "/",
+          "scope": "/",
+          "display": "standalone",
+          "background_color": "#fbf8f2",
+          "theme_color": "#ae452c",
+          "icons": [
+            {
+              "src": "/static/icons/icon-192.fdf6d4dfab0a.png",
+              "sizes": "192x192",
+              "type": "image/png",
+              "purpose": "any"
+            },
+            {
+              "src": "/static/icons/icon-512.a28cc429c452.png",
+              "sizes": "512x512",
+              "type": "image/png",
+              "purpose": "any"
+            },
+            {
+              "src": "/static/icons/maskable-512.96c16d88aca0.png",
+              "sizes": "512x512",
+              "type": "image/png",
+              "purpose": "maskable"
+            }
+          ]
+        }
+      },
+      {
+        "path": "/service-worker.js",
+        "status": 200,
+        "seconds": 0.265,
+        "bytes": 2514,
+        "headers": {
+          "Content-Type": "application/javascript",
+          "Cache-Control": "no-cache",
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": "/"
+        },
+        "cookies": []
+      },
+      {
+        "path": "/offline/",
+        "status": 200,
+        "seconds": 0.687,
+        "bytes": 1153,
+        "headers": {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "public, max-age=600",
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/api/cardapio/",
+        "status": 200,
+        "seconds": 0.766,
+        "bytes": 4534,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": null,
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": [],
+        "menu": {
+          "categories": 6,
+          "products": 15,
+          "available": 15,
+          "with_photo": 15
+        },
+        "sample_photo_paths": [
+          "/media/produtos/demo-2.png",
+          "/media/produtos/demo-1.png"
+        ]
+      },
+      {
+        "path": "/api/mesas/",
+        "status": 403,
+        "seconds": 0.297,
+        "bytes": 68,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/api/sessoes/",
+        "status": 403,
+        "seconds": 0.656,
+        "bytes": 68,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/api/cozinha/",
+        "status": 403,
+        "seconds": 0.281,
+        "bytes": 68,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/api/garcom/",
+        "status": 403,
+        "seconds": 0.297,
+        "bytes": 68,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/api/admin/pedidos/",
+        "status": 403,
+        "seconds": 0.313,
+        "bytes": 68,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/api/admin/contas/",
+        "status": 403,
+        "seconds": 0.719,
+        "bytes": 68,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/api/auth/usuario/",
+        "status": 403,
+        "seconds": 0.281,
+        "bytes": 68,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/api/mesas/1/qr-code/",
+        "status": 403,
+        "seconds": 0.281,
+        "bytes": 68,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/media/qrcodes/mesa_1_qrcode.png",
+        "status": 404,
+        "seconds": 0.266,
+        "bytes": 179,
+        "headers": {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": null,
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/api/schema/",
+        "status": 200,
+        "seconds": 1.61,
+        "bytes": 64378,
+        "headers": {
+          "Content-Type": "application/vnd.oai.openapi; charset=utf-8",
+          "Cache-Control": "no-store",
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/api/docs/",
+        "status": 200,
+        "seconds": 0.312,
+        "bytes": 4647,
+        "headers": {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store",
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": [
+          {
+            "name": "csrftoken",
+            "secure": true,
+            "httponly": false,
+            "samesite": "Lax"
+          }
+        ]
+      },
+      {
+        "path": "/__audit_not_found__/",
+        "status": 404,
+        "seconds": 0.297,
+        "bytes": 179,
+        "headers": {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": null,
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": [],
+        "debug_traceback_visible": false
+      },
+      {
+        "path": "/static/icons/icon-192.fdf6d4dfab0a.png",
+        "status": 200,
+        "seconds": 0.671,
+        "bytes": 2453,
+        "headers": {
+          "Content-Type": "image/png",
+          "Cache-Control": "max-age=315360000, public, immutable",
+          "Location": null,
+          "X-Frame-Options": null,
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/static/icons/icon-512.a28cc429c452.png",
+        "status": 200,
+        "seconds": 0.375,
+        "bytes": 7052,
+        "headers": {
+          "Content-Type": "image/png",
+          "Cache-Control": "max-age=315360000, public, immutable",
+          "Location": null,
+          "X-Frame-Options": null,
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/static/icons/maskable-512.96c16d88aca0.png",
+        "status": 200,
+        "seconds": 0.282,
+        "bytes": 6252,
+        "headers": {
+          "Content-Type": "image/png",
+          "Cache-Control": "max-age=315360000, public, immutable",
+          "Location": null,
+          "X-Frame-Options": null,
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/media/produtos/demo-2.png",
+        "status": 200,
+        "seconds": 0.265,
+        "bytes": 5414,
+        "headers": {
+          "Content-Type": "image/png",
+          "Cache-Control": null,
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      },
+      {
+        "path": "/media/produtos/demo-1.png",
+        "status": 200,
+        "seconds": 0.328,
+        "bytes": 5414,
+        "headers": {
+          "Content-Type": "image/png",
+          "Cache-Control": null,
+          "Location": null,
+          "X-Frame-Options": "DENY",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": null,
+          "Content-Security-Policy": null,
+          "Service-Worker-Allowed": null
+        },
+        "cookies": []
+      }
+    ]
+  },
+  "browser": {
+    "url": "https://mesafacil-co9h.onrender.com",
+    "browser": "156.0.8078.48",
+    "viewports": [
+      {
+        "viewport": 390,
+        "url": "/",
+        "document": 390,
+        "horizontalOverflow": false
+      },
+      {
+        "viewport": 390,
+        "url": "/entrar/",
+        "document": 390,
+        "horizontalOverflow": false
+      },
+      {
+        "viewport": 768,
+        "url": "/",
+        "document": 768,
+        "horizontalOverflow": false
+      },
+      {
+        "viewport": 768,
+        "url": "/entrar/",
+        "document": 768,
+        "horizontalOverflow": false
+      },
+      {
+        "viewport": 1366,
+        "url": "/",
+        "document": 1366,
+        "horizontalOverflow": false
+      },
+      {
+        "viewport": 1366,
+        "url": "/entrar/",
+        "document": 1366,
+        "horizontalOverflow": false
+      }
+    ],
+    "errors": [],
+    "installability": {
+      "installabilityErrors": [
+        {
+          "errorId": "in-incognito",
+          "errorArguments": []
+        }
+      ]
+    },
+    "manifestErrors": [],
+    "serviceWorkerActive": true,
+    "cachedPaths": [
+      "/offline/",
+      "/static/js/offline.1dd6a64a56bb.js",
+      "/static/css/style.e7769f06aaac.css",
+      "/static/vendor/bootstrap.min.deb991cdf0ea.css",
+      "/static/icons/icon-192.fdf6d4dfab0a.png",
+      "/static/icons/icon-512.a28cc429c452.png",
+      "/static/icons/maskable-512.96c16d88aca0.png",
+      "/manifest.webmanifest",
+      "/static/js/pwa.616541501cc2.js",
+      "/static/js/app.5692501e07ba.js",
+      "/api/cardapio/"
+    ],
+    "privateResourcesCached": false,
+    "offlineMenuReadable": true,
+    "offlineMessageVisible": true,
+    "reconnection": true,
+    "blockedWriteAttempts": 0
+  },
+  "installability_normal_profile": {
+    "persistentProfile": true,
+    "manifestErrors": [],
+    "installabilityErrors": []
+  },
+  "schema_comparison": {
+    "tracked_paths": 31,
+    "generated_paths": 31,
+    "live_paths": 31,
+    "live_operations": 47,
+    "same_path_set": true,
+    "generated_live_difference_paths": [
+      "/components/schemas/Categoria/properties/ordem/format",
+      "/components/schemas/Categoria/properties/ordem/maximum",
+      "/components/schemas/Categoria/properties/ordem/minimum",
+      "/components/schemas/CategoriaComProdutos/properties/ordem/format",
+      "/components/schemas/CategoriaComProdutos/properties/ordem/maximum",
+      "/components/schemas/CategoriaComProdutos/properties/ordem/minimum",
+      "/components/schemas/Conta/properties/mesa_numero/format",
+      "/components/schemas/Conta/properties/mesa_numero/maximum",
+      "/components/schemas/ItemPedido/properties/quantidade/format",
+      "/components/schemas/ItemPedido/properties/quantidade/maximum",
+      "/components/schemas/Mesa/properties/numero/format",
+      "/components/schemas/Mesa/properties/numero/maximum",
+      "/components/schemas/MesaCliente/properties/numero/format",
+      "/components/schemas/MesaCliente/properties/numero/maximum",
+      "/components/schemas/MesaContexto/properties/numero/format",
+      "/components/schemas/MesaContexto/properties/numero/maximum",
+      "/components/schemas/PatchedCategoria/properties/ordem/format",
+      "/components/schemas/PatchedCategoria/properties/ordem/maximum",
+      "/components/schemas/PatchedCategoria/properties/ordem/minimum",
+      "/components/schemas/PatchedMesa/properties/numero/format",
+      "/components/schemas/PatchedMesa/properties/numero/maximum",
+      "/components/schemas/Pedido/properties/mesa_numero/format",
+      "/components/schemas/Pedido/properties/mesa_numero/maximum",
+      "/components/schemas/PedidoCozinha/properties/mesa_numero/format",
+      "/components/schemas/PedidoCozinha/properties/mesa_numero/maximum",
+      "/components/schemas/SessaoMesa/properties/mesa_numero/format",
+      "/components/schemas/SessaoMesa/properties/mesa_numero/maximum"
+    ]
+  },
+  "limits": [
+    "No current PostgreSQL concurrency execution",
+    "No physical phone installation test",
+    "No authenticated live workflow",
+    "Local framework version differs from target",
+    "Previously documented PostgreSQL/browser results were treated as historical"
+  ]
+}

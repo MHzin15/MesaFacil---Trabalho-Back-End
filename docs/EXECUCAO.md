@@ -95,3 +95,20 @@ Publicação pendente: a pedido do usuário, commit/push e criação dos recurso
 Render serão feitos manualmente conforme [RENDER.md](RENDER.md). Nenhum recurso
 remoto foi criado nesta preparação. O guia registra a expiração do banco em
 30 dias e a necessidade de armazenamento externo para uploads persistentes.
+
+## Auditoria após publicação — 28/10/2026
+
+Publicação informada pelo usuário em `https://mesafacil-co9h.onrender.com/`.
+Foi produzido o [relatório de requisitos, domínio e decisões técnicas](RELATORIO_TECNICO_E_PRODUTO_2026-10-28.md),
+referenciado no commit local `6ce926f`. Os testes atuais retornaram **90 aprovados,
+1 falha e 5 ignorados** em SQLite. A falha confirma a regressão da validação de
+senha introduzida após a preparação do deploy. Os resultados anteriores desta
+página permanecem como registros históricos, não como aprovação da suíte atual.
+
+Consultas GET anônimas e Chrome verificaram o deploy público: cardápio, recursos
+PWA, offline, reconexão e bloqueio das áreas operacionais. Sondagens em banco
+temporário reproduziram 500 na exclusão de mesa com histórico, consultas crescentes
+no mapa e restauração de produto removido pelo seed. Nenhum dado de negócio do
+deploy foi alterado; fluxo autenticado e ensaio físico continuam pendentes de
+registro no ambiente publicado. Esta auditoria entregou documentação, sem corrigir
+ou publicar alterações funcionais.
