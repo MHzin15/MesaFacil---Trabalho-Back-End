@@ -7,6 +7,8 @@ consulte [o aceite final](docs/ACEITE_FINAL.md) para evidências e demonstraçõ
 Acompanhe as entregas em [docs/EXECUCAO.md](docs/EXECUCAO.md).
 Para ligar o projeto, conectar o pgAdmin e ensaiar cada papel pelas telas, siga
 [o guia de demonstração](docs/DEMONSTRACAO.md).
+Para publicar uma versão de testes com deploy automático a cada push,
+siga [o guia do Render Free](docs/RENDER.md).
 
 ## Stack
 

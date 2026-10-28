@@ -70,3 +70,28 @@ O usuário esclareceu que procurava a ação na tela `/mesa/<uuid>/`. Adicionado
 também botão no cabeçalho dessa página, abaixo da identificação da mesa, para
 perfil ADMIN. Verificado no Chrome contra a URL local indicada: login com retorno
 à mesa, botão visível e download PNG real. Anônimo e cozinha permanecem sem acesso.
+
+## Preparação do Render Free — 28/10/2026
+
+Adicionado `render.yaml` com Web Service Python e PostgreSQL 18, ambos Free, e
+deploy automático da `main`. Scripts separados instalam dependências/coletam
+estáticos e iniciam migrations, dados demonstrativos e Gunicorn. O ambiente
+reconhece o proxy HTTPS e usa o domínio real nos hosts, CSRF e QR Codes.
+
+`preparar_render` cria o primeiro administrador com senha fornecida somente pelo
+ambiente e validada pelo Django. Reinícios preservam acessos existentes, preços
+e identificadores das mesas. Ilustrações demonstrativas perdidas no disco
+temporário são recriadas; fotos enviadas pelo usuário não são substituídas.
+
+Validação nesta máquina: **91 testes aprovados e 5 ignorados** na configuração
+rápida com SQLite, Python 3.11.5 e Django 5.2.17 disponíveis. Os cinco ignorados
+exigem PostgreSQL e cobrem concorrência. Os nove testes novos conferem criação
+e preservação do administrador, senha inicial, imagens e configuração HTTPS.
+Checks Django, collectstatic, sintaxe Bash, diff e validação do Blueprint pelo
+schema oficial do Render aprovados. O runtime de destino Python 3.13/Django 6.1.2
+e o PostgreSQL remoto serão validados na primeira publicação.
+
+Publicação pendente: a pedido do usuário, commit/push e criação dos recursos no
+Render serão feitos manualmente conforme [RENDER.md](RENDER.md). Nenhum recurso
+remoto foi criado nesta preparação. O guia registra a expiração do banco em
+30 dias e a necessidade de armazenamento externo para uploads persistentes.

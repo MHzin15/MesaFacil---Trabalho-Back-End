@@ -6,7 +6,12 @@ from .models import Produto
 
 
 def criar_imagens():
-    for produto in Produto.objects.filter(foto=''):
+    for produto in Produto.objects.all():
+        # No Render Free, arquivos locais somem após reiniciar. Recrie apenas as
+        # ilustrações geradas aqui; nunca substitua uma foto enviada pelo usuário.
+        if produto.foto:
+            if not produto.foto.name.startswith('produtos/demo-') or produto.foto.storage.exists(produto.foto.name):
+                continue
         image = Image.new('RGB', (640, 360), '#f4eadb')
         draw = ImageDraw.Draw(image)
         draw.ellipse((185, 45, 455, 315), fill='#fffaf2', outline='#ae452c', width=8)
