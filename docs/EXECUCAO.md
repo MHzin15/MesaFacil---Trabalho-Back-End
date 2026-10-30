@@ -127,3 +127,15 @@ Detalhes em [UX_NAVEGACAO_2026-10-29.md](UX_NAVEGACAO_2026-10-29.md).
 
 Entrega em branch `codex/client-screen-navigation`, sem disparar o deploy da
 main. O ajuste manual do guia local continua preservado fora do commit.
+
+## UI/UX da equipe — 29/10/2026
+
+Concluída a organização por funcionário: garçom com Mesas/Entregas/Contas,
+cozinha com Fila/Disponibilidade, administração agrupada e perfis visíveis na
+lista da equipe. Destinos de login, permissões e fluxo de negócio preservados.
+
+Fluxo completo e regressões aprovados; bateria de equipe em 18 combinações de
+tela/perfil/resolução sem erros JavaScript. PostgreSQL: 101 testes, 100 aprovados
+e a falha anterior de senha do Render. Detalhes em [UX_EQUIPE_2026-10-29.md](UX_EQUIPE_2026-10-29.md).
+Entrega diretamente na main, conforme solicitado, preservando a edição manual
+existente do guia de demonstração.

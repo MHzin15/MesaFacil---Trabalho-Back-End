@@ -1,13 +1,24 @@
-{% extends 'base.html' %}{% load static %}
-{% block title %}Garçom · MesaFácil{% endblock %}
+{% extends 'restaurante/equipe_base.html' %}{% load static %}
+{% block title %}{{ equipe_titulo }} · Garçom · MesaFácil{% endblock %}
 {% block page %}garcom{% endblock %}
-{% block scripts %}<script src="{% static 'js/garcom.js' %}" defer></script>{% endblock %}
-{% block content %}
-<section class="page-heading"><div><p class="eyebrow">ATENDIMENTO DO SALÃO</p><h1>Mesas e <em>entregas.</em></h1><p class="muted">Abra a mesa antes do primeiro pedido. Depois, entregue os pratos e finalize a conta.</p></div><div class="sync-box"><span class="live-dot"></span><span id="last-sync">Atualizando…</span><button id="refresh" class="icon-button" aria-label="Atualizar agora">↻</button></div></section>
-<nav class="service-summary" aria-label="Resumo do atendimento"><a href="#mesas"><strong id="mesas-livres">—</strong> mesas livres</a><a href="#sec-entregas"><strong id="total-entregas">—</strong> entregas pendentes</a><a href="#sec-contas"><strong id="total-contas">—</strong> contas solicitadas</a></nav>
-<div class="waiter-layout"><section id="mesas"><h2>Mesas do restaurante</h2><div id="mapa-mesas" class="table-grid" aria-live="polite"><p>Carregando mesas…</p></div></section><div class="waiter-work">
-<section id="sec-entregas"><div class="section-title"><h2>Prontos e a caminho</h2><span class="sync-label">Atualização automática</span></div><div id="entregas" class="table-grid" aria-live="polite"></div></section>
-<section id="sec-contas" class="section-space"><h2>Solicitações de conta</h2><div id="contas-pendentes" class="table-grid" aria-live="polite"></div></section>
-</div></div>
-<dialog id="conta-dialog" class="app-dialog"><div class="section-title"><h2 id="conta-titulo">Conta da mesa</h2><button type="button" class="icon-button" data-close="conta-dialog" aria-label="Fechar conta">×</button></div><div id="conta-itens"></div><p id="conta-pendencias" class="alert alert-warning" hidden>Há pedidos pendentes. Entregue ou cancele os pedidos antes de finalizar.</p><p id="conta-error" class="alert alert-danger" role="alert" hidden></p><button id="solicitar-conta" class="btn btn-outline-primary my-3">Solicitar conta</button><form id="pagamento-form"><label class="form-label" for="meio-pagamento">Meio de pagamento simulado</label><select id="meio-pagamento" class="form-select mb-3" required><option value="PIX">Pix</option><option value="CARTAO">Cartão</option><option value="DINHEIRO">Dinheiro no caixa</option></select><button id="pagar" class="btn btn-primary w-100" type="submit">Confirmar pagamento simulado</button></form><button id="fechar-sem-cobranca" class="btn btn-outline-primary w-100 mt-3" hidden>Encerrar sessão sem cobrança</button></dialog>
+{% block workspace_scripts %}<script src="{% static 'js/garcom.js' %}" defer></script>{% endblock %}
+{% block workspace_content %}
+<section id="mesas" data-staff-screen="mesas" {% if equipe_tela != 'mesas' %}hidden{% endif %}>
+  <div class="staff-toolbar"><div><h2>Mapa de mesas</h2><p id="mesas-summary" class="muted small mb-0">Consultando o salão…</p></div><div class="staff-search"><label for="buscar-mesa" class="visually-hidden">Buscar mesa por número</label><input id="buscar-mesa" class="form-control" type="search" placeholder="Buscar mesa pelo número" autocomplete="off"></div></div>
+  <div class="staff-filters" role="group" aria-label="Situação das mesas"><button type="button" data-table-filter="" aria-pressed="true">Todas</button><button type="button" data-table-filter="livre" aria-pressed="false">Livres</button><button type="button" data-table-filter="ocupada" aria-pressed="false">Ocupadas</button><button type="button" data-table-filter="aguardando_conta" aria-pressed="false">Aguardando conta</button></div>
+  <div id="mapa-mesas" class="table-grid" aria-live="polite"><p>Carregando mesas…</p></div>
+</section>
+<section id="sec-entregas" data-staff-screen="entregas" {% if equipe_tela != 'entregas' %}hidden{% endif %}>
+  <div id="entregas" class="delivery-board"><section class="delivery-column"><div class="column-heading"><h2>Prontos para retirar</h2><span id="prontos-count" class="count-badge">0</span></div><p class="muted small">Retire na cozinha e marque que está levando à mesa.</p><div id="entregas-prontos" aria-live="polite"></div></section><section class="delivery-column"><div class="column-heading"><h2>A caminho da mesa</h2><span id="caminho-count" class="count-badge">0</span></div><p class="muted small">Confirme a entrega quando o pedido chegar ao cliente.</p><div id="entregas-caminho" aria-live="polite"></div></section></div>
+</section>
+<section id="sec-contas" data-staff-screen="contas" {% if equipe_tela != 'contas' %}hidden{% endif %}>
+  <div class="staff-toolbar"><div><h2>Mesas que pediram a conta</h2><p class="muted small mb-0">Abra a conta para conferir os pedidos e o pagamento.</p></div></div><div id="contas-pendentes" class="table-grid" aria-live="polite"></div>
+</section>
+{% endblock %}
+{% block workspace_dialogs %}
+<dialog id="conta-dialog" class="app-dialog staff-bill-dialog" aria-labelledby="conta-titulo">
+  <div class="bill-dialog-heading"><div><p class="eyebrow">ATENDIMENTO DA MESA</p><h2 id="conta-titulo">Conta da mesa</h2></div><button type="button" class="icon-button" data-close="conta-dialog" aria-label="Fechar janela da conta">×</button></div>
+  <div class="bill-dialog-body"><p id="conta-pendencias" class="alert alert-warning" hidden>Há pedidos pendentes.</p><div id="conta-itens"></div><button id="solicitar-conta" class="btn btn-outline-primary mt-3">Solicitar conta</button></div>
+  <div class="bill-dialog-footer"><p id="conta-error" data-dialog-feedback class="dialog-feedback error" role="alert" hidden></p><div class="bill-total"><span>Total da mesa</span><strong id="conta-valor">R$ 0,00</strong></div><p id="pagamento-ajuda" class="small muted"></p><form id="pagamento-form"><label class="form-label" for="meio-pagamento">Meio de pagamento simulado</label><select id="meio-pagamento" class="form-select mb-3" required><option value="PIX">Pix</option><option value="CARTAO">Cartão</option><option value="DINHEIRO">Dinheiro no caixa</option></select><button id="pagar" class="btn btn-primary w-100" type="submit">Confirmar pagamento simulado</button></form><button id="fechar-sem-cobranca" class="btn btn-outline-primary w-100" hidden>Encerrar sessão sem cobrança</button></div>
+</dialog>
 {% endblock %}

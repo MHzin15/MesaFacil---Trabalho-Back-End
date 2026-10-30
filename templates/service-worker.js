@@ -1,9 +1,9 @@
 {% load static %}
 'use strict';
-const CACHE = 'mesafacil-public-v4';
+const CACHE = 'mesafacil-public-v5';
 const OFFLINE = '/offline/';
 const ASSETS = [OFFLINE, '/manifest.webmanifest',
-  '{% static "js/offline.js" %}', '{% static "css/style.css" %}', '{% static "css/cliente.css" %}', '{% static "vendor/bootstrap.min.css" %}',
+  '{% static "js/offline.js" %}', '{% static "css/style.css" %}', '{% static "css/cliente.css" %}', '{% static "css/equipe.css" %}', '{% static "vendor/bootstrap.min.css" %}',
   '{% static "icons/icon-192.png" %}', '{% static "icons/icon-512.png" %}',
   '{% static "icons/maskable-512.png" %}'];
 

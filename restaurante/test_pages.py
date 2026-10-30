@@ -71,3 +71,42 @@ class PaginasTestCase(TestCase):
         for name in ('cliente-carrinho', 'cliente-pedidos', 'cliente-conta'):
             with self.subTest(name=name):
                 self.assertEqual(self.client.get(reverse(name, args=[self.mesa.token_uuid])).status_code, 404)
+
+    def test_staff_deep_links_keep_role_permissions(self):
+        pages = [('/garcom/', self.garcom, self.cozinha, 'mesas'),
+                 ('/garcom/entregas/', self.garcom, self.cozinha, 'entregas'),
+                 ('/garcom/contas/', self.garcom, self.cozinha, 'contas'),
+                 ('/cozinha/', self.cozinha, self.garcom, 'fila'),
+                 ('/cozinha/disponibilidade/', self.cozinha, self.garcom, 'disponibilidade')]
+        for path, allowed, denied, screen in pages:
+            with self.subTest(path=path):
+                self.client.logout()
+                self.assertEqual(self.client.get(path).status_code, 302)
+                self.client.force_login(denied)
+                self.assertEqual(self.client.get(path).status_code, 403)
+                self.client.force_login(allowed)
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, f'data-staff-view="{screen}"')
+                self.assertEqual(response['Cache-Control'], 'no-store')
+                self.assertNotContains(response, 'ESPAÇOS DO ADMINISTRADOR')
+
+    def test_staff_login_destinations_are_unchanged(self):
+        admin = User.objects.create_user('gestor')
+        Perfil.objects.create(user=admin, role='ADMIN')
+        for user, target in [(self.garcom, '/garcom/'), (self.cozinha, '/cozinha/'), (admin, '/admin/')]:
+            with self.subTest(user=user.username):
+                self.client.force_login(user)
+                self.assertRedirects(self.client.get('/painel/'), target, fetch_redirect_response=False)
+
+    def test_admin_home_exposes_existing_management_actions_to_manager(self):
+        admin = User.objects.create_user('gestor-painel')
+        Perfil.objects.create(user=admin, role='ADMIN')
+        self.client.force_login(admin)
+        response = self.client.get('/admin/')
+        self.assertContains(response, 'Administração do restaurante')
+        for url in ('/admin/restaurante/mesa/', '/admin/restaurante/produto/',
+                    '/admin/auth/user/', '/admin/restaurante/pedido/'):
+            self.assertContains(response, f'href="{url}"')
+        self.client.force_login(self.garcom)
+        self.assertEqual(self.client.get('/admin/').status_code, 302)

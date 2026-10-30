@@ -1,9 +1,15 @@
-{% extends 'base.html' %}{% load static %}
-{% block title %}Cozinha · MesaFácil{% endblock %}
+{% extends 'restaurante/equipe_base.html' %}{% load static %}
+{% block title %}{{ equipe_titulo }} · Cozinha · MesaFácil{% endblock %}
 {% block page %}cozinha{% endblock %}
-{% block scripts %}<script src="{% static 'js/cozinha.js' %}" defer></script>{% endblock %}
-{% block content %}
-<section class="page-heading"><div><p class="eyebrow">PAINEL DA COZINHA</p><h1>Fila de <em>preparo.</em></h1><p class="muted">Aceite o pedido para iniciar o preparo. Quando terminar, marque como pronto para o garçom retirar.</p></div><div class="sync-box"><span class="live-dot"></span><span id="last-sync">Atualizando pedidos…</span><button id="refresh" class="icon-button" aria-label="Atualizar agora">↻</button></div></section>
-<div class="kanban"><section class="kanban-column"><div class="column-heading"><h2><span class="status-dot received"></span>Recebidos</h2><span id="count-RECEBIDO" class="count-badge">0</span></div><div id="RECEBIDO"></div></section><section class="kanban-column"><div class="column-heading"><h2><span class="status-dot preparing"></span>Em preparação</h2><span id="count-EM_PREPARACAO" class="count-badge">0</span></div><div id="EM_PREPARACAO"></div></section><section class="kanban-column"><div class="column-heading"><h2><span class="status-dot ready"></span>Prontos</h2><span id="count-PRONTO" class="count-badge">0</span></div><div id="PRONTO"></div></section></div>
-<section class="section-space"><div class="section-title"><div><p class="eyebrow">CARDÁPIO EM DIA</p><h2>Disponibilidade dos produtos</h2></div><span class="small muted">Alterações aparecem imediatamente para os clientes.</span></div><div id="disponibilidade" class="availability-grid"></div></section>
+{% block workspace_scripts %}<script src="{% static 'js/cozinha.js' %}" defer></script>{% endblock %}
+{% block workspace_content %}
+<section data-staff-screen="fila" {% if equipe_tela != 'fila' %}hidden{% endif %}>
+  <div class="staff-toolbar"><div><h2>Pedidos em andamento</h2><p class="muted small mb-0">Cada coluna mostra a próxima ação do preparo.</p></div><div class="staff-search"><label for="buscar-pedido" class="visually-hidden">Buscar mesa, pedido ou item</label><input id="buscar-pedido" class="form-control" type="search" placeholder="Buscar mesa, pedido ou item" autocomplete="off"></div></div>
+  <div class="kanban"><section class="kanban-column"><div class="column-heading"><h2><span class="status-dot received"></span>Recebidos</h2><span id="count-RECEBIDO" class="count-badge">0</span></div><div id="RECEBIDO"></div></section><section class="kanban-column"><div class="column-heading"><h2><span class="status-dot preparing"></span>Em preparação</h2><span id="count-EM_PREPARACAO" class="count-badge">0</span></div><div id="EM_PREPARACAO"></div></section><section class="kanban-column"><div class="column-heading"><h2><span class="status-dot ready"></span>Prontos</h2><span id="count-PRONTO" class="count-badge">0</span></div><div id="PRONTO"></div></section></div>
+</section>
+<section data-staff-screen="disponibilidade" {% if equipe_tela != 'disponibilidade' %}hidden{% endif %}>
+  <div class="staff-toolbar"><div><h2>Disponibilidade dos produtos</h2><p class="muted small mb-0">Ative ou pause um produto para novos pedidos.</p></div></div>
+  <div class="availability-filters"><div><label for="buscar-disponibilidade" class="form-label">Produto</label><input id="buscar-disponibilidade" class="form-control" type="search" placeholder="Buscar produto" autocomplete="off"></div><div><label for="categoria-disponibilidade" class="form-label">Categoria</label><select id="categoria-disponibilidade" class="form-select"><option value="">Todas as categorias</option></select></div><div><label for="filtro-disponibilidade" class="form-label">Situação</label><select id="filtro-disponibilidade" class="form-select"><option value="">Todos</option><option value="true">Disponíveis</option><option value="false">Indisponíveis</option></select></div></div>
+  <div id="disponibilidade" class="availability-grid" aria-live="polite"></div>
+</section>
 {% endblock %}

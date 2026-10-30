@@ -91,7 +91,7 @@ async function login(page, role) {
 
     // Produto que fica indisponível com a personalização aberta deve explicar o bloqueio.
     await add.click();
-    await kitchen.bringToFront(); await kitchen.locator(`[data-product="${fixture.product_id}"]`).click();
+    await kitchen.bringToFront(); await kitchen.locator('.staff-nav [data-staff-link="disponibilidade"]').click(); await kitchen.locator(`[data-product="${fixture.product_id}"]`).click();
     await guest.bringToFront();
     await guest.waitForFunction(() => document.getElementById('adicionar-item').disabled);
     assert(await guest.locator('#produto-dialog [data-dialog-feedback]').isVisible());
@@ -158,10 +158,12 @@ async function login(page, role) {
     const order = await created.json();
     assert.equal(order.valor_total, '41.90');
     await kitchen.bringToFront();
+    await kitchen.locator('.staff-nav [data-staff-link="fila"]').click();
     await kitchen.locator(`[data-order="${order.id}"][data-status="EM_PREPARACAO"]`).click();
     await kitchen.screenshot({path:'.tmp/screens/desktop-cozinha.png'});
     await kitchen.locator(`[data-order="${order.id}"][data-status="PRONTO"]`).click();
     await waiter.bringToFront();
+    await waiter.locator('.staff-nav [data-staff-link="entregas"]').click();
     await waiter.locator(`[data-order="${order.id}"][data-status="A_CAMINHO"]`).click();
     await waiter.locator(`[data-order="${order.id}"][data-status="ENTREGUE"]`).click();
     await guest.bringToFront();
@@ -169,10 +171,12 @@ async function login(page, role) {
     await guest.locator('.client-nav [data-client-link="conta"]').click();
     await guest.locator('#pedir-conta').click();
     await waiter.bringToFront();
+    await waiter.locator('.staff-nav [data-staff-link="contas"]').click();
     await waiter.locator('#contas-pendentes [data-bill]').click();
     await waiter.locator('#conta-dialog').waitFor({state:'visible'});
     await waiter.locator('#meio-pagamento').selectOption('PIX');
     await waiter.locator('#pagar').click();
+    await waiter.locator('.staff-nav [data-staff-link="mesas"]').click();
     await waiter.locator(`[data-open="${fixture.table_id}"]`).waitFor();
     await waiter.screenshot({path:'.tmp/screens/desktop-salao.png'});
 

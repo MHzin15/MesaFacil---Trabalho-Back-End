@@ -1,0 +1,33 @@
+{% extends 'base.html' %}{% load static %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/equipe.css' %}">{% endblock %}
+{% block brand_url %}{% url 'painel' %}{% endblock %}
+{% block bodyattrs %}data-staff-area="{{ equipe_area }}" data-staff-view="{{ equipe_tela }}"{% endblock %}
+{% block nav %}<span class="staff-area-label">Área da equipe</span>{% endblock %}
+{% block account_nav %}<span class="staff-account">{{ user.get_full_name|default:user.username }}</span><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="nav-button" type="submit">Sair</button></form>{% endblock %}
+{% block scripts %}<script src="{% static 'js/equipe.js' %}" defer></script>{% block workspace_scripts %}{% endblock %}{% endblock %}
+{% block content %}
+<div class="staff-workspace">
+  <aside class="staff-sidebar">
+    <div class="staff-profile"><span class="staff-avatar" aria-hidden="true">{{ user.username|first|upper }}</span><div><strong>{{ user.perfil.get_role_display }}</strong><span>{{ user.get_full_name|default:user.username }}</span></div></div>
+    <p class="sidebar-caption">{% if equipe_area == 'garcom' %}ATENDIMENTO DO SALÃO{% else %}OPERAÇÃO DA COZINHA{% endif %}</p>
+    <nav class="staff-nav" aria-label="Área de trabalho">
+      {% if equipe_area == 'garcom' %}
+      <a href="{% url 'garcom' %}" data-staff-link="mesas" data-title="Mesas do salão" data-description="Abra o atendimento e acompanhe a situação de cada mesa." {% if equipe_tela == 'mesas' %}aria-current="page"{% endif %}><span>Mesas</span><span id="mesas-livres" class="staff-count" title="Mesas livres">—</span></a>
+      <a href="{% url 'garcom-entregas' %}" data-staff-link="entregas" data-title="Entregas" data-description="Retire os pedidos prontos e confirme quando chegarem à mesa." {% if equipe_tela == 'entregas' %}aria-current="page"{% endif %}><span>Entregas</span><span id="total-entregas" class="staff-count">—</span></a>
+      <a href="{% url 'garcom-contas' %}" data-staff-link="contas" data-title="Contas solicitadas" data-description="Confira os pedidos da mesa e finalize o atendimento." {% if equipe_tela == 'contas' %}aria-current="page"{% endif %}><span>Contas</span><span id="total-contas" class="staff-count">—</span></a>
+      {% else %}
+      <a href="{% url 'cozinha' %}" data-staff-link="fila" data-title="Fila de preparo" data-description="Aceite os pedidos, acompanhe o preparo e avise quando estiverem prontos." {% if equipe_tela == 'fila' %}aria-current="page"{% endif %}><span>Fila de preparo</span><span id="total-cozinha" class="staff-count">—</span></a>
+      <a href="{% url 'cozinha-disponibilidade' %}" data-staff-link="disponibilidade" data-title="Disponibilidade dos produtos" data-description="Mantenha o cardápio atualizado para quem está fazendo pedidos." {% if equipe_tela == 'disponibilidade' %}aria-current="page"{% endif %}><span>Disponibilidade</span></a>
+      {% endif %}
+    </nav>
+    {% if user.perfil.role == 'ADMIN' %}<div class="workspace-switch"><p class="sidebar-caption">ESPAÇOS DO ADMINISTRADOR</p><a href="{% url 'garcom' %}" {% if equipe_area == 'garcom' %}aria-current="page"{% endif %}>Salão</a><a href="{% url 'cozinha' %}" {% if equipe_area == 'cozinha' %}aria-current="page"{% endif %}>Cozinha</a><a href="{% url 'admin:index' %}">Administração</a></div>{% endif %}
+    <p class="workspace-help">Seu acesso é definido pelo perfil da equipe.</p>
+  </aside>
+  <div class="staff-main">
+    <header class="staff-heading"><div><p class="eyebrow">{% if equipe_area == 'garcom' %}SALÃO{% else %}COZINHA{% endif %}</p><h1 id="workspace-title" tabindex="-1">{{ equipe_titulo }}</h1><p id="workspace-description" class="muted">{{ equipe_descricao }}</p></div><div class="workspace-sync"><span class="live-dot"></span><span id="last-sync" role="status">Atualizando…</span><button id="refresh" type="button" class="sync-button" aria-label="Atualizar agora">Atualizar</button></div></header>
+    <div id="workspace-error" class="alert alert-danger" role="alert" hidden><span id="workspace-error-message"></span> <button id="retry-workspace" type="button" class="btn btn-outline-primary">Tentar novamente</button></div>
+    {% block workspace_content %}{% endblock %}
+  </div>
+</div>
+{% block workspace_dialogs %}{% endblock %}
+{% endblock %}

@@ -1,0 +1,39 @@
+:root{--primary:#ae452c;--secondary:#873721;--link-fg:#ae452c;--link-selected-fg:#873721;--button-bg:#ae452c;--button-hover-bg:#873721;--default-button-bg:#873721;--default-button-hover-bg:#6f2b1c}
+html[data-theme=light]{--body-bg:#f7f5ef;--body-fg:#292e29;--header-bg:#fffefa;--header-color:#292e29;--header-link-color:#873721;--breadcrumbs-bg:#eeeae0;--breadcrumbs-fg:#585b51;--breadcrumbs-link-fg:#873721;--darkened-bg:#f1eee6;--border-color:#e0dfd3;--hairline-color:#e5e4d9}
+@media(prefers-color-scheme:light){html[data-theme=auto]{--body-bg:#f7f5ef;--body-fg:#292e29;--header-bg:#fffefa;--header-color:#292e29;--header-link-color:#873721;--breadcrumbs-bg:#eeeae0;--breadcrumbs-fg:#585b51;--breadcrumbs-link-fg:#873721;--darkened-bg:#f1eee6;--border-color:#e0dfd3;--hairline-color:#e5e4d9}}
+body{font-family:Arial,Helvetica,sans-serif;font-size:14px}
+#header{padding:20px 32px;gap:20px;border-bottom:1px solid var(--border-color);flex-wrap:wrap}
+.admin-brand{display:flex;gap:10px;align-items:center;font-size:21px;font-weight:700}
+.admin-brand>span{background:#ae452c;color:white;padding:4px 9px;border-radius:8px;font:26px Georgia,serif}
+.admin-brand small{font-size:12px;font-weight:400;border-left:1px solid var(--border-color);padding-left:12px;margin-left:4px}
+#site-name a{color:var(--header-color)}
+#user-tools{font-size:12px;letter-spacing:0;text-transform:none;line-height:1.8}
+#user-tools a,#logout-form button{font-size:12px}
+.admin-workspaces{display:flex;gap:8px}
+.admin-workspaces a{border:1px solid var(--border-color);padding:9px 14px;border-radius:7px;font-size:13px}
+#content{padding:28px 32px}
+.dashboard #content{width:auto;max-width:1400px}
+#content h1{font:34px Georgia,'Times New Roman',serif;letter-spacing:-.03em;margin-bottom:20px}
+.admin-intro{font-size:15px;color:var(--body-quiet-color);margin:0 0 28px;max-width:800px;line-height:1.7}
+.admin-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-bottom:28px}
+.admin-shortcut{padding:26px;border:1px solid var(--border-color);border-radius:12px;background:var(--body-bg)}
+.admin-shortcut h2{font-size:20px;margin:0 0 12px;padding:0;background:none;color:var(--body-fg);letter-spacing:-.02em}
+.admin-shortcut p{color:var(--body-quiet-color);font-size:14px;line-height:1.6}
+.admin-shortcut .admin-eyebrow{font-size:10px;letter-spacing:.13em;color:var(--link-fg);font-weight:700;margin:0 0 14px}
+.admin-primary-link{display:inline-block;margin-top:10px;font-weight:700;font-size:14px}
+.admin-card-links{display:flex;gap:20px;flex-wrap:wrap;margin-top:18px}
+.admin-card-links a{font-size:13px}
+.admin-all-models,.admin-recent{border:1px solid var(--border-color);border-radius:10px;padding:18px;clear:both;margin-bottom:18px}
+.admin-all-models summary,.admin-recent summary{cursor:pointer;font-size:14px;font-weight:600;min-height:24px}
+.admin-all-models[open] summary,.admin-recent[open] summary{margin-bottom:20px}
+.admin-all-models #content-main{float:none;width:100%}
+.admin-all-models .app-list th{font-size:14px}
+.admin-recent #content-related{width:auto;float:none;margin:0}
+.module h2,.module caption{padding:12px 16px}
+.module{border-radius:8px;overflow:hidden}
+.submit-row{padding:16px;border-radius:8px}
+.submit-row input{border-radius:6px;padding:12px 18px}
+#changelist .actions{padding:14px}
+#changelist table tbody td,#changelist table tbody th{padding:13px 10px;vertical-align:middle}
+#changelist .button{border-radius:6px;font-size:12px;white-space:nowrap}
+@media(max-width:767px){#header{padding:18px 16px}.admin-brand{font-size:18px}.admin-brand small{font-size:11px}#content{padding:22px 16px}#content h1{font-size:28px}.admin-shortcuts{grid-template-columns:minmax(0,1fr);gap:16px}.admin-shortcut{padding:22px}.admin-workspaces a{padding:8px 12px}}

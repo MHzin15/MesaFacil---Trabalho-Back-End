@@ -1,0 +1,16 @@
+{% extends 'admin/index.html' %}
+{% block coltype %}colM{% endblock %}
+{% block content_title %}<h1>Administração do restaurante</h1>{% endblock %}
+{% block content %}
+<div class="admin-home">
+  <p class="admin-intro">Organize o cardápio, as mesas e os acessos da equipe. O atendimento continua nos painéis de salão e cozinha.</p>
+  <div class="admin-shortcuts">
+    {% if perms.restaurante.view_mesa %}<section class="admin-shortcut"><p class="admin-eyebrow">SALÃO</p><h2>Mesas e QR Codes</h2><p>Cadastre as mesas e baixe o QR Code de cada uma.</p><a class="admin-primary-link" href="{% url 'admin:restaurante_mesa_changelist' %}">Gerenciar mesas →</a></section>{% endif %}
+    {% if perms.restaurante.view_produto %}<section class="admin-shortcut"><p class="admin-eyebrow">CARDÁPIO</p><h2>Produtos e preços</h2><p>Atualize fotos, descrições, preços e disponibilidade.</p><a class="admin-primary-link" href="{% url 'admin:restaurante_produto_changelist' %}">Gerenciar produtos →</a><div class="admin-card-links">{% if perms.restaurante.view_categoria %}<a href="{% url 'admin:restaurante_categoria_changelist' %}">Categorias</a>{% endif %}{% if perms.restaurante.view_adicional %}<a href="{% url 'admin:restaurante_adicional_changelist' %}">Adicionais</a>{% endif %}</div></section>{% endif %}
+    {% if perms.auth.view_user %}<section class="admin-shortcut"><p class="admin-eyebrow">PESSOAS</p><h2>Equipe e acessos</h2><p>Cadastre funcionários e defina o perfil de cada um.</p><a class="admin-primary-link" href="{% url 'admin:auth_user_changelist' %}">Gerenciar equipe →</a>{% if perms.restaurante.view_perfil %}<div class="admin-card-links"><a href="{% url 'admin:restaurante_perfil_changelist' %}">Consultar perfis</a></div>{% endif %}</section>{% endif %}
+    {% if perms.restaurante.view_pedido %}<section class="admin-shortcut"><p class="admin-eyebrow">HISTÓRICO</p><h2>Pedidos e contas</h2><p>Consulte o andamento, o histórico e os pagamentos registrados.</p><a class="admin-primary-link" href="{% url 'admin:restaurante_pedido_changelist' %}">Consultar pedidos →</a>{% if perms.restaurante.view_conta %}<div class="admin-card-links"><a href="{% url 'admin:restaurante_conta_changelist' %}">Contas e pagamentos</a></div>{% endif %}</section>{% endif %}
+  </div>
+  <details class="admin-all-models"><summary>Todos os cadastros e registros</summary>{{ block.super }}</details>
+</div>
+{% endblock %}
+{% block sidebar %}<details class="admin-recent"><summary>Minhas atividades recentes</summary>{{ block.super }}</details>{% endblock %}

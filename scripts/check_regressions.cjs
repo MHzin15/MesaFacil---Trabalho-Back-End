@@ -34,7 +34,7 @@ async function price(page, value) {
     await guest.goto(`${base}/mesa/${fixture.table_uuid}/`);
     const add=guest.locator(`[data-product="${fixture.product_id}"]`);
     await guest.locator('#session-label').getByText('Sessão aberta').waitFor();
-    await kitchen.bringToFront(); await kitchen.locator(`[data-product="${fixture.product_id}"]`).click();
+    await kitchen.bringToFront(); await kitchen.locator('.staff-nav [data-staff-link="disponibilidade"]').click(); await kitchen.locator(`[data-product="${fixture.product_id}"]`).click();
     await guest.bringToFront(); await guest.waitForFunction(id=>document.querySelector(`[data-product="${id}"]`)?.disabled,fixture.product_id);
     await kitchen.bringToFront(); await kitchen.locator(`[data-product="${fixture.product_id}"]`).click();
     await guest.bringToFront(); await guest.waitForFunction(id=>document.querySelector(`[data-product="${id}"]`)?.disabled===false,fixture.product_id);
@@ -73,12 +73,13 @@ async function price(page, value) {
     const current=orders.filter(p=>p.status==='RECEBIDO');
     assert.equal(current.length,1); assert.equal(current[0].valor_total,'48.90');
     await kitchen.bringToFront();
+    await kitchen.locator('.staff-nav [data-staff-link="fila"]').click();
     const cancel=kitchen.locator(`[data-order="${current[0].id}"][data-status="CANCELADO"]`);
     await cancel.waitFor(); kitchen.once('dialog',d=>d.accept()); await cancel.click();
     await guest.bringToFront(); await guest.locator('#lista-pedidos .status-label').getByText('Cancelado',{exact:true}).waitFor();
     await waiter.bringToFront(); await waiter.locator(`#mapa-mesas [data-bill="${current[0].sessao}"]`).click();
     await waiter.locator('#conta-dialog').waitFor({state:'visible'});
-    assert.match(await waiter.locator('#conta-itens').innerText(),/0,00/);
+    assert.match(await waiter.locator('#conta-valor').innerText(),/0,00/);
     await waiter.locator('#fechar-sem-cobranca').click();
     await waiter.locator(`[data-open="${fixture.table_id}"]`).waitFor();
     await price(admin,'32.90');

@@ -26,6 +26,7 @@ node scripts/check_flow.cjs
 node scripts/check_regressions.cjs
 node scripts/check_desktop.cjs
 node scripts/check_navigation.cjs
+node scripts/check_staff_ux.cjs
 node scripts/check_pwa.cjs
 ```
 
@@ -54,6 +55,9 @@ no cluster de desenvolvimento para inspeção; não são dados de produção.
   visível, abrir no topo, voltar/avançar, rascunho e observação preservados,
   atualização e acesso direto. Confere desktop e celular e encerra a sessão
   vazia da fixture sem enviar o rascunho.
+- `check_staff_ux`: espaços de garçom/cozinha/admin, destinos e limites de perfil,
+  telas separadas, filtros, administração, perfil dos funcionários, recuperação
+  de falhas e polling ao voltar pelo histórico, em desktop/tablet/celular.
 
 Os scripts não fazem chamadas externas de publicação. Resultados JSON, screenshots,
 downloads e perfis ficam em `.tmp/`. O cenário funcional foi validado com viewports

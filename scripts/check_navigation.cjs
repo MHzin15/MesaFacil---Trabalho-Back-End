@@ -119,7 +119,7 @@ async function screen(page, view) {
     await waiter.bringToFront();
     await waiter.locator('#mapa-mesas .table-card').filter({hasText:'Mesa 01'}).locator('[data-bill]').click();
     await waiter.locator('#conta-dialog').waitFor({state:'visible'});
-    assert.match(await waiter.locator('#conta-itens').innerText(),/0,00/);
+    assert.match(await waiter.locator('#conta-valor').innerText(),/0,00/);
     await waiter.locator('#fechar-sem-cobranca').click();
     await guest.bringToFront();
     await guest.locator('#session-label').getByText('Sessão encerrada', {exact:true}).waitFor();

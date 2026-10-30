@@ -192,6 +192,7 @@ class PerfilInline(admin.StackedInline):
     extra = 1
     max_num = 1
     can_delete = False
+    verbose_name_plural = 'Perfil de acesso na equipe'
 
 
 admin.site.unregister(get_user_model())
@@ -200,9 +201,16 @@ admin.site.unregister(get_user_model())
 @admin.register(get_user_model())
 class EquipeUserAdmin(UserAdmin):
     inlines = [PerfilInline]
+    list_display = (*UserAdmin.list_display, 'perfil_equipe')
+    list_filter = ('perfil__role', *UserAdmin.list_filter)
+
+    @admin.display(description='Perfil da equipe', ordering='perfil__role')
+    def perfil_equipe(self, obj):
+        perfil = getattr(obj, 'perfil', None)
+        return perfil.get_role_display() if perfil else 'Sem perfil'
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
+        qs = super().get_queryset(request).select_related('perfil')
         return qs if request.user.is_superuser else qs.filter(is_superuser=False)
 
     def get_fieldsets(self, request, obj=None):

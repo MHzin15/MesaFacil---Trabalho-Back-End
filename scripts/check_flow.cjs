@@ -64,6 +64,7 @@ async function login(page, role) {
     await kitchen.screenshot({path:'.tmp/screens/cozinha-preparo.png',fullPage:true});
     await kitchen.locator(`[data-order="${pedido.id}"][data-status="PRONTO"]`).click();
     await waiter.bringToFront();
+    await waiter.locator('.staff-nav [data-staff-link="entregas"]').click();
     await waiter.locator(`[data-order="${pedido.id}"][data-status="A_CAMINHO"]`).click();
     await waiter.locator(`[data-order="${pedido.id}"][data-status="ENTREGUE"]`).click();
     await guest.bringToFront();
@@ -72,12 +73,14 @@ async function login(page, role) {
     await guest.screenshot({path:'.tmp/screens/navigation-bill-mobile-live.png'});
     await guest.locator('#pedir-conta').click();
     await waiter.bringToFront();
+    await waiter.locator('.staff-nav [data-staff-link="contas"]').click();
     await waiter.locator('#contas-pendentes [data-bill]').click();
     await waiter.locator('#conta-dialog').waitFor({state:'visible'});
     assert.match(await waiter.locator('#conta-itens').innerText(),/83,80/);
     await waiter.locator('#meio-pagamento').selectOption('CARTAO');
     await waiter.screenshot({path:'.tmp/screens/garcom-conta-tablet.png',fullPage:true});
     await waiter.locator('#pagar').click();
+    await waiter.locator('.staff-nav [data-staff-link="mesas"]').click();
     await waiter.locator(`[data-open="${fixture.table_id}"]`).waitFor();
     await guest.bringToFront();
     await guest.locator('#session-label').getByText('Sessão encerrada',{exact:true}).waitFor();

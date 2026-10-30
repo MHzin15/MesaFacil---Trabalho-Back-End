@@ -56,8 +56,15 @@ def cliente(request, uuid, tela='cardapio'):
 
 @equipe('ADMIN', 'COZINHA')
 @ensure_csrf_cookie
-def cozinha(request):
-    return render(request, 'restaurante/cozinha.html')
+def cozinha(request, tela='fila'):
+    telas = {
+        'fila': ('Fila de preparo', 'Aceite os pedidos, acompanhe o preparo e avise quando estiverem prontos.'),
+        'disponibilidade': ('Disponibilidade dos produtos', 'Mantenha o cardápio atualizado para quem está fazendo pedidos.'),
+    }
+    titulo, descricao = telas[tela]
+    return render(request, 'restaurante/cozinha.html', {
+        'equipe_area': 'cozinha', 'equipe_tela': tela, 'equipe_titulo': titulo, 'equipe_descricao': descricao,
+    })
 
 
 @login_required
@@ -71,5 +78,13 @@ def painel(request):
 
 @equipe('ADMIN', 'GARCOM')
 @ensure_csrf_cookie
-def garcom(request):
-    return render(request, 'restaurante/garcom.html')
+def garcom(request, tela='mesas'):
+    telas = {
+        'mesas': ('Mesas do salão', 'Abra o atendimento e acompanhe a situação de cada mesa.'),
+        'entregas': ('Entregas', 'Retire os pedidos prontos e confirme quando chegarem à mesa.'),
+        'contas': ('Contas solicitadas', 'Confira os pedidos da mesa e finalize o atendimento.'),
+    }
+    titulo, descricao = telas[tela]
+    return render(request, 'restaurante/garcom.html', {
+        'equipe_area': 'garcom', 'equipe_tela': tela, 'equipe_titulo': titulo, 'equipe_descricao': descricao,
+    })

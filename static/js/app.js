@@ -59,16 +59,22 @@ window.MF = (() => {
     return data;
   }
   function poll(callback, interval = 4000) {
-    let active = true;
+    let active = true, running = false, timer;
     async function tick() {
-      if (!active) return;
-      if (!document.hidden && navigator.onLine) {
-        try { await callback(); } catch (error) { feedback(error.message, true); }
+      if (!active || running) return;
+      running = true;
+      try {
+        if (!document.hidden && navigator.onLine) {
+          try { await callback(); } catch (error) { feedback(error.message, true); }
+        }
+      } finally {
+        running = false;
+        if (active) timer = setTimeout(tick, interval);
       }
-      if (active) setTimeout(tick, interval);
     }
     tick();
-    window.addEventListener('pagehide', () => { active = false; }, {once: true});
+    window.addEventListener('pagehide', () => { active = false; clearTimeout(timer); });
+    window.addEventListener('pageshow', event => { if (event.persisted) { active = true; tick(); } });
   }
   function itemList(pedido) {
     return pedido.itens.map(item => `<div class="order-item"><strong>${item.quantidade}× ${escape(item.produto_nome)}</strong>${item.itens_adicionais.length ? `<div class="extras">+ ${item.itens_adicionais.map(a => escape(a.nome)).join(', ')}</div>` : ''}${item.observacao ? `<div class="item-note">${escape(item.observacao)}</div>` : ''}</div>`).join('');

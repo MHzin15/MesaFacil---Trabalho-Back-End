@@ -128,6 +128,8 @@ não testa a rede nem substitui o fluxo presencial.
 - Cliente: /mesa/<UUID>/; cozinha: /cozinha/.
 - Cliente tem telas de carrinho, pedidos e conta em /mesa/<UUID>/carrinho/,
   /mesa/<UUID>/pedidos/ e /mesa/<UUID>/conta/, com navegação própria.
+- Garçom: /garcom/, /garcom/entregas/ e /garcom/contas/; cozinha:
+  /cozinha/ e /cozinha/disponibilidade/. Cada perfil tem seu espaço de trabalho.
 - API: /api/; Swagger: /api/docs/; ReDoc: /api/redoc/.
 - Contratos e pendências detalhados no plano e no registro de execução.
 
