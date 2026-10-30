@@ -39,14 +39,17 @@ async function price(page, value) {
     await kitchen.bringToFront(); await kitchen.locator(`[data-product="${fixture.product_id}"]`).click();
     await guest.bringToFront(); await guest.waitForFunction(id=>document.querySelector(`[data-product="${id}"]`)?.disabled===false,fixture.product_id);
     async function addItem() {
+      await guest.locator('.client-nav [data-client-link="cardapio"]').click();
       await add.click(); await guest.getByLabel('Bacon',{exact:false}).check(); await guest.getByLabel('Queijo Cheddar',{exact:false}).check();
       await guest.getByRole('button',{name:'Adicionar ao carrinho',exact:true}).click();
     }
     await addItem();
+    await guest.locator('.client-nav [data-client-link="carrinho"]').click();
     await guest.locator('[data-quantity][data-delta="1"]').click();
     assert.match(await guest.locator('#cart-total').innerText(),/83,80/);
     await guest.locator('[data-remove]').click(); assert.equal(await guest.locator('#cart-count').innerText(),'0');
     await addItem();
+    await guest.locator('.client-nav [data-client-link="carrinho"]').click();
     await guest.locator('#revisar').click(); await guest.locator('#revisao-dialog').waitFor({state:'visible'});
     assert.match(await guest.locator('#revisao-total').innerText(),/41,90/);
     await price(admin,'39.90');

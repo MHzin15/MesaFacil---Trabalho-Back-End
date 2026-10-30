@@ -38,6 +38,7 @@ async function login(page, role) {
     await guest.getByLabel('Queijo Cheddar', {exact:false}).check();
     await guest.locator('#produto-observacao').fill('Sem cebola');
     await guest.getByRole('button',{name:'Adicionar ao carrinho',exact:true}).click();
+    await guest.locator('.client-nav [data-client-link="carrinho"]').click();
     assert.match(await guest.locator('#cart-total').innerText(),/83,80/);
     await guest.locator('#revisar').click();
     await guest.locator('#revisao-dialog').waitFor({state:'visible'});
@@ -50,7 +51,12 @@ async function login(page, role) {
     assert.equal(created.status(),201,await created.text());
     const pedido = await created.json();
     assert.equal(pedido.valor_total,'83.80');
+    await guest.waitForURL('**/pedidos/');
     await guest.locator('#lista-pedidos .status-label').getByText('Recebido',{exact:true}).waitFor();
+    await guest.screenshot({path:'.tmp/screens/navigation-orders-mobile-live.png'});
+    await guest.setViewportSize({width:1440,height:900});
+    await guest.screenshot({path:'.tmp/screens/navigation-orders-desktop-live.png'});
+    await guest.setViewportSize({width:390,height:844});
     await kitchen.bringToFront();
     await kitchen.locator(`[data-order="${pedido.id}"][data-status="EM_PREPARACAO"]`).click();
     await kitchen.locator(`[data-order="${pedido.id}"][data-status="PRONTO"]`).waitFor();
@@ -62,6 +68,8 @@ async function login(page, role) {
     await waiter.locator(`[data-order="${pedido.id}"][data-status="ENTREGUE"]`).click();
     await guest.bringToFront();
     await guest.locator('#lista-pedidos .status-label').getByText('Entregue',{exact:true}).waitFor();
+    await guest.locator('.client-nav [data-client-link="conta"]').click();
+    await guest.screenshot({path:'.tmp/screens/navigation-bill-mobile-live.png'});
     await guest.locator('#pedir-conta').click();
     await waiter.bringToFront();
     await waiter.locator('#contas-pendentes [data-bill]').click();
@@ -80,9 +88,10 @@ async function login(page, role) {
     const download=await downloadPromise;
     await download.saveAs('.tmp/screens/qr-teste.png');
     const paid=await admin.evaluate(async () => (await fetch('/api/admin/contas/')).json());
-    assert.equal(paid.length,1);
-    assert.equal(paid[0].valor_total,'83.80');
-    assert.equal(paid[0].meio_pagamento,'CARTAO');
+    const account = paid.filter(c => c.sessao === pedido.sessao);
+    assert.equal(account.length,1);
+    assert.equal(account[0].valor_total,'83.80');
+    assert.equal(account[0].meio_pagamento,'CARTAO');
     const cached = await waiter.evaluate(async () => {
       const all=[]; for(const k of await caches.keys()) for(const r of await(await caches.open(k)).keys()) all.push(new URL(r.url).pathname); return all;
     });

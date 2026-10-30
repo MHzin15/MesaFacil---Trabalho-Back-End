@@ -1,3 +1,5 @@
+from html.parser import HTMLParser
+
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
@@ -40,3 +42,32 @@ class PaginasTestCase(TestCase):
         self.mesa.ativa = False
         self.mesa.save()
         self.assertEqual(self.client.get(reverse('cliente', args=[self.mesa.token_uuid])).status_code, 404)
+
+    def test_client_deep_links_open_one_screen_and_keep_table_context(self):
+        class Screens(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.visible = []
+
+            def handle_starttag(self, tag, attrs):
+                attrs = dict(attrs)
+                if 'data-client-screen' in attrs and 'hidden' not in attrs:
+                    self.visible.append(attrs['data-client-screen'])
+
+        for name, screen in [('cliente', 'cardapio'), ('cliente-carrinho', 'carrinho'),
+                             ('cliente-pedidos', 'pedidos'), ('cliente-conta', 'conta')]:
+            with self.subTest(screen=screen):
+                response = self.client.get(reverse(name, args=[self.mesa.token_uuid]))
+                self.assertEqual(response.status_code, 200)
+                parser = Screens()
+                parser.feed(response.content.decode())
+                self.assertEqual(parser.visible, [screen])
+                self.assertEqual(response['Cache-Control'], 'no-store')
+                self.assertIn(str(self.mesa.token_uuid), self.client.session['mesas'])
+
+    def test_inactive_table_cannot_be_accessed_by_client_deep_links(self):
+        self.mesa.ativa = False
+        self.mesa.save()
+        for name in ('cliente-carrinho', 'cliente-pedidos', 'cliente-conta'):
+            with self.subTest(name=name):
+                self.assertEqual(self.client.get(reverse(name, args=[self.mesa.token_uuid])).status_code, 404)

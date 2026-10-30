@@ -112,3 +112,18 @@ no mapa e restauração de produto removido pelo seed. Nenhum dado de negócio d
 deploy foi alterado; fluxo autenticado e ensaio físico continuam pendentes de
 registro no ambiente publicado. Esta auditoria entregou documentação, sem corrigir
 ou publicar alterações funcionais.
+
+## UI/UX: telas separadas do cliente — 29/10/2026
+
+Após atualizar até 4291c8b, separadas as áreas de cardápio, carrinho, pedidos e
+conta, com URLs e indicação de tela ativa. A navegação deixa de depender de
+rolagem, preserva o rascunho e abre pedidos após o envio. No celular, navegação,
+total e ação principal ficam acessíveis na parte inferior.
+
+Modelos, serviços e API de negócio preservados. Baterias de navegador e testes
+de páginas aprovados. Suíte PostgreSQL: 98 testes, 97 aprovados e a mesma falha
+anterior de validação da senha de bootstrap do Render, reproduzida antes da edição.
+Detalhes em [UX_NAVEGACAO_2026-10-29.md](UX_NAVEGACAO_2026-10-29.md).
+
+Entrega em branch `codex/client-screen-navigation`, sem disparar o deploy da
+main. O ajuste manual do guia local continua preservado fora do commit.

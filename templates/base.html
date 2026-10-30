@@ -20,7 +20,7 @@
 <body data-page="{% block page %}inicio{% endblock %}" {% block bodyattrs %}{% endblock %}>
   <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
   <header class="topbar">
-    <a class="brand" href="/" aria-label="MesaFácil, início"><span class="brand-mark" aria-hidden="true">m.</span>Mesa<span>Fácil</span></a>
+    <a class="brand" href="{% block brand_url %}/{% endblock %}" aria-label="MesaFácil, início"><span class="brand-mark" aria-hidden="true">m.</span>Mesa<span>Fácil</span></a>
     <nav aria-label="Navegação principal" class="topnav">
       <button id="install-app" class="nav-button" type="button" hidden>Instalar app</button>
       {% block nav %}<a href="/">Início</a>{% endblock %}

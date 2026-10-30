@@ -35,10 +35,20 @@ def inicio(request):
 
 
 @ensure_csrf_cookie
-def cliente(request, uuid):
+def cliente(request, uuid, tela='cardapio'):
     mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
     vincular_mesa(request, mesa)
-    response = render(request, 'restaurante/cliente.html', {'mesa': mesa})
+    titulos = {
+        'cardapio': ('Cardápio', 'Escolha seus produtos e personalize cada item.'),
+        'carrinho': ('Seu carrinho', 'Confira as quantidades e os adicionais antes de enviar.'),
+        'pedidos': ('Meus pedidos', 'Acompanhe o preparo e a entrega dos pedidos desta mesa.'),
+        'conta': ('Conta da mesa', 'Veja o total do atendimento e peça o fechamento quando quiser.'),
+    }
+    titulo, descricao = titulos[tela]
+    response = render(request, 'restaurante/cliente.html', {
+        'mesa': mesa, 'cliente_tela': tela,
+        'cliente_titulo': titulo, 'cliente_descricao': descricao,
+    })
     response['Cache-Control'] = 'no-store'
     response['Referrer-Policy'] = 'same-origin'
     return response

@@ -106,10 +106,14 @@ precisam de codificação na URL; a senha hexadecimal sugerida evita essa difere
 ```
 
 A aplicação normal rejeita SQLite. core.test_settings é apenas para testes rápidos,
-nunca para runserver ou entrega. Validação atual: 87 testes aprovados em PostgreSQL
+nunca para runserver ou entrega. Validação de 25/10: 87 testes aprovados em PostgreSQL
 18.6, incluindo cinco corridas reais; schema estrito e dependências sem problemas.
 Use `python scripts/validate.py` para repetir os checks técnicos. Docker ainda requer validação
 em uma máquina com Docker disponível.
+
+Na revisão de navegação de 29/10, o PostgreSQL executou 98 testes: 97 aprovados e
+uma falha de senha no bootstrap do Render que já existia antes das mudanças.
+Os cenários de interface passaram. Veja [o registro de UI/UX](docs/UX_NAVEGACAO_2026-10-29.md).
 
 Antes do ensaio, execute `python manage.py verificar_demonstracao`. A pré-checagem
 somente lê o banco e a configuração: aponta migrations, dados, fotos e acessos
@@ -122,6 +126,8 @@ não testa a rede nem substitui o fluxo presencial.
 - Entrada: http://localhost:8000/
 - Login da equipe: /entrar/; administração: /admin/.
 - Cliente: /mesa/<UUID>/; cozinha: /cozinha/.
+- Cliente tem telas de carrinho, pedidos e conta em /mesa/<UUID>/carrinho/,
+  /mesa/<UUID>/pedidos/ e /mesa/<UUID>/conta/, com navegação própria.
 - API: /api/; Swagger: /api/docs/; ReDoc: /api/redoc/.
 - Contratos e pendências detalhados no plano e no registro de execução.
 

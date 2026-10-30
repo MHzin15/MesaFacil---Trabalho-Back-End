@@ -25,6 +25,7 @@ $env:PLAYWRIGHT_MODULE = (Resolve-Path .tmp/browser-tools/node_modules/playwrigh
 node scripts/check_flow.cjs
 node scripts/check_regressions.cjs
 node scripts/check_desktop.cjs
+node scripts/check_navigation.cjs
 node scripts/check_pwa.cjs
 ```
 
@@ -49,6 +50,10 @@ no cluster de desenvolvimento para inspeção; não são dados de produção.
   busca/categorias, teclado, total da personalização, indisponibilidade com diálogo
   aberto, carrinho longo, recuperação de carregamento, preços restaurados,
   erro de envio visível no diálogo e fluxo completo com Pix simulado.
+- `check_navigation`: URLs de cardápio/carrinho/pedidos/conta, apenas uma tela
+  visível, abrir no topo, voltar/avançar, rascunho e observação preservados,
+  atualização e acesso direto. Confere desktop e celular e encerra a sessão
+  vazia da fixture sem enviar o rascunho.
 
 Os scripts não fazem chamadas externas de publicação. Resultados JSON, screenshots,
 downloads e perfis ficam em `.tmp/`. O cenário funcional foi validado com viewports

@@ -5,26 +5,77 @@
   const base = `/api/mesa/${token}/`;
   const byId = id => document.getElementById(id);
   let products = [], cart = [], sessionId = null, currentProduct = null, sending = false, selected = null, search = '';
-  let ended = false, menuSignature = '', reviewSignature = '', cartInView = false;
+  let ended = false, menuSignature = '', reviewSignature = '';
+  let currentView = document.body.dataset.clientView;
+  const mesaPath = `/mesa/${token}/`;
+  const views = {
+    cardapio: {path:mesaPath, title:'Cardápio', description:'Escolha seus produtos e personalize cada item.'},
+    carrinho: {path:mesaPath + 'carrinho/', title:'Seu carrinho', description:'Confira as quantidades e os adicionais antes de enviar.'},
+    pedidos: {path:mesaPath + 'pedidos/', title:'Meus pedidos', description:'Acompanhe o preparo e a entrega dos pedidos desta mesa.'},
+    conta: {path:mesaPath + 'conta/', title:'Conta da mesa', description:'Veja o total do atendimento e peça o fechamento quando quiser.'},
+  };
+  function showView(view, navigate = false, focus = false) {
+    if (!Object.hasOwn(views, view)) return;
+    if (navigate && (location.pathname !== views[view].path || location.hash || location.search)) history.pushState(null, '', views[view].path);
+    currentView = view;
+    document.body.dataset.clientView = view;
+    document.querySelectorAll('[data-client-screen]').forEach(panel => { panel.hidden = panel.dataset.clientScreen !== view; });
+    document.querySelectorAll('[data-client-link]').forEach(link => {
+      if (link.dataset.clientLink === view) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+    byId('client-title').textContent = views[view].title;
+    byId('client-description').textContent = views[view].description;
+    document.title = `${views[view].title} · Mesa ${document.querySelector('.table-tag strong').textContent} · MesaFácil`;
+    byId('cart-shortcut').hidden = !cart.length || view !== 'cardapio';
+    if (focus) {
+      document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
+      window.scrollTo(0, 0);
+      byId('client-title').focus({preventScroll:true});
+    }
+  }
+  const viewFromPath = () => Object.keys(views).find(view => views[view].path === location.pathname) || 'cardapio';
+  document.addEventListener('click', event => {
+    const link = event.target.closest('a[data-client-link]');
+    if (!link || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    showView(link.dataset.clientLink, true, true);
+  });
+  window.addEventListener('popstate', () => showView(viewFromPath(), false, true));
   const cartSignature = () => JSON.stringify([sessionId, cart, byId('observacao-pedido').value]);
   let lastOrders = '', lastBill = '', refreshing = false, attempt = null;
   const attemptKey = () => `mf-attempt-${token}-${sessionId}`;
+  const noteKey = () => `mf-note-${token}-${sessionId}`;
   function saveAttempt() { try { if (attempt) sessionStorage.setItem(attemptKey(), JSON.stringify(attempt)); else sessionStorage.removeItem(attemptKey()); } catch {} }
   const cartAvailable = () => cart.every(i => { const p = products.find(p => p.id === i.produto_id); return p?.disponivel && i.adicionais.every(a => p.adicionais.some(v => v.id === a.id)); });
   function saveCart() {
-    try { sessionStorage.setItem(`mf-cart-${token}-${sessionId}`, JSON.stringify(cart)); } catch { /* Armazenamento pode estar indisponível. */ }
+    try {
+      sessionStorage.setItem(`mf-cart-${token}-${sessionId}`, JSON.stringify(cart));
+      if (sessionId) sessionStorage.setItem(noteKey(), byId('observacao-pedido').value);
+    } catch { /* Armazenamento pode estar indisponível. */ }
   }
   const unit = item => (Math.round(Number(item.preco) * 100) + item.adicionais.reduce((sum, a) => sum + Math.round(Number(a.preco) * 100), 0)) / 100;
   const total = () => cart.reduce((sum, item) => sum + Math.round(unit(item) * 100) * item.quantidade, 0) / 100;
+  function renderOrders(orders) {
+    if (!orders.length) return `<div class="surface screen-empty"><span class="empty-symbol" aria-hidden="true">✓</span><h2>Nenhum pedido enviado ainda</h2><p>Depois de confirmar seu carrinho, acompanhe o preparo por aqui.</p><a class="btn btn-primary" href="${mesaPath}" data-client-link="cardapio">Escolher produtos</a></div>`;
+    const steps = ['RECEBIDO', 'EM_PREPARACAO', 'PRONTO', 'A_CAMINHO', 'ENTREGUE'];
+    return orders.map(p => {
+      const current = steps.indexOf(p.status);
+      const progress = p.status === 'CANCELADO' ? '<p class="small muted">Pedido cancelado antes do preparo. Não será cobrado.</p>' : `<ol class="order-progress" aria-label="Andamento do pedido">${steps.map((s, i) => `<li class="${i <= current ? 'done' : ''}" ${i === current ? 'aria-current="step"' : ''}><span aria-hidden="true">${i < current ? '✓' : i + 1}</span><small>${statusNames[s]}</small></li>`).join('')}</ol>`;
+      return `<article class="surface order-card"><div class="order-header"><strong>Pedido #${p.id}</strong><span class="status-label ${p.status.toLowerCase()}">${statusNames[p.status]}</span></div>${itemList(p)}${p.observacao ? `<p class="order-note">${escape(p.observacao)}</p>` : ''}<div class="order-bottom"><span class="small muted">${new Date(p.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'})}</span><strong>${money(p.valor_total)}</strong></div>${progress}</article>`;
+    }).join('');
+  }
   function renderCart() {
-    byId('cart-items').innerHTML = cart.length ? cart.map((item, i) => `<div class="cart-item"><div><strong>${escape(item.nome)}</strong><button class="remove-button" data-remove="${i}" aria-label="Remover ${escape(item.nome)}">Remover</button></div><p class="small muted">${item.adicionais.map(a => escape(a.nome)).join(', ')}${item.observacao ? ` · ${escape(item.observacao)}` : ''}</p><div class="quantity-row"><div class="quantity-control"><button data-quantity="${i}" data-delta="-1" aria-label="Diminuir quantidade de ${escape(item.nome)}" ${item.quantidade <= 1 ? 'disabled' : ''}>−</button><span>${item.quantidade}</span><button data-quantity="${i}" data-delta="1" aria-label="Aumentar quantidade de ${escape(item.nome)}" ${item.quantidade >= 99 ? 'disabled' : ''}>+</button></div><strong>${money(unit(item) * item.quantidade)}</strong></div></div>`).join('') : '<p class="empty-state">Seu carrinho está vazio.<br>Use “Adicionar” em um produto.</p>';
+    byId('cart-items').innerHTML = cart.length ? cart.map((item, i) => `<div class="cart-item"><div><strong>${escape(item.nome)}</strong><button class="remove-button" data-remove="${i}" aria-label="Remover ${escape(item.nome)}">Remover</button></div><p class="small muted">${item.adicionais.map(a => escape(a.nome)).join(', ')}${item.observacao ? ` · ${escape(item.observacao)}` : ''}</p><div class="quantity-row"><div class="quantity-control"><button data-quantity="${i}" data-delta="-1" aria-label="Diminuir quantidade de ${escape(item.nome)}" ${item.quantidade <= 1 ? 'disabled' : ''}>−</button><span>${item.quantidade}</span><button data-quantity="${i}" data-delta="1" aria-label="Aumentar quantidade de ${escape(item.nome)}" ${item.quantidade >= 99 ? 'disabled' : ''}>+</button></div><strong>${money(unit(item) * item.quantidade)}</strong></div></div>`).join('') : `<div class="screen-empty"><span class="empty-symbol" aria-hidden="true">＋</span><h2>Seu carrinho está vazio</h2><p>Escolha algo no cardápio para começar seu pedido.</p><a class="btn btn-primary" href="${mesaPath}" data-client-link="cardapio">Explorar o cardápio</a></div>`;
     byId('cart-count').textContent = cart.reduce((sum, item) => sum + item.quantidade, 0);
     byId('cart-total').textContent = money(total());
     byId('revisar').disabled = !cart.length || !sessionId || !navigator.onLine || sending || (!cartAvailable() && !attempt);
     byId('cart-warning').hidden = !cart.length || cartAvailable();
     byId('revisar-help').textContent = !sessionId ? 'A mesa precisa estar aberta pelo garçom para receber pedidos.' : !navigator.onLine ? 'Reconecte para revisar e enviar o pedido.' : attempt ? 'Aguardando confirmação de um envio. Confira seus pedidos antes de tentar novamente.' : !cart.length ? 'Adicione um produto para continuar.' : !cartAvailable() ? 'Remova os itens indisponíveis para continuar.' : 'Você ainda vai conferir os itens antes de enviar à cozinha.';
-    byId('cart-shortcut').hidden = !cart.length || cartInView;
-    byId('cart-shortcut-total').textContent = `${byId('cart-count').textContent} item(ns) · ${money(total())}`;
+    byId('nav-cart-count').textContent = byId('cart-count').textContent;
+    byId('nav-cart-count').hidden = !cart.length;
+    byId('cart-shortcut').hidden = !cart.length || currentView !== 'cardapio';
+    byId('cart-shortcut-total').textContent = `${byId('cart-count').textContent} ${byId('cart-count').textContent === '1' ? 'item' : 'itens'} · ${money(total())}`;
   }
   const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   function renderProducts() {
@@ -84,9 +135,11 @@
       attempt = null;
       try { attempt = JSON.parse(sessionStorage.getItem(attemptKey()) || 'null'); } catch {}
       cart = [];
+      byId('observacao-pedido').value = '';
       try {
         const stored = JSON.parse(sessionStorage.getItem(`mf-cart-${token}-${sessionId}`) || '[]');
         if (Array.isArray(stored)) cart = stored.filter(i => i && Number.isInteger(i.quantidade) && i.quantidade > 0 && Array.isArray(i.adicionais));
+        if (sessionId) byId('observacao-pedido').value = sessionStorage.getItem(noteKey()) || '';
       } catch { cart = []; }
       syncCartPrices();
       renderCart();
@@ -101,23 +154,33 @@
     if (!sessionId) {
       byId('lista-pedidos').innerHTML = '<p class="empty-state">Nenhuma sessão aberta nesta mesa.</p>';
       byId('resumo-conta').textContent = 'Aguardando abertura da sessão.';
+      byId('conta-total').textContent = money(0);
+      byId('conta-quantidade').textContent = 'Nenhuma sessão aberta.';
+      byId('conta-status').textContent = ended ? 'Atendimento encerrado. Obrigado pela visita!' : 'Aguarde a abertura da mesa para começar o atendimento.';
+      byId('nav-orders-count').hidden = true;
       lastOrders = ''; lastBill = '';
       return;
     }
     const [orders, bill] = await Promise.all([api(`${base}pedidos/`), api(`${base}conta/`)]);
     if (attempt && orders.some(p => p.chave_envio === attempt.chave_envio)) {
-      attempt = null; saveAttempt(); cart = []; saveCart(); renderCart();
+      attempt = null; saveAttempt(); cart = []; byId('observacao-pedido').value = ''; saveCart(); renderCart();
       byId('revisao-dialog').close(); feedback('Pedido recebido pela cozinha.');
+      showView('pedidos', true, true);
     }
     const signature = JSON.stringify(orders);
     if (signature !== lastOrders) {
       lastOrders = signature;
-      byId('lista-pedidos').innerHTML = orders.length ? orders.map(p => `<article class="surface order-card"><div class="order-header"><strong>Pedido #${p.id}</strong><span class="status-label ${p.status.toLowerCase()}">${statusNames[p.status]}</span></div>${itemList(p)}<div class="order-bottom"><span class="small muted">${new Date(p.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'})}</span><strong>${money(p.valor_total)}</strong></div><div class="status-track" aria-label="Etapa: ${statusNames[p.status]}">${['RECEBIDO','EM_PREPARACAO','PRONTO','A_CAMINHO','ENTREGUE'].map((s,i) => `<span class="${i <= ['RECEBIDO','EM_PREPARACAO','PRONTO','A_CAMINHO','ENTREGUE'].indexOf(p.status) ? 'done' : ''}" title="${statusNames[s]}"></span>`).join('')}</div></article>`).join('') : '<p class="empty-state">Seus pedidos aparecerão aqui assim que você enviar o primeiro.</p>';
+      byId('lista-pedidos').innerHTML = renderOrders(orders);
     }
     if (JSON.stringify(bill) !== lastBill) {
       lastBill = JSON.stringify(bill);
-      byId('resumo-conta').innerHTML = bill.pedidos.map(p => `<div class="bill-row"><span>Pedido #${p.id} · ${statusNames[p.status]}</span><strong>${money(p.status === 'CANCELADO' ? 0 : p.valor_total)}</strong></div>`).join('') + `<div class="cart-total"><span>Total da sessão</span><strong>${money(bill.valor_total)}</strong></div>${bill.conta_solicitada ? '<p class="success-text">O garçom já foi avisado. O pagamento será simulado no atendimento.</p>' : ''}`;
+      byId('resumo-conta').innerHTML = bill.pedidos.length ? bill.pedidos.map(p => `<div class="bill-order"><div class="bill-row"><div><strong>Pedido #${p.id}</strong><p class="small muted mb-0">${statusNames[p.status]}${p.status === 'CANCELADO' ? ' · sem cobrança' : ''}</p></div><strong>${money(p.status === 'CANCELADO' ? 0 : p.valor_total)}</strong></div>${itemList(p)}</div>`).join('') : '<p class="empty-state">Ainda não há pedidos na conta desta mesa.</p>';
     }
+    byId('nav-orders-count').textContent = orders.length;
+    byId('nav-orders-count').hidden = !orders.length;
+    byId('conta-total').textContent = money(bill.valor_total);
+    byId('conta-quantidade').textContent = `${bill.pedidos.length} ${bill.pedidos.length === 1 ? 'pedido nesta sessão' : 'pedidos nesta sessão'}`;
+    byId('conta-status').textContent = bill.conta_solicitada ? 'Conta solicitada. O garçom já foi avisado.' : 'O pagamento é feito com a equipe do restaurante.';
     byId('pedir-conta').disabled = bill.conta_solicitada || !navigator.onLine;
     byId('pedir-conta').textContent = bill.conta_solicitada ? 'Conta solicitada ✓' : 'Pedir a conta';
     } catch (error) {
@@ -129,6 +192,7 @@
   document.addEventListener('click', event => {
     const button = event.target.closest('button');
     if (!button) return;
+    if (button.hasAttribute('data-continue-menu')) { showView('cardapio', true, true); return; }
     if (button.hasAttribute('data-clear-menu')) {
       selected = null; search = ''; byId('buscar-produto').value = '';
       document.querySelectorAll('[data-category]').forEach(b => b.classList.toggle('active', b.dataset.category === ''));
@@ -164,6 +228,7 @@
     byId('produto-total').textContent = money(unit({preco:currentProduct.preco, adicionais:currentProduct.adicionais.filter(a => ids.includes(a.id))}) * Number(byId('produto-quantidade').value || 0));
   }
   byId('produto-form').addEventListener('input', updateProductTotal);
+  byId('observacao-pedido').addEventListener('input', saveCart);
   byId('buscar-produto').addEventListener('input', event => { search = event.target.value.trim(); renderProducts(); });
   byId('tentar-novamente').addEventListener('click', () => refresh().catch(e => feedback(e.message, true)));
   byId('produto-form').addEventListener('submit', event => {
@@ -200,9 +265,9 @@
       }
       await api('/api/pedidos/criar/', {method:'POST', body:JSON.stringify(attempt)});
       attempt = null; saveAttempt();
-      cart = []; saveCart(); byId('observacao-pedido').value = ''; byId('revisao-dialog').close();
+      cart = []; byId('observacao-pedido').value = ''; saveCart(); byId('revisao-dialog').close();
       feedback('Pedido enviado! A cozinha já recebeu.'); await refresh();
-      byId('pedidos').scrollIntoView({behavior:'smooth'});
+      showView('pedidos', true, true);
     } catch (error) { if (error.status && error.status < 500) { attempt = null; saveAttempt(); } feedback(`${error.message} Confira os pedidos antes de tentar novamente.`, true); await loadMenu().catch(() => {}); }
     finally { sending = false; byId('confirmar').disabled = false; byId('confirmar').textContent = 'Confirmar e enviar pedido →'; renderCart(); refresh().catch(e => feedback(e.message, true)); }
   });
@@ -213,9 +278,11 @@
   });
   window.addEventListener('offline', renderCart);
   window.addEventListener('online', () => { renderCart(); refresh().catch(e => feedback(e.message,true)); });
-  new IntersectionObserver(entries => {
-    cartInView = entries[0].isIntersecting;
-    byId('cart-shortcut').hidden = !cart.length || cartInView;
-  }).observe(byId('carrinho'));
+  document.documentElement.style.scrollBehavior = 'auto';
+  const legacyView = location.hash.slice(1);
+  if (Object.hasOwn(views, legacyView)) {
+    history.replaceState(null, '', views[legacyView].path);
+    showView(legacyView);
+  } else showView(currentView);
   poll(refresh);
 })();

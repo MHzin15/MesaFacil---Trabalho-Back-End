@@ -26,6 +26,11 @@ com hash continuam imutáveis e preferem cache. CSS/JS sem hash consultam a rede
 primeiro e usam o cache se estiver offline, para que mudanças locais não fiquem
 presas numa versão anterior. Dados privados continuam fora do Cache API.
 
+Na navegação separada do cliente (29/10), o cache foi atualizado para v4 e inclui
+o CSS público das novas telas. As páginas de carrinho/pedidos/conta continuam
+buscadas na rede; não entram no cache. As novas URLs também recebem a página
+offline pública quando não há conexão. Não existe fila de pedidos offline.
+
 ## Verificação realizada
 
 Chrome 155, perfil exclusivo de teste e viewport 390×844: nenhum erro de manifesto

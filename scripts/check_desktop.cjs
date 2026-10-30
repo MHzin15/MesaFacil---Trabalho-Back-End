@@ -58,6 +58,7 @@ async function login(page, role) {
     const layouts = [];
     for (const [width,height] of [[1920,1080], [1440,900], [1366,768], [1024,768], [390,844]]) {
       await guest.setViewportSize({width,height});
+      await guest.locator('.client-nav [data-client-link="cardapio"]').click();
       await guest.locator('#cardapio').scrollIntoViewIfNeeded();
       const layout = await guest.evaluate(() => ({viewport:innerWidth, content:document.documentElement.scrollWidth,
         imagesContained:[...document.querySelectorAll('.product-image img')].every(img => {
@@ -75,12 +76,14 @@ async function login(page, role) {
       assert(action.y >= 0 && action.y + action.height <= height, `Ação do diálogo fora da tela em ${width}px`);
       if (width === 1366) await guest.screenshot({path:'.tmp/screens/desktop-personalizacao-1366.png'});
       await guest.locator('#adicionar-item').click();
+      await guest.locator('.client-nav [data-client-link="carrinho"]').click();
       assert.equal(await guest.locator('#cart-count').innerText(), '2');
       await guest.locator('[data-remove]').click();
       layouts.push({...layout, height, addAndRemove:true, dialogActionVisible:true});
     }
 
     await guest.setViewportSize({width:1920,height:1080});
+    await guest.locator('.client-nav [data-client-link="cardapio"]').click();
     await add.focus(); await guest.keyboard.press('Enter');
     await guest.locator('#produto-dialog').waitFor({state:'visible'});
     await guest.keyboard.press('Escape');
@@ -101,11 +104,12 @@ async function login(page, role) {
     // Vários itens: a revisão continua alcançável no carrinho em tela baixa.
     await guest.setViewportSize({width:1366,height:768});
     for (let i=0; i<6; i++) { await add.click(); await guest.locator('#adicionar-item').click(); }
-    await guest.locator('#carrinho').scrollIntoViewIfNeeded();
+    await guest.locator('.client-nav [data-client-link="carrinho"]').click();
     await guest.locator('#revisar').click();
     await guest.locator('#revisao-dialog').waitFor({state:'visible'});
     assert.equal(await guest.locator('#revisao-itens .bill-row').count(), 6);
     await guest.getByRole('button', {name:'Continuar escolhendo'}).click();
+    await guest.locator('.client-nav [data-client-link="carrinho"]').click();
     while (await guest.locator('[data-remove]').count()) await guest.locator('[data-remove]').first().click();
 
     // Falha inicial tem mensagem persistente e recuperação pela ação Tentar novamente.
@@ -117,10 +121,12 @@ async function login(page, role) {
     await guest.locator('#session-label').getByText('Sessão aberta').waitFor();
 
     // Carrinho restaurado precisa usar os preços atuais, mesmo sem mudar o menu no polling.
+    await guest.locator('.client-nav [data-client-link="cardapio"]').click();
     await add.click();
     await guest.getByLabel('Bacon', {exact:false}).check();
     await guest.getByLabel('Queijo Cheddar', {exact:false}).check();
     await guest.locator('#adicionar-item').click();
+    await guest.locator('.client-nav [data-client-link="carrinho"]').click();
     await guest.evaluate(() => {
       for (const key of Object.keys(sessionStorage).filter(k => k.startsWith('mf-cart-'))) {
         const cart = JSON.parse(sessionStorage.getItem(key));
@@ -131,8 +137,10 @@ async function login(page, role) {
     await guest.reload();
     await guest.waitForFunction(() => document.getElementById('cart-total').textContent.includes('41,90'));
     await guest.setViewportSize({width:1920,height:1080});
+    await guest.locator('.client-nav [data-client-link="cardapio"]').click();
     await guest.evaluate(() => scrollTo(0,0));
     await guest.screenshot({path:'.tmp/screens/desktop-cardapio-1920.png'});
+    await guest.locator('.client-nav [data-client-link="carrinho"]').click();
     await guest.locator('#revisar').click();
     await guest.locator('#revisao-dialog').waitFor({state:'visible'});
 
@@ -158,6 +166,7 @@ async function login(page, role) {
     await waiter.locator(`[data-order="${order.id}"][data-status="ENTREGUE"]`).click();
     await guest.bringToFront();
     await guest.locator('#lista-pedidos .status-label').getByText('Entregue', {exact:true}).waitFor();
+    await guest.locator('.client-nav [data-client-link="conta"]').click();
     await guest.locator('#pedir-conta').click();
     await waiter.bringToFront();
     await waiter.locator('#contas-pendentes [data-bill]').click();
