@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.templatetags.static import static
 from .models import (
     Perfil, Mesa, SessaoMesa, Categoria, Produto, Adicional,
     Pedido, ItemPedido, ItemPedidoAdicional, HistoricoStatusPedido, Conta,
@@ -26,9 +27,25 @@ class AdicionalSerializer(serializers.ModelSerializer):
         fields = ['id', 'nome', 'preco', 'produto']
 
 
+FOTOS_EXEMPLO = {
+    'Bruschetta de Tomate': 'bruschetta', 'Bolinho de Bacalhau (6 un.)': 'bacalhau',
+    'Hambúrguer Clássico': 'classico', 'Hambúrguer Duplo': 'duplo', 'Hambúrguer Vegano': 'vegano',
+    'Filé à Parmegiana': 'parmegiana', 'Salmão Grelhado': 'salmao', 'Batata Frita': 'batata',
+    'Onion Rings (8 un.)': 'onion', 'Refrigerante Lata': 'refrigerante', 'Suco Natural': 'suco',
+    'Água Mineral': 'agua', 'Chopp Artesanal': 'chopp', 'Petit Gâteau': 'gateau', 'Pudim de Leite': 'pudim',
+}
+
+
 class ProdutoSerializer(serializers.ModelSerializer):
     adicionais = AdicionalSerializer(many=True, read_only=True)
     categoria_nome = serializers.ReadOnlyField(source='categoria.nome')
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        nome = FOTOS_EXEMPLO.get(instance.nome)
+        if nome and (not instance.foto or instance.foto.name.startswith('produtos/demo-')):
+            data['foto'] = static(f'fotos-exemplo/{nome}.jpg')
+        return data
 
     class Meta:
         model = Produto

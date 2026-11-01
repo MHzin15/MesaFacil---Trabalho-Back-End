@@ -1,25 +1,24 @@
-# Fotos sugeridas para o cardápio de demonstração
+# Fotos de exemplo
 
-As páginas abaixo identificam fotos apresentadas como gratuitas pelo Unsplash ou
-Pexels. O download automático nesta sessão retornou HTTP 401 no Unsplash e erro
-de certificado no Pexels; portanto, as fotos ainda não foram incorporadas ao
-projeto. Confirme a licença e a adequação visual antes de incorporá-las. Algumas
-fotos mostram pratos semelhantes, não exatamente os produtos descritos.
+As fotos ficam em `static/fotos-exemplo/`, servidas como arquivos estáticos;
+não dependem dos arquivos temporários de mídia do Render. São ilustrativas e
+podem ser substituídas por fotos próprias no administrador. Arquivos enviados
+pelo restaurante são preservados. Consulte a [licença do Pexels](https://www.pexels.com/license/).
 
-| Produto | Foto sugerida |
+| Produto | Foto e autoria |
 | --- | --- |
-| Bruschetta de Tomate | [Bruschetta](https://unsplash.com/photos/bruschetta-with-fresh-tomatoes-and-herbs-JK1Iog4H4u0) |
-| Bolinho de Bacalhau | [Bolinhos de peixe](https://unsplash.com/photos/golden-brown-fish-cakes-frying-in-hot-oil-qko9r2lfDNI) |
-| Hambúrguer Clássico | [Hambúrguer](https://unsplash.com/photos/a-delicious-cheeseburger-with-lettuce-and-tomato-SezzVhcMwDk) |
-| Hambúrguer Duplo | [Hambúrguer duplo](https://unsplash.com/photos/burger-with-lettuce-and-tomato-tuuh4DrgMpU) |
-| Hambúrguer Vegano | [Hambúrguer vegano](https://unsplash.com/photos/a-tray-with-a-sandwich-and-fries-on-it-kPdk0c3JBHc) |
-| Filé à Parmegiana | [Parmegiana de frango com fritas](https://www.pexels.com/photo/chicken-parmigiana-with-french-fries-served-34902480/) |
-| Salmão Grelhado | [Salmão grelhado](https://unsplash.com/photos/vegetable-salad-with-grilled-salmon-inDRPMBfX8M) |
-| Batata Frita | [Batatas fritas](https://unsplash.com/photos/french-fries-in-fry-basket-lv7H9OKj_f4) |
-| Onion Rings | [Anéis de cebola](https://unsplash.com/photos/onion-rings-on-white-paper-AuXET-GaEqA) |
-| Refrigerante Lata | [Latas de refrigerante](https://unsplash.com/photos/a-row-of-soda-cans-sitting-on-top-of-a-counter-aHp47GFJqqw) |
-| Suco Natural | [Suco de laranja](https://unsplash.com/photos/orange-juice-in-clear-drinking-glass-kkrXVKK-jhg) |
-| Água Mineral | [Garrafa de água](https://unsplash.com/photos/blue-labeled-plastic-bottle-on-white-table-sxqR1PnALRE) |
-| Chopp Artesanal | [Cerveja servida no copo](https://unsplash.com/photos/a-person-pouring-a-drink-into-a-glass-BBY4bOImXK8) |
-| Petit Gâteau | [Bolo de chocolate e sorvete](https://unsplash.com/photos/a-white-plate-topped-with-a-piece-of-cake-and-ice-cream-PFG4JCWomIM) |
-| Pudim de Leite | [Pudim com caramelo](https://unsplash.com/photos/sweet-flan-dessert-with-caramel-sauce-and-a-spoon-gynfA2P1dis) |
+| Bruschetta | [Lucie Liz](https://www.pexels.com/photo/close-up-photo-of-a-bruschetta-7432986/) |
+| Bolinho de bacalhau | [Jahra Tasfia Reza — croquetes ilustrativos](https://www.pexels.com/photo/crispy-croquettes-with-fresh-garnish-on-plate-39853094/) |
+| Hambúrguer clássico | [Jonathan Borba](https://www.pexels.com/photo/close-up-photo-of-a-burger-19247582/) |
+| Hambúrguer duplo | [Anupkumar Patel](https://www.pexels.com/photo/double-cheese-burger-with-lettuce-20722031/) |
+| Hambúrguer vegano | [Alesia Kozik](https://www.pexels.com/photo/vegan-falafel-burger-on-plate-6546034/) |
+| Filé à parmegiana | [Sergei Starostin — parmegiana de frango ilustrativa](https://www.pexels.com/photo/chicken-parmigiana-with-french-fries-served-34902480/) |
+| Salmão grelhado | [Filipa Moreira](https://www.pexels.com/photo/grilled-salmon-with-vegetables-and-greens-37069897/) |
+| Batata frita | [Valeria Boltneva](https://www.pexels.com/photo/french-fries-on-basket-strainer-9328478/) |
+| Onion rings | [Valeria Boltneva](https://www.pexels.com/photo/close-up-of-onion-rings-25390056/) |
+| Refrigerante | [Ali Pli](https://www.pexels.com/photo/close-up-shot-of-a-soda-in-can-14650670/) |
+| Suco natural | [Joseph Abeesh](https://www.pexels.com/photo/a-glass-of-fresh-orange-juice-6829918/) |
+| Água mineral | [Bruno Saito](https://www.pexels.com/photo/cap-and-water-bottle-on-table-16151001/) |
+| Chopp | [Marcelo Verfe](https://www.pexels.com/photo/refreshing-craft-beers-on-wooden-table-28575831/) |
+| Petit gâteau | [Valeria Boltneva](https://www.pexels.com/photo/decadent-chocolate-lava-cake-with-berries-36183206/) |
+| Pudim | [Jeremy Li](https://www.pexels.com/photo/delicious-caramel-flan-dessert-with-garnish-30247016/) |

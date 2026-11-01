@@ -4,6 +4,15 @@
   const token = document.body.dataset.mesa;
   const base = `/api/mesa/${token}/`;
   const byId = id => document.getElementById(id);
+  document.addEventListener('error', event => {
+    const img = event.target;
+    if (!(img instanceof HTMLImageElement) || !img.closest('.product-image')) return;
+    const fallback = document.createElement('span');
+    fallback.className = 'food-placeholder';
+    fallback.setAttribute('aria-hidden', 'true');
+    fallback.textContent = img.alt.charAt(0);
+    img.replaceWith(fallback);
+  }, true);
   let products = [], cart = [], sessionId = null, currentProduct = null, sending = false, selected = null, search = '';
   let ended = false, menuSignature = '', reviewSignature = '';
   let currentView = document.body.dataset.clientView;

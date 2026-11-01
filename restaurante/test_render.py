@@ -13,9 +13,12 @@ from django.core.files.base import ContentFile
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import SimpleTestCase, TestCase
+from django.contrib.staticfiles import finders
+from PIL import Image
 
 from .demo_images import criar_imagens
 from .models import Mesa, Produto
+from .serializers import FOTOS_EXEMPLO, ProdutoSerializer
 
 
 class RenderBootstrapTests(TestCase):
@@ -97,6 +100,23 @@ class RenderBootstrapTests(TestCase):
         produto.refresh_from_db()
         self.assertEqual(produto.foto.name, name)
         self.assertTrue(produto.foto.storage.exists(name))
+
+    def test_catalog_uses_bundled_photos_even_when_demo_media_is_lost(self):
+        self.prepare()
+        for produto in Produto.objects.all():
+            with self.subTest(produto=produto.nome):
+                path = finders.find(f'fotos-exemplo/{FOTOS_EXEMPLO[produto.nome]}.jpg')
+                self.assertIsNotNone(path)
+                with Image.open(path) as image:
+                    image.verify()
+                produto.foto.storage.delete(produto.foto.name)
+                self.assertIn('/fotos-exemplo/', ProdutoSerializer(produto).data['foto'])
+
+    def test_catalog_preserves_custom_photo_url(self):
+        self.prepare()
+        produto = Produto.objects.first()
+        produto.foto = 'produtos/foto-propria.jpg'
+        self.assertTrue(ProdutoSerializer(produto).data['foto'].endswith('/produtos/foto-propria.jpg'))
 
     def test_custom_upload_is_preserved_even_when_its_file_is_missing(self):
         self.prepare()
