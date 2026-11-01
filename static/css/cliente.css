@@ -1,6 +1,7 @@
 /* Navegação do cliente: uma área de trabalho por vez, com URLs próprias. */
 .client-context{color:var(--muted);font-size:.8rem}
-.client-nav{display:flex;gap:6px;position:sticky;top:12px;z-index:25;width:fit-content;max-width:100%;padding:6px;margin:24px 0 0;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:0 4px 18px #292e2906}
+.client-nav{display:flex;gap:6px;position:relative;z-index:2;width:fit-content;max-width:100%;padding:6px;margin:24px 0 0;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:0 4px 18px #292e2906}
+.drink-options{border:0;padding:0;margin:22px 0 0}.drink-options legend{font-size:.95rem;font-weight:700;margin-bottom:4px}.drink-options p{font-size:.8rem;color:var(--muted);margin-bottom:12px}.drink-options-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.drink-options-list label{display:flex;align-items:center;gap:7px;padding:12px;border:1px solid var(--line);border-radius:9px;font-size:.8rem;cursor:pointer}.drink-options-list label:has(input:checked){border-color:var(--accent);background:#faf0eb;color:var(--accent)}.drink-options-list input{accent-color:var(--accent)}
 .client-nav>a{display:flex;align-items:center;gap:10px;position:relative;padding:12px 20px;border-radius:9px;min-height:48px;font-size:.9rem;color:var(--muted);white-space:nowrap}
 .client-nav>a:hover{background:#f2eee7;color:var(--ink)}
 .client-nav>a[aria-current=page]{background:var(--accent);color:#fff;font-weight:700}

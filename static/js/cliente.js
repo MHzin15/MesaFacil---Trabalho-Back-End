@@ -209,6 +209,10 @@
       byId('produto-titulo').textContent = currentProduct.nome;
       byId('produto-descricao').textContent = currentProduct.descricao;
       byId('produto-quantidade').value = '1'; byId('produto-observacao').value = '';
+      const soda = currentProduct.nome.trim().toLocaleLowerCase('pt-BR') === 'refrigerante lata';
+      byId('produto-opcoes').hidden = !soda;
+      document.querySelectorAll('input[name="sabor"]').forEach(input => { input.checked = false; input.required = soda; });
+      byId('produto-observacao').maxLength = soda ? 230 : 255;
       byId('produto-preco').textContent = money(currentProduct.preco);
       byId('adicionar-item').disabled = false;
       byId('produto-adicionais').innerHTML = currentProduct.adicionais.length ? '<h3 class="small-heading">Deixe do seu jeito</h3>' + currentProduct.adicionais.map(a => `<label class="extra-option"><span><input type="checkbox" name="adicional" value="${a.id}"> ${escape(a.nome)}</span><strong>+ ${money(a.preco)}</strong></label>`).join('') : '';
@@ -236,7 +240,9 @@
     currentProduct = products.find(p => p.id === currentProduct?.id);
     if (!sessionId || !currentProduct?.disponivel || attempt) { feedback('Este item não pode ser adicionado agora.', true); return; }
     const ids = [...document.querySelectorAll('[name="adicional"]:checked')].map(n => Number(n.value));
-    cart.push({produto_id: currentProduct.id, nome: currentProduct.nome, preco: currentProduct.preco, quantidade: Number(byId('produto-quantidade').value), adicionais: currentProduct.adicionais.filter(a => ids.includes(a.id)), observacao: byId('produto-observacao').value.trim()});
+    const sabor = document.querySelector('input[name="sabor"]:checked')?.value;
+    const observacao = [sabor ? `Sabor: ${sabor}` : '', byId('produto-observacao').value.trim()].filter(Boolean).join(' · ');
+    cart.push({produto_id: currentProduct.id, nome: currentProduct.nome, preco: currentProduct.preco, quantidade: Number(byId('produto-quantidade').value), adicionais: currentProduct.adicionais.filter(a => ids.includes(a.id)), observacao});
     saveCart(); renderCart(); byId('produto-dialog').close(); feedback('Adicionado ao carrinho.');
   });
   function renderReview() {
