@@ -11,12 +11,14 @@ Para publicar uma versão de testes com deploy automático a cada push,
 siga [o guia do Render Free](docs/RENDER.md).
 Consulte também a [auditoria de requisitos, domínio e decisões técnicas de 28/10](docs/RELATORIO_TECNICO_E_PRODUTO_2026-10-28.md)
 para o parecer atual e as pendências de aceite.
+As correções de segurança, evidências e orientações de atualização estão na
+[auditoria de segurança de 01/11](docs/AUDITORIA_SEGURANCA_2026-11-01.md).
 
 ## Stack
 
 Python 3.12+ (validado em 3.13), Django 6.1.2, DRF, PostgreSQL 18 e psycopg 3.
 Dependências diretas estão fixadas em requirements.txt, com versões estáveis
-consultadas no PyPI em 23/10/2026. HTML/CSS, Bootstrap 5.3.8 local e Fetch no frontend.
+revisadas no PyPI e auditadas em 01/11/2026. HTML/CSS, Bootstrap 5.3.8 local e Fetch no frontend.
 
 Pacotes extras: drf-spectacular documenta a API; django-filter filtra consultas;
 django-environ lê o ambiente; qrcode/Pillow geram QR e imagens; WhiteNoise serve
@@ -29,6 +31,7 @@ para integração futura. Gunicorn é instalado apenas em Linux/container.
 git clone https://github.com/MHzin15/MesaFacil---Trabalho-Back-End.git
 cd MesaFacil---Trabalho-Back-End
 python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip==26.2.2
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 Copy-Item .env.example .env
 .\.venv\Scripts\python.exe -c "import secrets; print(secrets.token_urlsafe(50)); print(secrets.token_hex(24))"

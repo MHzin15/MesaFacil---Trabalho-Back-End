@@ -1,6 +1,17 @@
 from django.middleware.csrf import get_token
 from rest_framework.authentication import SessionAuthentication
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import ParseError, PermissionDenied
+from rest_framework.parsers import JSONParser
+
+
+class SafeJSONParser(JSONParser):
+    """Preserva o limite de bytes do DRF e trata excesso de profundidade."""
+
+    def parse(self, stream, media_type=None, parser_context=None):
+        try:
+            return super().parse(stream, media_type, parser_context)
+        except RecursionError:
+            raise ParseError('JSON com aninhamento excessivo.') from None
 
 
 class CsrfSessionAuthentication(SessionAuthentication):

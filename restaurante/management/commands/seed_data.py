@@ -6,7 +6,8 @@ Uso: python manage.py seed_data
 """
 from decimal import Decimal
 
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User
 
 from restaurante.models import Mesa, Categoria, Produto, Adicional, Perfil
@@ -20,6 +21,8 @@ class Command(BaseCommand):
         parser.add_argument('--demo-images', action='store_true', help='Cria ilustrações de exemplo para produtos sem foto.')
 
     def handle(self, *args, **options):
+        if options['demo_users'] and not settings.DEBUG:
+            raise CommandError('Usuários com senhas demonstrativas exigem DEBUG=True em ambiente local.')
         self.stdout.write(self.style.NOTICE('  Populando dados do MesaFácil...'))
 
         if options['demo_users']:

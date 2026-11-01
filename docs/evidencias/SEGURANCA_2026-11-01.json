@@ -1,0 +1,77 @@
+{
+  "date": "2026-11-01",
+  "scope": "Repositório local, histórico Git, dependências Python e testes; sem deploy ou scanner de imagem Docker.",
+  "junit_results": {
+    "sqlite": {
+      "tests": "222",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "6",
+      "time": "69.875"
+    },
+    "postgresql": {
+      "tests": "222",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "75.852"
+    }
+  },
+  "pytest_summary": {
+    "sqlite": {
+      "passed": 112,
+      "skipped": 6,
+      "subtests_passed": 104
+    },
+    "postgresql": {
+      "passed": 118,
+      "skipped": 0,
+      "subtests_passed": 104
+    }
+  },
+  "queries": {
+    "serialize_10_tables": 2,
+    "serialize_20_orders": 3,
+    "calculate_bill": 2
+  },
+  "dependency_audit": {
+    "distributions": 31,
+    "known_vulnerabilities_after": 0,
+    "unique_advisories_before": 6
+  },
+  "bandit": {
+    "findings": 11,
+    "read_errors": 0,
+    "lines_scanned": 2254,
+    "triage": "Ver relatório Markdown."
+  },
+  "secret_pattern_scan": {
+    "initial_tracked_files": 136,
+    "historical_blobs": 355,
+    "commits": 29,
+    "matches": 0,
+    "patterns": [
+      "private key headers",
+      "AWS access keys",
+      "GitHub tokens",
+      "OpenAI keys"
+    ]
+  },
+  "deploy_check_remaining_warnings": [
+    "security.W005",
+    "security.W021"
+  ],
+  "local_migration_applied": "restaurante.0006_loginratebucket",
+  "commands": [
+    "python -m pytest -q",
+    "python -m pytest --ds=core.settings -q",
+    "python manage.py makemigrations --check --dry-run --settings=core.test_settings",
+    "python manage.py check --settings=core.test_settings",
+    "python manage.py spectacular --file .local/openapi-audit.yaml --validate --fail-on-warn --settings=core.test_settings",
+    "python -m pip check",
+    "python manage.py collectstatic --noinput",
+    "git diff --check",
+    "python -m pip_audit --no-deps --disable-pip -r .local/requirements-audit.txt --strict --progress-spinner off --format json",
+    "python -m bandit -r core restaurante scripts -x '*/test_*.py,*/tests.py,*/migrations/*' -f json"
+  ]
+}

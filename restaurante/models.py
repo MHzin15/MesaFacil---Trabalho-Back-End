@@ -6,6 +6,14 @@ from django.conf import settings
 import uuid
 
 
+class LoginRateBucket(models.Model):
+    """Contadores compartilhados entre workers; sem usuário/IP em texto puro."""
+
+    key = models.CharField(max_length=64, primary_key=True)
+    attempts = models.PositiveIntegerField(default=0)
+    expires_at = models.DateTimeField(db_index=True)
+
+
 # ============================================================
 # Perfil de usuário (Cozinha, Garçom, Administrador)
 # ============================================================
@@ -38,7 +46,16 @@ class Perfil(models.Model):
 # ============================================================
 # Mesa
 # ============================================================
+class MesaQuerySet(models.QuerySet):
+    def com_sessao_ativa(self):
+        return self.prefetch_related(models.Prefetch(
+            'sessoes', queryset=SessaoMesa.objects.filter(ativa=True),
+            to_attr='_sessoes_ativas',
+        ))
+
+
 class Mesa(models.Model):
+    objects = MesaQuerySet.as_manager()
     numero = models.IntegerField(unique=True, verbose_name='Número da Mesa', validators=[MinValueValidator(1)])
     # UUID aleatório para garantir a segurança do QR Code (RNF05)
     token_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
@@ -68,6 +85,8 @@ class Mesa(models.Model):
     @property
     def sessao_ativa(self):
         """Retorna a sessão ativa da mesa, se houver."""
+        if hasattr(self, '_sessoes_ativas'):
+            return next(iter(self._sessoes_ativas), None)
         return self.sessoes.filter(ativa=True).first()
 
     @property
@@ -121,6 +140,21 @@ class SessaoMesa(models.Model):
     def __str__(self):
         status = 'Ativa' if self.ativa else 'Encerrada'
         return f"Sessão Mesa {self.mesa.numero} — {status}"
+
+    def total_consumo(self):
+        """Duas agregações evitam N+1 e multiplicação de preços em joins."""
+        money = models.DecimalField(max_digits=22, decimal_places=2)
+        itens = ItemPedido.objects.filter(pedido__sessao=self).exclude(pedido__status='CANCELADO')
+        adicionais = ItemPedidoAdicional.objects.filter(
+            item_pedido__pedido__sessao=self,
+        ).exclude(item_pedido__pedido__status='CANCELADO')
+        base = itens.aggregate(total=models.Sum(
+            models.F('preco_unitario') * models.F('quantidade'), output_field=money,
+        ))['total'] or Decimal('0.00')
+        extras = adicionais.aggregate(total=models.Sum(
+            models.F('preco') * models.F('item_pedido__quantidade'), output_field=money,
+        ))['total'] or Decimal('0.00')
+        return base + extras
 
 
 # ============================================================
@@ -198,7 +232,17 @@ class Adicional(models.Model):
 # ============================================================
 # Pedido e Itens (RN01–RN08)
 # ============================================================
+class PedidoQuerySet(models.QuerySet):
+    def para_exibicao(self):
+        return self.select_related('sessao__mesa').prefetch_related(models.Prefetch(
+            'itens', queryset=ItemPedido.objects.select_related('produto').prefetch_related(
+                models.Prefetch('itens_adicionais', queryset=ItemPedidoAdicional.objects.select_related('adicional')),
+            ),
+        ))
+
+
 class Pedido(models.Model):
+    objects = PedidoQuerySet.as_manager()
     STATUS_CHOICES = [
         ('RECEBIDO', 'Recebido'),
         ('EM_PREPARACAO', 'Em Preparação'),
@@ -427,9 +471,6 @@ class Conta(models.Model):
 
     def calcular_total(self):
         """Calcula o valor total somando todos os pedidos da sessão."""
-        total = sum(
-            pedido.valor_total
-            for pedido in self.sessao.pedidos.exclude(status='CANCELADO')
-        )
+        total = self.sessao.total_consumo()
         self.valor_total = total
         return total

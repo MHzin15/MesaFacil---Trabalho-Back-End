@@ -16,6 +16,8 @@ ENV/
 
 # --- Configurações Sensíveis ---
 .env
+.env.*
+!.env.example
 
 # --- IDEs e Editores (VS Code / PyCharm) ---
 .vscode/

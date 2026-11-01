@@ -5,8 +5,10 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.conf import settings
+from django.http import Http404
 from django.views.static import serve
 from django.views.decorators.csrf import ensure_csrf_cookie
+from PIL import Image, UnidentifiedImageError
 
 from .models import Mesa
 from .security import vincular_mesa
@@ -14,7 +16,23 @@ from .security import vincular_mesa
 
 def foto_produto(request, path):
     """Apenas fotos públicas; nunca o diretório de QR Codes ou o restante da mídia."""
-    return serve(request, path, document_root=settings.MEDIA_ROOT / 'produtos')
+    response = serve(request, path, document_root=settings.MEDIA_ROOT / 'produtos')
+    if response.status_code == 200:
+        # Arquivos legados/importados podem não ter passado pelos formulários.
+        # O navegador deve receber o tipo dos bytes, nunca o da extensão.
+        stream = response.file_to_stream
+        try:
+            image = Image.open(stream)
+            content_type = Image.MIME.get(image.format, 'application/octet-stream')
+            response['Content-Type'] = content_type
+            stream.seek(0)
+        except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
+            # Não emitir request_finished antes de o Django construir o 404.
+            stream.close()
+            raise Http404('Imagem inválida.') from None
+    response['X-Content-Type-Options'] = 'nosniff'
+    response['Content-Security-Policy'] = "default-src 'none'; sandbox"
+    return response
 
 
 def equipe(*roles):

@@ -55,6 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'restaurante.middleware.LoginRateLimit',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -78,6 +79,11 @@ WSGI_APPLICATION = 'core.wsgi.application'
 LOGIN_URL = '/entrar/'
 LOGIN_REDIRECT_URL = '/painel/'
 LOGOUT_REDIRECT_URL = '/'
+LOGIN_RATE_LIMIT_WINDOW = env.int('LOGIN_RATE_LIMIT_WINDOW', default=300)
+LOGIN_RATE_LIMIT_ACCOUNT = env.int('LOGIN_RATE_LIMIT_ACCOUNT', default=20)
+LOGIN_RATE_LIMIT_IP = env.int('LOGIN_RATE_LIMIT_IP', default=100)
+if min(LOGIN_RATE_LIMIT_WINDOW, LOGIN_RATE_LIMIT_ACCOUNT, LOGIN_RATE_LIMIT_IP) < 1:
+    raise ImproperlyConfigured('Os limites de login devem ser inteiros positivos.')
 
 
 # Database - Conexão via PostgreSQL usando a URL do .env
@@ -89,6 +95,10 @@ if DATABASES['default']['ENGINE'] != 'django.db.backends.postgresql':
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
 
@@ -124,6 +134,11 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 
 # Django REST Framework
 REST_FRAMEWORK = {
+    'DEFAULT_PARSER_CLASSES': [
+        'restaurante.security.SafeJSONParser',
+        'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser',
+    ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
@@ -158,8 +173,9 @@ SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
+SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=not DEBUG)
+SECURE_HSTS_SECONDS = env.int('SECURE_HSTS_SECONDS', default=0 if DEBUG else 3600)
 
 if env.bool('RENDER', default=False):
     # Render termina o TLS no proxy; Django precisa reconhecer o HTTPS original.
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT = not DEBUG

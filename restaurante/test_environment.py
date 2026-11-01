@@ -1,7 +1,7 @@
 from io import StringIO
 from django.contrib.auth.models import User
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from .models import Mesa, Produto
 
 
@@ -18,6 +18,7 @@ class SeedTests(TestCase):
         self.assertEqual(Mesa.objects.count(), 10)
         self.assertEqual(Produto.objects.count(), 15)
 
+    @override_settings(DEBUG=True)
     def test_demo_users_are_explicit_and_do_not_reset_passwords(self):
         call_command('seed_data', demo_users=True, stdout=StringIO())
         admin = User.objects.get(username='admin')

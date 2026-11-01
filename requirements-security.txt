@@ -1,0 +1,3 @@
+# Ferramentas opcionais de auditoria; instalar em ambiente separado.
+pip-audit==2.10.1
+bandit==1.9.4

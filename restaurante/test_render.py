@@ -133,7 +133,7 @@ with patch('environ.Env.read_env'):
 print(json.dumps({key: getattr(settings, key, None) for key in (
     'ALLOWED_HOSTS', 'CSRF_TRUSTED_ORIGINS', 'PUBLIC_BASE_URL',
     'SECURE_PROXY_SSL_HEADER', 'SECURE_SSL_REDIRECT', 'SESSION_COOKIE_SECURE',
-    'CSRF_COOKIE_SECURE', 'DATABASES')}))
+    'CSRF_COOKIE_SECURE', 'SECURE_HSTS_SECONDS', 'DATABASES')}))
 """
         result = subprocess.run([sys.executable, '-c', script], cwd=Path(__file__).resolve().parents[1],
                                 env=environment, capture_output=True, text=True, check=True)
@@ -166,3 +166,9 @@ print(json.dumps({key: getattr(settings, key, None) for key in (
         self.assertEqual(settings['PUBLIC_BASE_URL'], 'http://localhost:8000')
         self.assertIsNone(settings['SECURE_PROXY_SSL_HEADER'])
         self.assertFalse(settings['SESSION_COOKIE_SECURE'])
+
+    def test_production_requires_https_even_outside_render(self):
+        settings = self.load_settings()
+        self.assertTrue(settings['SECURE_SSL_REDIRECT'])
+        self.assertEqual(settings['SECURE_HSTS_SECONDS'], 3600)
+        self.assertIsNone(settings['SECURE_PROXY_SSL_HEADER'])

@@ -78,3 +78,17 @@ class ConcurrencyTests(TransactionTestCase):
         self.assertEqual(self.race([lambda: services.criar(data, self.admin)] * 2), ['ok', 'ok'])
         self.assertEqual(Pedido.objects.filter(sessao=sessao).count(), 1)
         self.assertEqual(HistoricoStatusPedido.objects.count(), 1)
+
+    def test_login_limit_is_atomic_across_workers(self):
+        from django.test import RequestFactory
+        from rest_framework.exceptions import PermissionDenied
+        from .middleware import LoginRateLimit
+
+        def attempt():
+            request = RequestFactory().post('/entrar/', {'username': 'concorrencia'})
+            response = LoginRateLimit(lambda request: None).process_view(request, None, (), {})
+            if response is not None and response.status_code == 429:
+                raise PermissionDenied()
+
+        with self.settings(LOGIN_RATE_LIMIT_ACCOUNT=1, LOGIN_RATE_LIMIT_IP=10):
+            self.assertCountEqual(self.race([attempt, attempt]), ['ok', 'rejeitado'])

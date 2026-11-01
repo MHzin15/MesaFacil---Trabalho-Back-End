@@ -48,6 +48,9 @@ class MesaAdmin(admin.ModelAdmin):
     exclude = ('qr_code',)
     actions = ['abrir_mesas']
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).com_sessao_ativa()
+
     def get_object(self, request, object_id, from_field=None):
         obj = super().get_object(request, object_id, from_field)
         # O changeform POST do Django Admin já executa dentro de transaction.atomic.
@@ -158,6 +161,9 @@ class PedidoAdmin(admin.ModelAdmin):
     search_fields = ('id', 'sessao__mesa__numero', 'observacao')
     inlines = [ItemPedidoInline, HistoricoStatusInline]
     readonly_fields = ('sessao', 'status', 'observacao', 'created_at', 'updated_at')
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).para_exibicao()
 
     def has_add_permission(self, request):
         return False

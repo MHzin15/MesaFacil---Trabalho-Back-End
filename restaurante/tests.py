@@ -403,7 +403,7 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
         pedido = Pedido.objects.create(sessao=self.abrir_sessao_teste())
         atualizado_em = pedido.updated_at
         self.client.force_authenticate(self.user_cozinha)
-        with patch('restaurante.views.HistoricoStatusPedido.objects.create', side_effect=RuntimeError('falha de auditoria')):
+        with patch('restaurante.services.HistoricoStatusPedido.objects.create', side_effect=RuntimeError('falha de auditoria')):
             with self.assertRaisesMessage(RuntimeError, 'falha de auditoria'):
                 self.mudar_status(pedido, 'EM_PREPARACAO')
         pedido.refresh_from_db()
@@ -413,7 +413,7 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
 
     def test_rn03_falha_na_auditoria_inicial_reverte_criacao(self):
         self.abrir_sessao_teste()
-        with patch('restaurante.views.HistoricoStatusPedido.objects.create', side_effect=RuntimeError('falha de auditoria')):
+        with patch('restaurante.services.HistoricoStatusPedido.objects.create', side_effect=RuntimeError('falha de auditoria')):
             with self.assertRaisesMessage(RuntimeError, 'falha de auditoria'):
                 self.enviar_pedido()
         self.assert_sem_pedido_parcial()

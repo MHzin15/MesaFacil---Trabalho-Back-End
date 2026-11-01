@@ -1,29 +1,27 @@
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
-from .api_schema import *
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from .api_schema import (
+    ERROS, FILTROS, ContaMesaSerializer, CozinhaSerializer, GarcomSerializer,
+    MensagemSerializer, MesaContextoSerializer, PagamentoResultadoSerializer,
+    QrLinksSerializer, UsuarioSerializer,
+)
 from django.conf import settings
 from django.urls import reverse
 from django.db.models.deletion import ProtectedError
 from . import services
 from .security import vincular_mesa, validar_mesa
 from .serializers import FiltroDatasSerializer
-import io
-import qrcode
 from decimal import Decimal
 
-from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
-from django.db import IntegrityError, transaction
-from django.http import HttpResponse
+from django.db import transaction
 
-from rest_framework import viewsets, status, generics, serializers
+from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import api_view, action, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .models import (
-    Perfil, Mesa, SessaoMesa, Categoria, Produto, Adicional,
-    Pedido, ItemPedido, ItemPedidoAdicional, HistoricoStatusPedido, Conta,
+    Mesa, SessaoMesa, Categoria, Produto, Adicional, Pedido, Conta,
 )
 from .serializers import (
     PerfilSerializer,
@@ -33,11 +31,9 @@ from .serializers import (
     ProdutoSerializer, AdicionalSerializer,
     PedidoSerializer, PedidoCriarSerializer, PedidoStatusSerializer,
     PedidoCozinhaSerializer, ProdutoDisponibilidadeSerializer,
-    ItemPedidoSerializer,
-    HistoricoStatusPedidoSerializer,
     ContaSerializer, PagamentoSerializer,
 )
-from .permissions import IsAdmin, IsCozinha, IsGarcom, IsEquipe, IsCozinhaOuAdmin, IsGarcomOuAdmin
+from .permissions import IsAdmin, IsEquipe, IsCozinhaOuAdmin, IsGarcomOuAdmin
 
 
 # ============================================================
@@ -104,7 +100,7 @@ def cardapio(request):
 # ============================================================
 class MesaViewSet(viewsets.ModelViewSet):
     """CRUD de mesas. Admin gerencia; garçom pode ver."""
-    queryset = Mesa.objects.all()
+    queryset = Mesa.objects.com_sessao_ativa()
     serializer_class = MesaSerializer
 
     @transaction.atomic
@@ -162,7 +158,7 @@ class SessaoMesaViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['get'])
     def conta(self, request, pk=None):
         sessao = self.get_object()
-        pedidos = sessao.pedidos.prefetch_related('itens__produto', 'itens__itens_adicionais__adicional')
+        pedidos = sessao.pedidos.para_exibicao()
         return Response({
             'mesa': MesaClienteSerializer(sessao.mesa).data, 'sessao_id': sessao.pk,
             'pedidos': PedidoSerializer(pedidos, many=True).data,
@@ -235,10 +231,7 @@ def pedidos_da_mesa(request, uuid):
     if not sessao:
         return Response([])
 
-    pedidos = sessao.pedidos.prefetch_related(
-        'itens__produto',
-        'itens__itens_adicionais__adicional',
-    ).all()
+    pedidos = sessao.pedidos.para_exibicao()
 
     return Response(PedidoSerializer(pedidos, many=True).data)
 
@@ -258,12 +251,7 @@ def painel_cozinha(request):
 
     pedidos = Pedido.objects.filter(
         status__in=status_cozinha,
-    ).select_related(
-        'sessao__mesa',
-    ).prefetch_related(
-        'itens__produto',
-        'itens__itens_adicionais__adicional',
-    ).order_by('created_at', 'id')
+    ).para_exibicao().order_by('created_at', 'id')
 
     resultado = {s: [] for s in status_cozinha}
     for pedido in PedidoCozinhaSerializer(pedidos, many=True).data:
@@ -300,18 +288,13 @@ def painel_garcom(request):
     # Pedidos prontos e a caminho
     pedidos_prontos = Pedido.objects.filter(
         status__in=['PRONTO', 'A_CAMINHO'],
-    ).select_related(
-        'sessao__mesa',
-    ).prefetch_related(
-        'itens__produto',
-        'itens__itens_adicionais__adicional',
-    ).order_by('created_at')
+    ).para_exibicao().order_by('created_at')
 
     # Mesas aguardando conta
     mesas_aguardando = Mesa.objects.filter(
         sessoes__ativa=True,
         sessoes__conta_solicitada=True,
-    ).distinct()
+    ).distinct().com_sessao_ativa()
 
     return Response({
         'pedidos_prontos': PedidoSerializer(pedidos_prontos, many=True).data,
@@ -324,7 +307,7 @@ def painel_garcom(request):
 @permission_classes([IsGarcomOuAdmin])
 def mapa_mesas(request):
     """RF04 — Situação de cada mesa (livre, ocupada, aguardando conta)."""
-    mesas = Mesa.objects.filter(ativa=True).prefetch_related('sessoes')
+    mesas = Mesa.objects.filter(ativa=True).com_sessao_ativa()
     return Response(MesaSerializer(mesas, many=True).data)
 
 
@@ -345,10 +328,7 @@ def ver_conta(request, uuid):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    pedidos = sessao.pedidos.prefetch_related(
-        'itens__produto',
-        'itens__itens_adicionais__adicional',
-    )
+    pedidos = sessao.pedidos.para_exibicao()
 
     total = sum((p.valor_total for p in pedidos if p.status != 'CANCELADO'), Decimal('0.00'))
 
@@ -392,12 +372,7 @@ def processar_pagamento(request, sessao_id):
 @permission_classes([IsAdmin])
 def consultar_pedidos(request):
     """RF25 — Consulta de pedidos com filtros por data."""
-    pedidos = Pedido.objects.select_related(
-        'sessao__mesa',
-    ).prefetch_related(
-        'itens__produto',
-        'itens__itens_adicionais__adicional',
-    )
+    pedidos = Pedido.objects.para_exibicao()
 
     # Filtros por data
     filtros = FiltroDatasSerializer(data=request.query_params)

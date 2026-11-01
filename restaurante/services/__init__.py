@@ -1,6 +1,6 @@
+"""Regras transacionais compartilhadas pela API e pelo admin."""
 import hashlib
 import json
-"""Regras transacionais compartilhadas pela API e pelo admin."""
 from decimal import Decimal
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
@@ -57,7 +57,7 @@ def criar(dados, user):
         if anterior:
             if anterior.envio_hash != digest:
                 erro('Esta chave de envio já foi usada com outro pedido. Revise e envie novamente.')
-            return anterior
+            return Pedido.objects.para_exibicao().get(pk=anterior.pk)
     products = {p.pk: p for p in Produto.objects.select_for_update().filter(
         pk__in=[i['produto_id'] for i in dados['itens']]).order_by('pk')}
     addons = {a.pk: a for a in Adicional.objects.select_for_update().filter(
@@ -79,9 +79,10 @@ def criar(dados, user):
                 from django.http import Http404
                 raise Http404('Adicional não pertence ao produto.')
             ItemPedidoAdicional.objects.create(item_pedido=saved, adicional=adicional, preco=adicional.preco)
+    pedido = Pedido.objects.para_exibicao().get(pk=pedido.pk)
     if dados.get('total_esperado') is not None and pedido.valor_total != dados['total_esperado']:
         erro('Os preços mudaram. Atualize o cardápio e confirme novamente o total.')
-    total = sum((p.valor_total for p in sessao.pedidos.exclude(status='CANCELADO')), Decimal('0.00'))
+    total = sessao.total_consumo()
     if total > Decimal('99999999.99'):
         erro('O total ultrapassa o limite da conta. Peça ajuda ao atendimento.')
     return pedido
@@ -106,7 +107,7 @@ def transitar(pedido_id, novo, user):
     pedido.save(update_fields=['status', 'updated_at'])
     HistoricoStatusPedido.objects.create(pedido=pedido, status_anterior=anterior,
         status_novo=novo, alterado_por=user)
-    return pedido
+    return Pedido.objects.para_exibicao().get(pk=pedido.pk)
 
 
 @transaction.atomic
@@ -154,7 +155,7 @@ def fechar(sessao_id, user):
     if not sessao.ativa:
         erro('A sessão já foi encerrada.')
     validar_finalizacao(sessao)
-    total = sum((p.valor_total for p in sessao.pedidos.exclude(status='CANCELADO')), Decimal('0.00'))
+    total = sessao.total_consumo()
     if total > 0:
         erro('A conta ainda não foi paga. Confirme o pagamento para encerrar a sessão.')
     encerrar(sessao)
