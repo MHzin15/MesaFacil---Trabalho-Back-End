@@ -1,0 +1,18 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}{{ titulo }} · Gestão MesaFácil{% endblock %}
+{% block page %}gestao{% endblock %}
+{% block brand_url %}{% url 'gestao:inicio' %}{% endblock %}
+{% block head %}<meta name="robots" content="noindex,nofollow"><link rel="stylesheet" href="{% static 'css/gestao.css' %}">{% endblock %}
+{% block scripts %}<script src="{% static 'js/gestao.js' %}" defer></script>{% endblock %}
+{% block nav %}<span class="g-context">GESTÃO DO RESTAURANTE</span>{% endblock %}
+{% block account_nav %}<a href="{% url 'garcom' %}">Salão ↗</a><a href="{% url 'cozinha' %}">Cozinha ↗</a><span class="staff-user">{{ user.first_name|default:user.username }}</span><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="nav-button" type="submit">Sair</button></form>{% endblock %}
+{% block content %}
+<div class="g-layout">
+  <aside class="g-sidebar"><p class="eyebrow">SEU RESTAURANTE</p><div class="g-desktop-menu">{% include 'gestao/menu.html' %}</div><details class="g-mobile-menu"><summary>Menu da gestão</summary>{% include 'gestao/menu.html' %}</details><div class="g-sidebar-note"><strong>Rotina do salão</strong><p>Abertura, entregas e fechamento de contas estão no painel do salão.</p><a href="{% url 'garcom' %}">Abrir salão →</a></div>{% if user.is_superuser %}<details class="g-technical"><summary>Configuração técnica</summary><a href="{% url 'admin-avancado' %}">Administração avançada</a></details>{% endif %}</aside>
+  <div class="g-main">
+    <header class="g-heading"><div><p class="eyebrow">MESAFÁCIL · GESTÃO</p><h1>{{ titulo }}</h1>{% if descricao %}<p>{{ descricao }}</p>{% endif %}</div><div class="g-actions">{% block actions %}{% endblock %}</div></header>
+    {% for message in messages %}<div class="g-message {{ message.tags }}" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">{{ message }}</div>{% endfor %}
+    {% block gcontent %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

@@ -104,9 +104,9 @@ class PaginasTestCase(TestCase):
         Perfil.objects.create(user=admin, role='ADMIN')
         self.client.force_login(admin)
         response = self.client.get('/admin/')
-        self.assertContains(response, 'Administração do restaurante')
-        for url in ('/admin/restaurante/mesa/', '/admin/restaurante/produto/',
-                    '/admin/auth/user/', '/admin/restaurante/pedido/'):
+        self.assertContains(response, 'Seu restaurante, em dia.')
+        for url in ('/admin/mesas/', '/admin/cardapio/',
+                    '/admin/equipe/', '/admin/pedidos/'):
             self.assertContains(response, f'href="{url}"')
         self.client.force_login(self.garcom)
-        self.assertEqual(self.client.get('/admin/').status_code, 302)
+        self.assertEqual(self.client.get('/admin/').status_code, 403)

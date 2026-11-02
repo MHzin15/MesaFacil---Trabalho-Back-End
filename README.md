@@ -13,6 +13,8 @@ Consulte também a [auditoria de requisitos, domínio e decisões técnicas de 2
 para o parecer atual e as pendências de aceite.
 As correções de segurança, evidências e orientações de atualização estão na
 [auditoria de segurança de 01/11](docs/AUDITORIA_SEGURANCA_2026-11-01.md).
+A administração agora oferece um [painel de gestão do restaurante](docs/GESTAO_RESTAURANTE.md),
+com equipe, recuperação de acesso, mesas, cardápio, preços, pedidos e relatórios.
 
 ## Stack
 
@@ -127,7 +129,7 @@ não testa a rede nem substitui o fluxo presencial.
 ## Acesso e API
 
 - Entrada: http://localhost:8000/
-- Login da equipe: /entrar/; administração: /admin/.
+- Login da equipe: /entrar/; painel do gestor: /admin/.
 - Cliente: /mesa/<UUID>/; cozinha: /cozinha/.
 - Cliente tem telas de carrinho, pedidos e conta em /mesa/<UUID>/carrinho/,
   /mesa/<UUID>/pedidos/ e /mesa/<UUID>/conta/, com navegação própria.

@@ -1,0 +1,1 @@
+{% extends 'gestao/base.html' %}{% block gcontent %}<form method="post" class="surface g-confirm">{% csrf_token %}<h2>Confirme antes de continuar</h2><p>{{ descricao }}</p><div class="g-actions"><button class="btn btn-primary" type="submit">{{ botao }}</button><a href="{{ voltar }}" class="btn btn-outline-primary">Voltar sem alterar</a></div></form>{% endblock %}

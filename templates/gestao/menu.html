@@ -1,0 +1,9 @@
+<nav class="g-nav" aria-label="Gestão do restaurante">
+  <a href="{% url 'gestao:inicio' %}" {% if section == 'inicio' %}aria-current="page"{% endif %}>{% include "gestao/icone.html" with nome="inicio" %} Visão geral</a>
+  <a href="{% url 'gestao:equipe' %}" {% if section == 'equipe' %}aria-current="page"{% endif %}>{% include "gestao/icone.html" with nome="equipe" %} Equipe e acessos</a>
+  <a href="{% url 'gestao:mesas' %}" {% if section == 'mesas' %}aria-current="page"{% endif %}>{% include "gestao/icone.html" with nome="mesas" %} Mesas e QR Codes</a>
+  <a href="{% url 'gestao:cardapio' %}" {% if section == 'cardapio' %}aria-current="page"{% endif %}>{% include "gestao/icone.html" with nome="cardapio" %} Cardápio e preços</a>
+  <a href="{% url 'gestao:pedidos' %}" {% if section == 'pedidos' %}aria-current="page"{% endif %}>{% include "gestao/icone.html" with nome="pedidos" %} Pedidos</a>
+  <a href="{% url 'gestao:relatorios' %}" {% if section == 'relatorios' %}aria-current="page"{% endif %}>{% include "gestao/icone.html" with nome="relatorios" %} Recebimentos</a>
+  <a href="{% url 'gestao:atividades' %}" {% if section == 'atividades' %}aria-current="page"{% endif %}>{% include "gestao/icone.html" with nome="atividades" %} Histórico de alterações</a>
+</nav>

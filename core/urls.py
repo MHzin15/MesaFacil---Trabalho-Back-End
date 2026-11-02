@@ -30,6 +30,8 @@ urlpatterns = [
     path('painel/', pages.painel, name='painel'),
     path('entrar/', auth_views.LoginView.as_view(), name='login'),
     path('sair/', auth_views.LogoutView.as_view(), name='logout'),
+    path('admin/avancado/', admin.site.admin_view(admin.site.index), name='admin-avancado'),
+    path('admin/', include('restaurante.gestao.urls')),
     path('admin/', admin.site.urls),
     path('api/', include('restaurante.urls')),
 
