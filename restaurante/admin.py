@@ -88,7 +88,7 @@ class SessaoMesaAdmin(admin.ModelAdmin):
     list_display = ('mesa', 'ativa', 'conta_solicitada', 'aberta_em', 'fechada_em', 'aberta_por')
     list_filter = ('ativa', 'conta_solicitada')
     search_fields = ('mesa__numero',)
-    readonly_fields = ('mesa', 'ativa', 'conta_solicitada', 'aberta_em', 'fechada_em', 'aberta_por')
+    readonly_fields = ('acesso_uuid', 'versao_conta', 'mesa', 'ativa', 'conta_solicitada', 'aberta_em', 'fechada_em', 'aberta_por')
     actions = ['fechar_sessoes']
 
     def has_add_permission(self, request):
@@ -150,7 +150,7 @@ class ItemPedidoInline(admin.TabularInline):
 class HistoricoStatusInline(admin.TabularInline):
     model = HistoricoStatusPedido
     extra = 0
-    readonly_fields = ('status_anterior', 'status_novo', 'alterado_em', 'alterado_por')
+    readonly_fields = ('motivo', 'status_anterior', 'status_novo', 'alterado_em', 'alterado_por')
     can_delete = False
 
 

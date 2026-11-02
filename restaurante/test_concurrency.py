@@ -1,3 +1,4 @@
+from .test_support import conferencia
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 from unittest import skipUnless
@@ -37,6 +38,38 @@ class ConcurrencyTests(TransactionTestCase):
         self.assertCountEqual(results, ['ok', 'rejeitado'])
         self.assertEqual(SessaoMesa.objects.filter(ativa=True).count(), 1)
 
+    def test_simultaneous_first_orders_open_one_session(self):
+        from uuid import uuid4
+        product = Produto.objects.create(categoria=Categoria.objects.create(nome='Auto'), nome='Item', preco='10.00')
+        payloads = [{'mesa_uuid': self.mesa.token_uuid, 'sessao_id': None, 'chave_envio': uuid4(),
+            'itens': [{'produto_id': product.pk, 'quantidade': 1}]} for _ in range(2)]
+        generation = str(uuid4())
+        self.assertEqual(self.race([lambda: services.criar(payloads[0], self.admin, geracao=generation),
+                                   lambda: services.criar(payloads[1], self.admin, geracao=generation)]), ['ok', 'ok'])
+        self.assertEqual(SessaoMesa.objects.filter(mesa=self.mesa, ativa=True).count(), 1)
+        self.assertEqual(Pedido.objects.count(), 2)
+
+    def test_simultaneous_first_order_retries_create_one_order(self):
+        from uuid import uuid4
+        product = Produto.objects.create(categoria=Categoria.objects.create(nome='Auto'), nome='Item', preco='10.00')
+        data = {'mesa_uuid': self.mesa.token_uuid, 'sessao_id': None, 'chave_envio': uuid4(),
+            'itens': [{'produto_id': product.pk, 'quantidade': 1}]}
+        generation = str(uuid4())
+        self.assertEqual(self.race([lambda: services.criar(data, self.admin, geracao=generation)] * 2), ['ok', 'ok'])
+        self.assertEqual(SessaoMesa.objects.filter(mesa=self.mesa, ativa=True).count(), 1)
+        self.assertEqual(Pedido.objects.count(), 1)
+
+    def test_separate_families_simultaneously_create_separate_accounts(self):
+        from uuid import uuid4
+        product = Produto.objects.create(categoria=Categoria.objects.create(nome='Auto'), nome='Item', preco='10.00')
+        data = {'mesa_uuid': self.mesa.token_uuid, 'sessao_id': None,
+            'itens': [{'produto_id': product.pk, 'quantidade': 1}]}
+        keys = [str(uuid4()), str(uuid4())]
+        self.assertEqual(self.race([lambda: services.criar(data, self.admin, geracao=keys[0]),
+                                   lambda: services.criar(data, self.admin, geracao=keys[1])]), ['ok', 'ok'])
+        self.assertEqual(SessaoMesa.objects.filter(mesa=self.mesa, ativa=True).count(), 2)
+        self.assertEqual(Pedido.objects.values('sessao_id').distinct().count(), 2)
+
     def test_same_transition_runs_once_with_one_audit_event(self):
         pedido = Pedido.objects.create(sessao=services.abrir(self.mesa.pk, self.admin))
         results = self.race([lambda: services.transitar(pedido.pk, 'EM_PREPARACAO', self.admin)] * 2)
@@ -47,7 +80,8 @@ class ConcurrencyTests(TransactionTestCase):
         sessao = services.abrir(self.mesa.pk, self.admin)
         product = Produto.objects.create(categoria=Categoria.objects.create(nome='Lanches'), nome='Item', preco='10.00')
         data = {'mesa_uuid': self.mesa.token_uuid, 'sessao_id': sessao.pk, 'itens': [{'produto_id': product.pk, 'quantidade': 1}]}
-        results = self.race([lambda: services.criar(data, self.admin), lambda: services.pagar(sessao.pk, 'PIX', self.admin)])
+        snapshot = conferencia(sessao)
+        results = self.race([lambda: services.criar(data, self.admin), lambda: services.pagar(sessao.pk, 'PIX', self.admin, **snapshot)])
         self.assertCountEqual(results, ['ok', 'rejeitado'])
         sessao.refresh_from_db()
         if not sessao.ativa:
@@ -59,12 +93,16 @@ class ConcurrencyTests(TransactionTestCase):
 
     def test_request_account_racing_payment_never_reopens_paid_session(self):
         sessao = services.abrir(self.mesa.pk, self.admin)
+        snapshot = conferencia(sessao)
         results = self.race([
             lambda: services.pedir_conta(self.mesa.token_uuid, sessao.pk),
-            lambda: services.pagar(sessao.pk, 'PIX', self.admin),
+            lambda: services.pagar(sessao.pk, 'PIX', self.admin, **snapshot),
         ])
         self.assertIn('ok', results)
         sessao.refresh_from_db()
+        if sessao.ativa:
+            services.pagar(sessao.pk, 'PIX', self.admin, **conferencia(sessao))
+            sessao.refresh_from_db()
         self.assertFalse(sessao.ativa)
         self.assertFalse(sessao.conta_solicitada)
         self.assertTrue(Conta.objects.get(sessao=sessao).pago)

@@ -1,3 +1,4 @@
+from .test_support import entrar_cliente, conferencia
 from uuid import uuid4
 from django.test import TestCase
 from rest_framework.test import APIClient
@@ -10,7 +11,7 @@ class ContractTests(TestCase):
         self.sessao = SessaoMesa.objects.create(mesa=self.mesa)
         self.produto = Produto.objects.create(categoria=Categoria.objects.create(nome='Lanches'), nome='Item', preco='32.90')
         self.client = APIClient()
-        self.client.get(f'/api/mesa/{self.mesa.token_uuid}/')
+        entrar_cliente(self.client, self.mesa)
         self.payload = {'mesa_uuid': str(self.mesa.token_uuid), 'sessao_id': self.sessao.pk,
             'chave_envio': str(uuid4()), 'itens': [{'produto_id': self.produto.pk, 'quantidade': 1}]}
 
@@ -43,8 +44,10 @@ class ContractTests(TestCase):
         self.assertEqual(bill.data['pedidos'][0]['status'], 'CANCELADO')
         self.assertEqual(bill.data['valor_total'], '0.00')
 
-    def test_no_session_always_returns_list_for_orders(self):
+    def test_closed_command_is_denied_and_new_draft_has_empty_orders(self):
         self.sessao.ativa = False
         self.sessao.save()
-        self.client.get(f'/api/mesa/{self.mesa.token_uuid}/')
+        entrar_cliente(self.client, self.mesa)
+        self.assertEqual(self.client.get(f'/api/mesa/{self.mesa.token_uuid}/pedidos/').status_code, 403)
+        self.client.post(f'/api/mesa/{self.mesa.token_uuid}/novo-atendimento/')
         self.assertEqual(self.client.get(f'/api/mesa/{self.mesa.token_uuid}/pedidos/').data, [])

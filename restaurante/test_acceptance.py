@@ -1,3 +1,4 @@
+from .test_support import entrar_cliente, conferencia
 from decimal import Decimal
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -17,7 +18,7 @@ class AcceptanceTests(TestCase):
         self.produto = Produto.objects.create(categoria=Categoria.objects.create(nome='Lanches'), nome='Hambúrguer', preco='32.90')
         self.admin = User.objects.create_superuser('aceite', password='senha-local-de-teste')
         self.client = APIClient()
-        self.client.get(f'/api/mesa/{self.mesa.token_uuid}/')
+        entrar_cliente(self.client, self.mesa)
 
     def test_price_change_requires_confirmation_and_rolls_back_unconfirmed_order(self):
         payload = {'mesa_uuid': str(self.mesa.token_uuid), 'sessao_id': self.sessao.pk,

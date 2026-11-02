@@ -62,13 +62,13 @@ def cliente(request, uuid, tela='cardapio'):
     titulos = {
         'cardapio': ('Cardápio', 'Escolha seus produtos e personalize cada item.'),
         'carrinho': ('Seu carrinho', 'Confira as quantidades e os adicionais antes de enviar.'),
-        'pedidos': ('Meus pedidos', 'Acompanhe o preparo e a entrega dos pedidos desta mesa.'),
-        'conta': ('Conta da mesa', 'Veja o total do atendimento e peça o fechamento quando quiser.'),
+        'pedidos': ('Meus pedidos', 'Acompanhe o preparo e a entrega dos pedidos da sua comanda.'),
+        'conta': ('Minha conta', 'Veja o total da sua comanda e peça o fechamento quando quiser.'),
     }
     if modo_garcom:
         titulos.update({
             'cardapio': ('Cardápio', 'Consulte os produtos disponíveis para esta mesa.'),
-            'pedidos': ('Pedidos', 'Acompanhe o preparo e a entrega dos pedidos desta mesa.'),
+            'pedidos': ('Pedidos', 'Acompanhe o preparo e a entrega dos pedidos da sua comanda.'),
             'conta': ('Contas', 'Confira o consumo da mesa e acesse o fechamento no salão.'),
         })
     titulo, descricao = titulos[tela]

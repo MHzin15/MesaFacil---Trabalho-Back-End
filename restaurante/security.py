@@ -8,6 +8,10 @@ def usuario_garcom(user):
     return user.is_authenticated and getattr(getattr(user, 'perfil', None), 'role', None) == 'GARCOM'
 
 
+def equipe_mesa(user):
+    return user.is_authenticated and getattr(getattr(user, 'perfil', None), 'role', None) in ('ADMIN', 'GARCOM')
+
+
 class SafeJSONParser(JSONParser):
     """Preserva o limite de bytes do DRF e trata excesso de profundidade."""
 
@@ -25,24 +29,71 @@ class CsrfSessionAuthentication(SessionAuthentication):
         return super().authenticate(request)
 
 
-def vincular_mesa(request, mesa):
-    sessao = mesa.sessao_ativa
-    contextos = request.session.get('mesas', {})
-    contextos[str(mesa.token_uuid)] = sessao.pk if sessao else None
-    request.session['mesas'] = contextos
+def chave_comanda(request, mesa):
+    return request.session.get('comandas_privadas', {}).get(str(mesa.token_uuid))
+
+
+def comanda_cliente(request, mesa):
+    from .models import SessaoMesa
+    chave = chave_comanda(request, mesa)
+    return SessaoMesa.objects.filter(mesa=mesa, acesso_uuid=chave).first() if chave else None
+
+
+def guardar_comanda(request, mesa, chave):
+    from .models import SessaoMesa
+    token = str(mesa.token_uuid)
+    atuais = request.session.get('comandas_privadas', {})
+    acessos = request.session.get('acessos_comandas', {})
+    anteriores = set(acessos.get(token, []))
+    antiga = atuais.get(token)
+    if antiga and SessaoMesa.objects.filter(mesa=mesa, acesso_uuid=antiga).exists():
+        anteriores.add(antiga)
+    if SessaoMesa.objects.filter(mesa=mesa, acesso_uuid=chave).exists():
+        anteriores.add(str(chave))
+    atuais[token] = str(chave)
+    acessos[token] = sorted(anteriores)
+    request.session['comandas_privadas'] = atuais
+    request.session['acessos_comandas'] = acessos
+
+
+def vincular_mesa(request, mesa, *, novo=False):
+    """O QR cria somente um rascunho privado, nunca concede contas da mesa."""
+    from uuid import uuid4
+    chave = chave_comanda(request, mesa)
+    if novo or not chave:
+        guardar_comanda(request, mesa, uuid4())
     get_token(request)
-    return sessao
+    return comanda_cliente(request, mesa)
+
+
+def comandas_acessiveis(request, mesa):
+    from .models import SessaoMesa
+    chaves = request.session.get('acessos_comandas', {}).get(str(mesa.token_uuid), [])
+    chaves = set(chaves) | {chave_comanda(request, mesa)}
+    chaves.discard(None)
+    return SessaoMesa.objects.filter(mesa=mesa, acesso_uuid__in=chaves, ativa=True).order_by('pk')
+
+
+def acesso_mesa(request, mesa):
+    sessao = comanda_cliente(request, mesa)
+    return bool(chave_comanda(request, mesa)) and (not sessao or sessao.ativa)
 
 
 def validar_mesa(request, mesa, sessao_id=None):
-    actual = mesa.sessao_ativa
-    granted = request.session.get('mesas', {})
-    token = str(mesa.token_uuid)
-    if token not in granted or granted[token] != (actual.pk if actual else None):
-        raise PermissionDenied('Acesse novamente o QR Code desta mesa para atualizar a sessão.')
-    if sessao_id is not None and (not actual or actual.pk != sessao_id):
-        raise PermissionDenied('Este pedido pertence a outra sessão da mesa.')
-    return actual
+    sessao = comanda_cliente(request, mesa)
+    if not chave_comanda(request, mesa) or (sessao and not sessao.ativa):
+        raise PermissionDenied('Esta comanda foi encerrada. Comece uma nova comanda para pedir novamente.')
+    if sessao_id is not None and (not sessao or sessao.pk != sessao_id):
+        raise PermissionDenied('Este pedido pertence a outra comanda.')
+    return sessao
+
+
+def visao_equipe(request):
+    if request.query_params.get('equipe') != '1':
+        return False
+    if not equipe_mesa(request.user):
+        raise PermissionDenied('A consulta de comandas da mesa é restrita à equipe.')
+    return True
 
 
 from drf_spectacular.extensions import OpenApiAuthenticationExtension

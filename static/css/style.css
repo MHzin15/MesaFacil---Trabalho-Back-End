@@ -90,3 +90,5 @@
   .service-summary{gap:8px}
   .service-summary a{padding:10px;font-size:.8rem}
 }
+
+.invite-card{max-width:640px;margin:48px auto;text-align:center}.invite-card h1{font-size:2.4rem}.invite-card p{margin:20px 0}

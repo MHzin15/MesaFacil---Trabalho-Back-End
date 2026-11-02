@@ -1,7 +1,22 @@
 """Contratos dos endpoints compostos; os CRUD usam ModelSerializer."""
 from rest_framework import serializers
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes
-from .serializers import MesaClienteSerializer, MesaSerializer, PedidoSerializer, PedidoCozinhaSerializer, ContaSerializer, PerfilSerializer
+from .serializers import MesaClienteSerializer, MesaSerializer, PedidoSerializer, PedidoCozinhaSerializer, ContaSerializer, PerfilSerializer, SessaoMesaSerializer
+
+
+class ComandaAcessivelSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    conta_solicitada = serializers.BooleanField()
+
+
+class CompartilharSerializer(serializers.Serializer):
+    url = serializers.CharField()
+    qr_url = serializers.CharField()
+    expira_em = serializers.DateTimeField()
+
+
+class SelecionarComandaSerializer(serializers.Serializer):
+    comanda_id = serializers.IntegerField(min_value=1)
 
 
 class MensagemSerializer(serializers.Serializer):
@@ -11,17 +26,22 @@ class MensagemSerializer(serializers.Serializer):
 class MesaContextoSerializer(MesaClienteSerializer):
     sessao_ativa = serializers.BooleanField()
     sessao_id = serializers.IntegerField(allow_null=True)
+    acesso_liberado = serializers.BooleanField()
+    atendimento_encerrado = serializers.BooleanField()
+    atendimento_id = serializers.UUIDField(allow_null=True)
+    comandas = ComandaAcessivelSerializer(many=True)
 
     class Meta(MesaClienteSerializer.Meta):
-        fields = MesaClienteSerializer.Meta.fields + ['sessao_ativa', 'sessao_id']
+        fields = MesaClienteSerializer.Meta.fields + ['sessao_ativa', 'sessao_id', 'acesso_liberado', 'atendimento_encerrado', 'atendimento_id', 'comandas']
 
 
 class ContaMesaSerializer(serializers.Serializer):
     mesa = MesaClienteSerializer()
-    sessao_id = serializers.IntegerField()
+    sessao_id = serializers.IntegerField(allow_null=True)
     pedidos = PedidoSerializer(many=True)
     valor_total = serializers.DecimalField(max_digits=10, decimal_places=2)
     conta_solicitada = serializers.BooleanField()
+    versao_conta = serializers.IntegerField()
 
 
 class CozinhaSerializer(serializers.Serializer):
@@ -33,6 +53,7 @@ class CozinhaSerializer(serializers.Serializer):
 class GarcomSerializer(serializers.Serializer):
     pedidos_prontos = PedidoSerializer(many=True)
     mesas_aguardando_conta = MesaSerializer(many=True)
+    comandas_aguardando_conta = SessaoMesaSerializer(many=True)
 
 
 class PagamentoResultadoSerializer(MensagemSerializer):

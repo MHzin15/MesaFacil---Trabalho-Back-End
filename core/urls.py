@@ -6,6 +6,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.contrib.auth import views as auth_views
 from restaurante import pages, pwa
+from restaurante import comandas
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
@@ -18,6 +19,7 @@ urlpatterns = [
     path('offline/', pwa.offline, name='offline'),
     path('media/produtos/<path:path>', pages.foto_produto, name='foto-produto'),
     path('', pages.inicio, name='inicio'),
+    path('convite/<uuid:token>/', comandas.convite, name='convite-comanda'),
     path('mesa/<uuid:uuid>/', pages.cliente, name='cliente'),
     path('mesa/<uuid:uuid>/carrinho/', pages.cliente, {'tela': 'carrinho'}, name='cliente-carrinho'),
     path('mesa/<uuid:uuid>/pedidos/', pages.cliente, {'tela': 'pedidos'}, name='cliente-pedidos'),

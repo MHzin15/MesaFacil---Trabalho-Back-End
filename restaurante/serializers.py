@@ -74,6 +74,11 @@ class CategoriaComProdutosSerializer(serializers.ModelSerializer):
 # Mesa
 # ============================================================
 class MesaSerializer(serializers.ModelSerializer):
+    comandas_abertas = serializers.SerializerMethodField()
+
+    def get_comandas_abertas(self, obj) -> list[dict]:
+        return [{'id': s.pk, 'conta_solicitada': s.conta_solicitada} for s in obj.sessoes_ativas]
+
     def validate(self, attrs):
         if self.instance and attrs.get('ativa') is False and self.instance.sessoes.filter(ativa=True).exists():
             raise serializers.ValidationError('Encerre a sessão antes de desativar a mesa.')
@@ -89,7 +94,7 @@ class MesaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Mesa
-        fields = ['id', 'numero', 'token_uuid', 'ativa', 'qr_code', 'status', 'sessao_ativa_id']
+        fields = ['id', 'numero', 'token_uuid', 'ativa', 'qr_code', 'status', 'sessao_ativa_id', 'comandas_abertas']
         read_only_fields = ['token_uuid', 'qr_code']
 
     def get_sessao_ativa_id(self, obj) -> int | None:
@@ -117,8 +122,9 @@ class SessaoMesaSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'mesa', 'mesa_numero', 'ativa',
             'conta_solicitada', 'aberta_em', 'fechada_em', 'aberta_por',
+            'versao_conta',
         ]
-        read_only_fields = ['aberta_em', 'fechada_em', 'aberta_por']
+        read_only_fields = ['aberta_em', 'fechada_em', 'aberta_por', 'versao_conta']
 
 
 # ============================================================
@@ -231,6 +237,7 @@ class HistoricoStatusPedidoSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'pedido', 'status_anterior', 'status_novo',
             'alterado_em', 'alterado_por', 'alterado_por_nome',
+            'motivo',
         ]
 
     def get_alterado_por_nome(self, obj) -> str:
@@ -257,6 +264,8 @@ class ContaSerializer(serializers.ModelSerializer):
 class PagamentoSerializer(serializers.Serializer):
     """Serializer para processar pagamento simulado."""
     meio_pagamento = serializers.ChoiceField(choices=Conta.MEIO_PAGAMENTO_CHOICES)
+    total_esperado = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=0)
+    versao_conta = serializers.IntegerField(min_value=1)
 
 
 class FiltroDatasSerializer(serializers.Serializer):

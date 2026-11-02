@@ -5,6 +5,7 @@
   const labels = {livre:'Livre', ocupada:'Ocupada', aguardando_conta:'Aguardando conta'};
   let busy = false, refreshing = false, selected = null, lastData = '';
   const billUrl = id => `/api/sessoes/${id}/conta/`;
+  let reviewedBill = null, currentBill = null;
   let tablesCache = [], tableFilter = '';
 
   function renderTables() {
@@ -12,7 +13,7 @@
     const visible = tablesCache.filter(t => (!tableFilter || t.status === tableFilter) && String(t.numero).includes(search));
     const free = tablesCache.filter(t => t.status === 'livre').length;
     byId('mesas-summary').textContent = `${visible.length} de ${tablesCache.length} mesas · ${free} livres`;
-    byId('mapa-mesas').innerHTML = visible.map(t => `<article class="surface table-card table-${t.status}"><div class="section-title"><h3>Mesa ${String(t.numero).padStart(2,'0')}</h3><span class="status-label">${labels[t.status]}</span></div><p class="table-hint">${t.sessao_ativa_id ? 'Atendimento em andamento.' : 'Abra a sessão para o cliente poder pedir.'}</p><div class="table-actions">${t.sessao_ativa_id ? `<button class="btn btn-outline-primary" data-bill="${t.sessao_ativa_id}">Ver conta e atendimento</button>` : `<button class="btn btn-primary" data-open="${t.id}">Abrir sessão</button>`}<a class="text-link" href="/mesa/${escape(t.token_uuid)}/" target="_blank" rel="noopener">Abrir cardápio da mesa ↗</a></div></article>`).join('') || '<div class="surface workspace-empty"><h3>Nenhuma mesa encontrada</h3><p>Tente outro número ou situação.</p><button type="button" class="btn btn-outline-primary" data-clear-tables>Limpar filtros</button></div>';
+    byId('mapa-mesas').innerHTML = visible.map(t => `<article class="surface table-card table-${t.status}"><div class="section-title"><h3>Mesa ${String(t.numero).padStart(2,'0')}</h3><span class="status-label">${labels[t.status]}</span></div><p class="table-hint">${t.sessao_ativa_id ? 'Atendimento em andamento.' : 'O primeiro pedido abre o atendimento automaticamente.'}</p><div class="table-actions">${t.comandas_abertas.map(c => `<button class="btn btn-outline-primary" data-bill="${c.id}">Comanda #${c.id}${c.conta_solicitada ? " · conta solicitada" : " · conferir"}</button>`).join("")}<a class="text-link" href="/mesa/${escape(t.token_uuid)}/" target="_blank" rel="noopener">Abrir cardápio da mesa ↗</a></div></article>`).join('') || '<div class="surface workspace-empty"><h3>Nenhuma mesa encontrada</h3><p>Tente outro número ou situação.</p><button type="button" class="btn btn-outline-primary" data-clear-tables>Limpar filtros</button></div>';
   }
 
   function renderDeliveries(orders) {
@@ -27,7 +28,15 @@
   }
 
   function showBill(bill) {
-    byId('conta-titulo').textContent = `Conta · Mesa ${bill.mesa.numero}`;
+    currentBill = bill;
+    if (!reviewedBill || reviewedBill.sessao_id !== bill.sessao_id) reviewedBill = {sessao_id:bill.sessao_id, versao_conta:bill.versao_conta, total_esperado:bill.valor_total};
+    const changed = reviewedBill.versao_conta !== bill.versao_conta || reviewedBill.total_esperado !== bill.valor_total;
+    byId('conta-alterada').hidden = !changed;
+    byId('conferir-conta').hidden = !changed;
+    byId('retomar-atendimento').hidden = !bill.conta_solicitada;
+    byId('retomar-atendimento').disabled = busy;
+
+    byId('conta-titulo').textContent = `Comanda #${bill.sessao_id} · Mesa ${bill.mesa.numero}`;
     byId('conta-itens').innerHTML = bill.pedidos.map(p => `<div class="bill-row"><div><strong>Pedido #${p.id}</strong><p class="small muted mb-0">${statusNames[p.status]}${p.status === 'CANCELADO' ? ' · sem cobrança' : ''}</p>${MF.itemList(p)}</div><strong>${money(p.status === 'CANCELADO' ? 0 : p.valor_total)}</strong></div>`).join('') || '<p class="empty-state">Esta sessão ainda não tem pedidos.</p>';
     byId('conta-valor').textContent = money(bill.valor_total);
     const pending = bill.pedidos.some(p => !['ENTREGUE','CANCELADO'].includes(p.status));
@@ -35,9 +44,9 @@
     byId('conta-pendencias').textContent = 'Há pedidos pendentes. Entregue ou cancele os pedidos antes de finalizar a conta.';
     byId('pagamento-ajuda').textContent = pending ? 'O pagamento será liberado quando não houver pedidos pendentes.' : Number(bill.valor_total) === 0 ? 'Não há valor a cobrar. Você pode encerrar a sessão sem cobrança.' : 'Confira o valor e escolha o meio informado pelo cliente.';
     byId('pagamento-form').hidden = Number(bill.valor_total) === 0;
-    byId('pagar').disabled = pending || busy || Number(bill.valor_total) === 0 || !navigator.onLine;
+    byId('pagar').disabled = changed || pending || busy || Number(bill.valor_total) === 0 || !navigator.onLine;
     byId('fechar-sem-cobranca').hidden = pending || Number(bill.valor_total) !== 0;
-    byId('fechar-sem-cobranca').disabled = busy || !navigator.onLine;
+    byId('fechar-sem-cobranca').disabled = changed || busy || !navigator.onLine;
     byId('solicitar-conta').disabled = bill.conta_solicitada || busy;
     byId('solicitar-conta').textContent = bill.conta_solicitada ? 'Conta já solicitada' : 'Solicitar conta';
   }
@@ -53,13 +62,13 @@
         tablesCache = tables;
         StaffUI.count('mesas-livres', tables.filter(t => t.status === 'livre').length);
         StaffUI.count('total-entregas', panel.pedidos_prontos.length);
-        StaffUI.count('total-contas', panel.mesas_aguardando_conta.length);
+        StaffUI.count('total-contas', panel.comandas_aguardando_conta.length);
         renderTables();
         renderDeliveries(panel.pedidos_prontos);
-        byId('contas-pendentes').innerHTML = panel.mesas_aguardando_conta.map(t => `<article class="surface table-card table-aguardando_conta"><p class="eyebrow">CONTA SOLICITADA</p><h3>Mesa ${t.numero}</h3><p class="muted small">Confira os pedidos antes de finalizar.</p><button class="btn btn-primary w-100" data-bill="${t.sessao_ativa_id}">Conferir e finalizar</button></article>`).join('') || '<div class="surface workspace-empty"><h3>Nenhuma conta solicitada</h3><p>As mesas que pedirem o fechamento aparecerão aqui automaticamente.</p></div>';
+        byId('contas-pendentes').innerHTML = panel.comandas_aguardando_conta.map(t => `<article class="surface table-card table-aguardando_conta"><p class="eyebrow">CONTA SOLICITADA</p><h3>Mesa ${t.mesa_numero} · Comanda #${t.id}</h3><p class="muted small">Confira os pedidos antes de finalizar.</p><button class="btn btn-primary w-100" data-bill="${t.id}">Conferir e finalizar</button></article>`).join('') || '<div class="surface workspace-empty"><h3>Nenhuma conta solicitada</h3><p>As mesas que pedirem o fechamento aparecerão aqui automaticamente.</p></div>';
       }
       if (selected && byId('conta-dialog').open) {
-        const table = tables.find(t => t.sessao_ativa_id === selected);
+        const table = tables.find(t => t.comandas_abertas.some(c => c.id === selected));
         if (table) showBill(await api(billUrl(selected)));
         else { selected = null; byId('conta-dialog').close(); feedback('Esta sessão já foi encerrada.'); }
       }
@@ -72,7 +81,7 @@
     if (busy || !navigator.onLine) return;
     busy = true;
     byId('conta-error').hidden = true;
-    document.querySelectorAll('button[data-open], button[data-order], #pagar, #fechar-sem-cobranca, #solicitar-conta').forEach(b => b.disabled = true);
+    document.querySelectorAll('button[data-open], button[data-order], #retomar-atendimento, #pagar, #fechar-sem-cobranca, #solicitar-conta').forEach(b => b.disabled = true);
     try { await work(); feedback(success); }
     catch (error) { feedback(error.message, true); byId('conta-error').textContent = error.message; byId('conta-error').hidden = false; }
     finally {
@@ -103,17 +112,25 @@
     } catch (error) { feedback(error.message, true); }
   });
   byId('buscar-mesa').addEventListener('input', renderTables);
+  byId('conferir-conta').addEventListener('click', () => {
+    if (!currentBill) return;
+    reviewedBill = {sessao_id:currentBill.sessao_id, versao_conta:currentBill.versao_conta, total_esperado:currentBill.valor_total};
+    showBill(currentBill);
+  });
+  byId('retomar-atendimento').addEventListener('click', () => action(() => api(`/api/sessoes/${selected}/retomar/`, {method:'POST'}), 'Atendimento retomado. Confira a conta novamente antes de cobrar.'));
   byId('solicitar-conta').addEventListener('click', () => action(() => api(`/api/sessoes/${selected}/solicitar-conta/`, {method:'POST'}), 'Conta solicitada.'));
   byId('fechar-sem-cobranca').addEventListener('click', () => action(async () => {
     await api(`/api/sessoes/${selected}/fechar/`, {method:'POST'});
     byId('conta-dialog').close(); selected = null;
-  }, 'Sessão encerrada. Mesa livre.'));
+  }, 'Comanda encerrada. As outras comandas da mesa continuam abertas.'));
   byId('pagamento-form').addEventListener('submit', event => {
     event.preventDefault();
+    if (!reviewedBill || !currentBill || reviewedBill.versao_conta !== currentBill.versao_conta) return;
+    const confirmation = {...reviewedBill, meio_pagamento:byId('meio-pagamento').value};
     action(async () => {
-      await api(`/api/sessoes/${selected}/pagamento/`, {method:'POST', body:JSON.stringify({meio_pagamento:byId('meio-pagamento').value})});
+      await api(`/api/sessoes/${confirmation.sessao_id}/pagamento/`, {method:'POST', body:JSON.stringify(confirmation)});
       byId('conta-dialog').close(); selected = null;
-    }, 'Pagamento aprovado! A mesa está livre.');
+    }, 'Pagamento simulado confirmado. Esta comanda foi encerrada.');
   });
   window.addEventListener('online', () => refresh().catch(e => feedback(e.message, true)));
   poll(refresh);

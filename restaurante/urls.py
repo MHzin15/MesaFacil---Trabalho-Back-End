@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import views, qr
+from . import views, qr, comandas
 
 router = DefaultRouter()
 router.register(r'categorias', views.CategoriaViewSet)
@@ -19,6 +19,10 @@ urlpatterns = [
 
     # Mesa via QR Code (UUID)
     path('mesa/<uuid:uuid>/', views.mesa_por_uuid, name='mesa-por-uuid'),
+    path('mesa/<uuid:uuid>/novo-atendimento/', views.novo_atendimento, name='novo-atendimento'),
+    path('mesa/<uuid:uuid>/compartilhar/', comandas.compartilhar, name='compartilhar-comanda'),
+    path('mesa/<uuid:uuid>/selecionar-comanda/', comandas.selecionar, name='selecionar-comanda'),
+    path('mesa/<uuid:uuid>/convites/<uuid:token>/qr/', comandas.convite_qr, name='convite-qr'),
 
     # Sessão da Mesa
     path('mesas/<int:mesa_id>/abrir-sessao/', views.abrir_sessao, name='abrir-sessao'),

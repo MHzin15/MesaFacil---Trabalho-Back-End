@@ -126,3 +126,7 @@ body[data-client-view=cardapio] .feedback{bottom:104px}
   .client-cart-bar strong{font-size:.75rem}
   body[data-page=cliente] .site-footer{display:none}
 }
+
+.private-tab-bar{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:24px}
+.private-tab-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.private-tab-actions label{font-size:.8rem}
+.share-dialog{text-align:center}.share-qr{display:block;max-width:100%;width:240px;height:240px;object-fit:contain;margin:16px auto}.share-dialog input{font-size:.8rem}

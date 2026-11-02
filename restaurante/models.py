@@ -83,6 +83,12 @@ class Mesa(models.Model):
         return f"Mesa {self.numero}"
 
     @property
+    def sessoes_ativas(self):
+        if hasattr(self, '_sessoes_ativas'):
+            return self._sessoes_ativas
+        return list(self.sessoes.filter(ativa=True))
+
+    @property
     def sessao_ativa(self):
         """Retorna a sessão ativa da mesa, se houver."""
         if hasattr(self, '_sessoes_ativas'):
@@ -92,10 +98,10 @@ class Mesa(models.Model):
     @property
     def status_display(self) -> str:
         """Retorna o status visual da mesa."""
-        sessao = self.sessao_ativa
-        if not sessao:
+        sessoes = self.sessoes_ativas
+        if not sessoes:
             return 'livre'
-        if sessao.conta_solicitada:
+        if any(sessao.conta_solicitada for sessao in sessoes):
             return 'aguardando_conta'
         return 'ocupada'
 
@@ -104,6 +110,8 @@ class Mesa(models.Model):
 # Sessão da Mesa (RF03, RN04, RN05)
 # ============================================================
 class SessaoMesa(models.Model):
+    acesso_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    versao_conta = models.PositiveIntegerField(default=1, editable=False)
     mesa = models.ForeignKey(
         Mesa,
         on_delete=models.PROTECT,
@@ -130,12 +138,7 @@ class SessaoMesa(models.Model):
         verbose_name = 'Sessão da Mesa'
         verbose_name_plural = 'Sessões das Mesas'
         ordering = ['-aberta_em']
-        constraints = [
-            models.UniqueConstraint(
-                fields=['mesa'], condition=models.Q(ativa=True),
-                name='uma_sessao_ativa_por_mesa',
-            ),
-        ]
+
 
     def __str__(self):
         status = 'Ativa' if self.ativa else 'Encerrada'
@@ -160,6 +163,12 @@ class SessaoMesa(models.Model):
 # ============================================================
 # Cardápio: Categoria, Produto, Adicional
 # ============================================================
+class ConviteComanda(models.Model):
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    sessao = models.ForeignKey(SessaoMesa, on_delete=models.CASCADE, related_name='convites')
+    expira_em = models.DateTimeField()
+
+
 class Categoria(models.Model):
     nome = models.CharField(max_length=100, unique=True)
     ordem = models.IntegerField(default=0, verbose_name='Ordem de Exibição')
@@ -393,6 +402,7 @@ class ItemPedidoAdicional(models.Model):
 # Histórico de Status (RN03)
 # ============================================================
 class HistoricoStatusPedido(models.Model):
+    motivo = models.CharField(max_length=500, blank=True, default='')
     pedido = models.ForeignKey(
         Pedido,
         on_delete=models.CASCADE,

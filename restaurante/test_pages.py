@@ -43,7 +43,7 @@ class PaginasTestCase(TestCase):
         self.mesa.save()
         self.assertEqual(self.client.get(reverse('cliente', args=[self.mesa.token_uuid])).status_code, 404)
 
-    def test_client_deep_links_open_one_screen_and_keep_table_context(self):
+    def test_client_deep_links_open_one_screen_for_self_service(self):
         class Screens(HTMLParser):
             def __init__(self):
                 super().__init__()
@@ -63,7 +63,8 @@ class PaginasTestCase(TestCase):
                 parser.feed(response.content.decode())
                 self.assertEqual(parser.visible, [screen])
                 self.assertEqual(response['Cache-Control'], 'no-store')
-                self.assertIn(str(self.mesa.token_uuid), self.client.session['mesas'])
+                self.assertIn(str(self.mesa.token_uuid), self.client.session['comandas_privadas'])
+                self.assertNotContains(response, 'codigo-atendimento')
 
     def test_inactive_table_cannot_be_accessed_by_client_deep_links(self):
         self.mesa.ativa = False

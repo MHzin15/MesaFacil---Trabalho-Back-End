@@ -1,3 +1,4 @@
+from .test_support import entrar_cliente, conferencia
 from decimal import Decimal
 from unittest.mock import patch
 from django.contrib.auth.models import User
@@ -26,7 +27,7 @@ class WaiterTests(TestCase):
         data = {'mesa_uuid': str(self.mesa.token_uuid), 'sessao_id': sessao.pk,
                 'itens': [{'produto_id': self.produto.pk, 'quantidade': 1}]}
         self.client.force_login(self.garcom)
-        self.client.get(f'/api/mesa/{self.mesa.token_uuid}/')
+        entrar_cliente(self.client, self.mesa)
         response = self.client.post('/api/pedidos/criar/', data, format='json')
         self.assertEqual(response.status_code, 403)
         with self.assertRaises(PermissionDenied):
@@ -60,6 +61,7 @@ class WaiterTests(TestCase):
         self.assertContains(response, 'id="produto-form"')
         self.assertContains(response, 'Meus pedidos')
         self.assertContains(response, 'Minha conta')
+        entrar_cliente(self.client, self.mesa)
         response = self.client.post('/api/pedidos/criar/', {
             'mesa_uuid': str(self.mesa.token_uuid), 'sessao_id': sessao.pk,
             'itens': [{'produto_id': self.produto.pk, 'quantidade': 1}]}, format='json')
@@ -81,7 +83,7 @@ class WaiterTests(TestCase):
         opened = self.client.post(f'/api/mesas/{self.mesa.pk}/abrir-sessao/')
         self.assertEqual(opened.status_code, 201)
         guest = APIClient(enforce_csrf_checks=True)
-        guest.get(f'/api/mesa/{self.mesa.token_uuid}/')
+        entrar_cliente(guest, self.mesa)
         csrf = {'HTTP_X_CSRFTOKEN': guest.cookies['csrftoken'].value}
         created = guest.post('/api/pedidos/criar/', {'mesa_uuid': str(self.mesa.token_uuid), 'sessao_id': opened.data['id'],
             'itens': [{'produto_id': self.produto.pk, 'quantidade': 2, 'adicionais_ids': [self.addon.pk]}]}, format='json', **csrf)
@@ -99,7 +101,7 @@ class WaiterTests(TestCase):
         self.assertEqual(self.client.get('/api/garcom/').data['mesas_aguardando_conta'][0]['id'], self.mesa.pk)
         bill = self.client.get(f'/api/sessoes/{opened.data["id"]}/conta/')
         self.assertEqual(bill.data['valor_total'], '75.80')
-        paid = self.client.post(f'/api/sessoes/{opened.data["id"]}/pagamento/', {'meio_pagamento': 'PIX'}, format='json')
+        paid = self.client.post(f'/api/sessoes/{opened.data["id"]}/pagamento/', {'meio_pagamento': 'PIX', **conferencia(SessaoMesa.objects.get(pk=opened.data['id']))}, format='json')
         self.assertEqual(paid.status_code, 200)
         self.assertEqual(self.client.get('/api/garcom/mapa-mesas/').data[0]['status'], 'livre')
         self.assertFalse(SessaoMesa.objects.get(pk=opened.data['id']).ativa)
@@ -115,9 +117,9 @@ class WaiterTests(TestCase):
                 cancelled = Pedido.objects.create(sessao=sessao, status='CANCELADO')
                 ItemPedido.objects.create(pedido=cancelled, produto=self.produto, preco_unitario='90.00')
                 url = f'/api/sessoes/{sessao.pk}/pagamento/'
-                self.assertEqual(self.client.post(url, {'meio_pagamento': method}, format='json').status_code, 200)
+                self.assertEqual(self.client.post(url, {'meio_pagamento': method, **conferencia(sessao)}, format='json').status_code, 200)
                 self.assertEqual(Conta.objects.get(sessao=sessao).valor_total, Decimal('32.90'))
-                self.assertEqual(self.client.post(url, {'meio_pagamento': method}, format='json').status_code, 400)
+                self.assertEqual(self.client.post(url, {'meio_pagamento': method, **conferencia(sessao)}, format='json').status_code, 400)
                 self.assertEqual(Conta.objects.filter(sessao=sessao).count(), 1)
 
     def test_every_pending_state_blocks_payment_and_invalid_method_is_rejected(self):
@@ -127,7 +129,7 @@ class WaiterTests(TestCase):
         url = f'/api/sessoes/{sessao.pk}/pagamento/'
         for state in ('RECEBIDO', 'EM_PREPARACAO', 'PRONTO', 'A_CAMINHO'):
             Pedido.objects.filter(pk=pedido.pk).update(status=state)
-            self.assertEqual(self.client.post(url, {'meio_pagamento': 'PIX'}, format='json').status_code, 400)
+            self.assertEqual(self.client.post(url, {'meio_pagamento': 'PIX', **conferencia(sessao)}, format='json').status_code, 400)
         self.assertEqual(self.client.post(url, {'meio_pagamento': 'BOLETO'}, format='json').status_code, 400)
         self.assertFalse(Conta.objects.exists())
 
@@ -144,7 +146,7 @@ class WaiterTests(TestCase):
         sessao = services.abrir(self.mesa.pk, self.garcom)
         with patch('restaurante.services.encerrar', side_effect=RuntimeError('falha simulada')):
             with self.assertRaises(RuntimeError):
-                services.pagar(sessao.pk, 'PIX', self.garcom)
+                services.pagar(sessao.pk, 'PIX', self.garcom, **conferencia(sessao))
         sessao.refresh_from_db()
         self.assertTrue(sessao.ativa)
         self.assertFalse(Conta.objects.exists())

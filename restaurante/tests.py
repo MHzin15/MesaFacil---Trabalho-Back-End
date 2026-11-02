@@ -1,3 +1,4 @@
+from .test_support import entrar_cliente, conferencia
 from decimal import Decimal
 from datetime import timedelta
 from itertools import product
@@ -70,8 +71,8 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
     # -------------------------------------------------------------
     # RN04 & RN05 — Sessões de Mesa
     # -------------------------------------------------------------
-    def test_rn04_nao_permite_pedido_sem_sessao_aberta(self):
-        """RN04: Só é possível enviar pedido para uma mesa com sessão aberta."""
+    def test_primeiro_pedido_abre_sessao_automaticamente(self):
+        """Autoatendimento: primeiro pedido válido abre sua sessão na mesma transação."""
         url = reverse('criar-pedido')
         payload = {
             'mesa_uuid': str(self.mesa.token_uuid),
@@ -80,10 +81,11 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
                 {'produto_id': self.produto_hamburguer.id, 'quantidade': 1}
             ]
         }
-        self.client.get(reverse('mesa-por-uuid', args=[self.mesa.token_uuid]))
+        entrar_cliente(self.client, self.mesa)
         response = self.client.post(url, payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('não possui uma sessão aberta', response.data.get('erro', ''))
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(SessaoMesa.objects.filter(mesa=self.mesa, ativa=True).count(), 1)
+        self.assertIsNone(self.mesa.sessao_ativa.aberta_por)
 
     def test_rn05_uma_mesa_nao_pode_ter_duas_sessoes_abertas(self):
         """RN05: Uma mesa não pode ter duas sessões abertas ao mesmo tempo."""
@@ -122,7 +124,7 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
                 }
             ]
         }
-        self.client.get(reverse('mesa-por-uuid', args=[self.mesa.token_uuid]))
+        entrar_cliente(self.client, self.mesa)
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -155,7 +157,7 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
                 {'produto_id': self.produto_esgotado.id, 'quantidade': 1}
             ]
         }
-        self.client.get(reverse('mesa-por-uuid', args=[self.mesa.token_uuid]))
+        entrar_cliente(self.client, self.mesa)
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -270,7 +272,7 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
         url_pagamento = reverse('processar-pagamento', kwargs={'sessao_id': sessao.id})
 
         # Tentativa de fechar conta com pedido em preparação (deve falhar)
-        resp = self.client.post(url_pagamento, {'meio_pagamento': 'PIX'}, format='json')
+        resp = self.client.post(url_pagamento, {'meio_pagamento': 'PIX', **conferencia(sessao)}, format='json')
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('Todos os pedidos devem estar entregues ou cancelados', resp.data.get('erro', ''))
 
@@ -281,13 +283,13 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
         url = reverse('criar-pedido')
         payload = {
             'mesa_uuid': str(self.mesa.token_uuid),
-            'sessao_id': self.mesa.sessao_ativa.pk if self.mesa.sessao_ativa else None,
+            'sessao_id': sessao.pk,
             'itens': [{'produto_id': self.produto_hamburguer.id, 'quantidade': 1}]
         }
         # Como a sessão não está ativa, mesa.sessao_ativa é None (RN04)
-        self.client.get(reverse('mesa-por-uuid', args=[self.mesa.token_uuid]))
+        entrar_cliente(self.client, self.mesa)
         response = self.client.post(url, payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def abrir_sessao_teste(self):
         return SessaoMesa.objects.create(mesa=self.mesa, aberta_por=self.user_garcom)
@@ -301,7 +303,7 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
             }],
             **campos,
         }
-        self.client.get(reverse('mesa-por-uuid', args=[self.mesa.token_uuid]))
+        entrar_cliente(self.client, self.mesa)
         return self.client.post(reverse('criar-pedido'), payload, format='json')
 
     def mudar_status(self, pedido, status_novo):
@@ -420,8 +422,8 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
 
     def test_rn04_sessao_de_outra_mesa_nao_autoriza_pedido(self):
         outra_mesa = Mesa.objects.create(numero=2)
-        SessaoMesa.objects.create(mesa=outra_mesa)
-        self.assertEqual(self.enviar_pedido().status_code, 400)
+        outra_sessao = SessaoMesa.objects.create(mesa=outra_mesa)
+        self.assertEqual(self.enviar_pedido(sessao_id=outra_sessao.pk).status_code, 403)
         self.assert_sem_pedido_parcial()
 
     def test_rn04_mesa_inativa_uuid_invalido_ou_inexistente(self):
@@ -433,11 +435,11 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
                 self.assertEqual(self.enviar_pedido(mesa_uuid=token).status_code, esperado)
                 self.assert_sem_pedido_parcial()
 
-    def test_rn05_restricao_no_banco_impede_sessao_duplicada(self):
+    def test_comanda_privada_tem_acesso_unico_no_banco(self):
         sessao = self.abrir_sessao_teste()
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
-                SessaoMesa.objects.create(mesa=self.mesa)
+                SessaoMesa.objects.create(mesa=self.mesa, acesso_uuid=sessao.acesso_uuid)
         self.assertEqual(list(self.mesa.sessoes.filter(ativa=True)), [sessao])
 
     def test_rn05_conflito_na_gravacao_retorna_400(self):

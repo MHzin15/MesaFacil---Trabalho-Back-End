@@ -46,7 +46,7 @@ class PrivateResponses:
 
     def __call__(self, request):
         response = self.get_response(request)
-        if request.path.startswith(('/api/', '/mesa/', '/cozinha/', '/garcom/', '/admin/', '/entrar/', '/painel/')) and request.path != '/api/cardapio/':
+        if request.path.startswith(('/api/', '/mesa/', '/convite/', '/cozinha/', '/garcom/', '/admin/', '/entrar/', '/painel/')) and request.path != '/api/cardapio/':
             response['Cache-Control'] = 'no-store'
             response['Referrer-Policy'] = 'same-origin'
         return response

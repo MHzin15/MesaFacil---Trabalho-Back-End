@@ -8,7 +8,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.db.models.deletion import ProtectedError
 from . import services
-from .security import vincular_mesa, validar_mesa
+from .security import vincular_mesa, validar_mesa, equipe_mesa, chave_comanda, comanda_cliente, comandas_acessiveis, guardar_comanda, visao_equipe
 from .serializers import FiltroDatasSerializer
 from decimal import Decimal
 
@@ -136,13 +136,28 @@ def mesa_por_uuid(request, uuid):
     Não requer login (cliente acessa).
     """
     mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
-    sessao = vincular_mesa(request, mesa)
+    equipe = visao_equipe(request)
+    sessao = mesa.sessao_ativa if equipe else comanda_cliente(request, mesa)
 
     data = MesaClienteSerializer(mesa).data
-    data['sessao_ativa'] = sessao is not None
-    data['sessao_id'] = sessao.id if sessao else None
+    data['sessao_ativa'] = bool(sessao and sessao.ativa)
+    acesso = equipe or bool(chave_comanda(request, mesa)) and (not sessao or sessao.ativa)
+    data['acesso_liberado'] = acesso
+    data['atendimento_id'] = chave_comanda(request, mesa) if acesso and not equipe else None
+    data['sessao_id'] = sessao.id if sessao and sessao.ativa and acesso else None
+    data['atendimento_encerrado'] = bool(not equipe and sessao and not sessao.ativa)
+    data['comandas'] = [] if equipe else list(comandas_acessiveis(request, mesa).values('id', 'conta_solicitada'))
 
     return Response(data)
+
+
+@extend_schema(request=None, responses={200: MensagemSerializer, **ERROS})
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def novo_atendimento(request, uuid):
+    mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
+    vincular_mesa(request, mesa, novo=True)
+    return Response({'mensagem': 'Novo atendimento iniciado. Escolha e confirme seu pedido.'})
 
 
 # ============================================================
@@ -156,14 +171,16 @@ class SessaoMesaViewSet(viewsets.ReadOnlyModelViewSet):
 
     @extend_schema(responses={200: ContaMesaSerializer, **ERROS})
     @action(detail=True, methods=['get'])
+    @transaction.atomic
     def conta(self, request, pk=None):
-        sessao = self.get_object()
+        sessao = services.sessao_bloqueada(self.get_object().pk)
         pedidos = sessao.pedidos.para_exibicao()
         return Response({
             'mesa': MesaClienteSerializer(sessao.mesa).data, 'sessao_id': sessao.pk,
             'pedidos': PedidoSerializer(pedidos, many=True).data,
             'valor_total': str(sum((p.valor_total for p in pedidos if p.status != 'CANCELADO'), Decimal('0.00'))),
             'conta_solicitada': sessao.conta_solicitada,
+            'versao_conta': sessao.versao_conta,
         })
 
     @extend_schema(request=None, responses={200: MensagemSerializer, **ERROS})
@@ -172,6 +189,12 @@ class SessaoMesaViewSet(viewsets.ReadOnlyModelViewSet):
         sessao = self.get_object()
         services.pedir_conta(sessao.mesa.token_uuid, sessao.pk)
         return Response({'mensagem': 'Conta solicitada.'})
+
+    @extend_schema(request=None, responses={200: MensagemSerializer, **ERROS})
+    @action(detail=True, methods=['post'])
+    def retomar(self, request, pk=None):
+        services.retomar(self.get_object().pk, request.user)
+        return Response({'mensagem': 'Atendimento retomado. Novos pedidos estão liberados.'})
 
 
 @extend_schema(request=None, responses={201: SessaoMesaSerializer, **ERROS})
@@ -202,10 +225,9 @@ def criar_pedido(request):
     serializer.is_valid(raise_exception=True)
     dados = serializer.validated_data
     mesa = get_object_or_404(Mesa, token_uuid=dados['mesa_uuid'], ativa=True)
-    # Sem sessão aberta, a regra de negócio retorna um erro claro antes do contexto.
-    if mesa.sessao_ativa:
-        validar_mesa(request, mesa, dados.get('sessao_id'))
-    pedido = services.criar(dados, request.user)
+    validar_mesa(request, mesa, dados.get('sessao_id'))
+    geracao = chave_comanda(request, mesa)
+    pedido = services.criar(dados, request.user, geracao=geracao)
     return Response(PedidoSerializer(pedido).data, status=201)
 
 
@@ -226,12 +248,13 @@ def alterar_status_pedido(request, pedido_id):
 def pedidos_da_mesa(request, uuid):
     """RF12 — Cliente acompanha os pedidos da mesa pela UUID."""
     mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
-    sessao = validar_mesa(request, mesa)
+    equipe = visao_equipe(request)
+    sessao = mesa.sessao_ativa if equipe else validar_mesa(request, mesa)
 
     if not sessao:
         return Response([])
 
-    pedidos = sessao.pedidos.para_exibicao()
+    pedidos = Pedido.objects.filter(sessao__mesa=mesa, sessao__ativa=True).para_exibicao() if equipe else sessao.pedidos.para_exibicao()
 
     return Response(PedidoSerializer(pedidos, many=True).data)
 
@@ -298,7 +321,8 @@ def painel_garcom(request):
 
     return Response({
         'pedidos_prontos': PedidoSerializer(pedidos_prontos, many=True).data,
-        'mesas_aguardando_conta': MesaSerializer(mesas_aguardando, many=True).data,
+        'mesas_aguardando_conta': MesaSerializer(mesas_aguardando, many=True, context={'request': request}).data,
+        'comandas_aguardando_conta': SessaoMesaSerializer(SessaoMesa.objects.filter(ativa=True, conta_solicitada=True).select_related('mesa'), many=True).data,
     })
 
 
@@ -308,7 +332,7 @@ def painel_garcom(request):
 def mapa_mesas(request):
     """RF04 — Situação de cada mesa (livre, ocupada, aguardando conta)."""
     mesas = Mesa.objects.filter(ativa=True).com_sessao_ativa()
-    return Response(MesaSerializer(mesas, many=True).data)
+    return Response(MesaSerializer(mesas, many=True, context={'request': request}).data)
 
 
 # ============================================================
@@ -320,7 +344,8 @@ def mapa_mesas(request):
 def ver_conta(request, uuid):
     """RF19 — Cliente vê a conta da mesa com todos os pedidos."""
     mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
-    sessao = validar_mesa(request, mesa)
+    equipe = visao_equipe(request)
+    sessao = mesa.sessao_ativa if equipe else validar_mesa(request, mesa)
 
     if not sessao:
         return Response(
@@ -328,16 +353,17 @@ def ver_conta(request, uuid):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    pedidos = sessao.pedidos.para_exibicao()
+    pedidos = Pedido.objects.filter(sessao__mesa=mesa, sessao__ativa=True).para_exibicao() if equipe else sessao.pedidos.para_exibicao()
 
     total = sum((p.valor_total for p in pedidos if p.status != 'CANCELADO'), Decimal('0.00'))
 
     return Response({
         'mesa': MesaClienteSerializer(mesa).data,
-        'sessao_id': sessao.id,
+        'sessao_id': None if equipe else sessao.id,
         'pedidos': PedidoSerializer(pedidos, many=True).data,
         'valor_total': str(total),
-        'conta_solicitada': sessao.conta_solicitada,
+        'conta_solicitada': mesa.sessoes.filter(ativa=True, conta_solicitada=True).exists() if equipe else sessao.conta_solicitada,
+        'versao_conta': sessao.versao_conta,
     })
 
 
@@ -360,7 +386,9 @@ def solicitar_conta(request, uuid):
 def processar_pagamento(request, sessao_id):
     serializer = PagamentoSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    conta = services.pagar(sessao_id, serializer.validated_data['meio_pagamento'], request.user)
+    dados = serializer.validated_data
+    conta = services.pagar(sessao_id, dados['meio_pagamento'], request.user,
+        total_esperado=dados['total_esperado'], versao_conta=dados['versao_conta'])
     return Response({'mensagem': 'Pagamento aprovado! Sessão encerrada.', 'conta': ContaSerializer(conta).data})
 
 

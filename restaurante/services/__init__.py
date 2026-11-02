@@ -34,7 +34,7 @@ def abrir(mesa_id, user):
     try:
         with transaction.atomic():
             mesa = get_object_or_404(Mesa.objects.select_for_update(), pk=mesa_id, ativa=True)
-            if mesa.sessao_ativa:
+            if mesa.sessoes.filter(ativa=True).exists():
                 erro(f'Mesa {mesa.numero} já possui uma sessão aberta.')
             return SessaoMesa.objects.create(mesa=mesa, aberta_por=user)
     except IntegrityError:
@@ -44,15 +44,25 @@ def abrir(mesa_id, user):
 
 
 @transaction.atomic
-def criar(dados, user):
+def criar(dados, user, *, geracao=None):
     if usuario_garcom(user):
         raise PermissionDenied('O perfil de garçom não pode criar pedidos.')
     mesa = get_object_or_404(Mesa.objects.select_for_update(), token_uuid=dados['mesa_uuid'], ativa=True)
-    sessao = SessaoMesa.objects.select_for_update().filter(mesa=mesa, ativa=True).first()
+    if geracao is not None:
+        sessao = SessaoMesa.objects.select_for_update().filter(mesa=mesa, acesso_uuid=geracao).first()
+        if sessao and not sessao.ativa:
+            erro('Esta comanda foi encerrada. Comece uma nova comanda para pedir novamente.')
+        if not sessao:
+            if dados.get('sessao_id') is not None:
+                erro('A comanda mudou. Revise seu pedido antes de enviar.')
+            sessao = SessaoMesa.objects.create(mesa=mesa, acesso_uuid=geracao,
+                aberta_por=user if user.is_authenticated else None)
+    else:
+        sessao = SessaoMesa.objects.select_for_update().filter(mesa=mesa, ativa=True, pk=dados.get('sessao_id')).first()
     if not sessao:
-        erro('Esta mesa não possui uma sessão aberta. Peça ao garçom para abrir.')
-    if dados.get('sessao_id') != sessao.pk:
-        erro('A sessão mudou ou foi encerrada. Atualize a mesa e revise o pedido.')
+        erro('Esta comanda não está aberta.')
+    if dados.get('sessao_id') != sessao.pk and not (geracao is not None and dados.get('sessao_id') is None):
+        erro('A comanda mudou ou foi encerrada. Revise o pedido.')
     key = dados.get('chave_envio')
     digest = hashlib.sha256(json.dumps(dados, sort_keys=True, default=str).encode()).hexdigest()
     if key:
@@ -61,6 +71,8 @@ def criar(dados, user):
             if anterior.envio_hash != digest:
                 erro('Esta chave de envio já foi usada com outro pedido. Revise e envie novamente.')
             return Pedido.objects.para_exibicao().get(pk=anterior.pk)
+    if sessao.conta_solicitada:
+        erro('A conta está em fechamento. Peça à equipe para retomar o atendimento antes de pedir.')
     products = {p.pk: p for p in Produto.objects.select_for_update().filter(
         pk__in=[i['produto_id'] for i in dados['itens']]).order_by('pk')}
     addons = {a.pk: a for a in Adicional.objects.select_for_update().filter(
@@ -88,7 +100,14 @@ def criar(dados, user):
     total = sessao.total_consumo()
     if total > Decimal('99999999.99'):
         erro('O total ultrapassa o limite da conta. Peça ajuda ao atendimento.')
+    atualizar_versao(sessao)
     return pedido
+
+
+def atualizar_versao(sessao):
+    # Chamado somente após bloquear a mesa e a sessão na transação.
+    sessao.versao_conta += 1
+    sessao.save(update_fields=['versao_conta'])
 
 
 @transaction.atomic
@@ -110,6 +129,7 @@ def transitar(pedido_id, novo, user):
     pedido.save(update_fields=['status', 'updated_at'])
     HistoricoStatusPedido.objects.create(pedido=pedido, status_anterior=anterior,
         status_novo=novo, alterado_por=user)
+    atualizar_versao(sessao)
     return Pedido.objects.para_exibicao().get(pk=pedido.pk)
 
 
@@ -117,9 +137,55 @@ def transitar(pedido_id, novo, user):
 def pedir_conta(mesa_uuid, sessao_id):
     mesa = get_object_or_404(Mesa.objects.select_for_update(), token_uuid=mesa_uuid, ativa=True)
     sessao = get_object_or_404(SessaoMesa.objects.select_for_update(), mesa=mesa, pk=sessao_id, ativa=True)
-    sessao.conta_solicitada = True
-    sessao.save(update_fields=['conta_solicitada'])
+    if not sessao.conta_solicitada:
+        sessao.conta_solicitada = True
+        sessao.save(update_fields=['conta_solicitada'])
+        atualizar_versao(sessao)
     return sessao
+
+
+@transaction.atomic
+def retomar(sessao_id, user):
+    papel(user, ('ADMIN', 'GARCOM'))
+    sessao = sessao_bloqueada(sessao_id)
+    if not sessao.ativa:
+        erro('A sessão foi encerrada.')
+    if sessao.conta_solicitada:
+        sessao.conta_solicitada = False
+        sessao.save(update_fields=['conta_solicitada'])
+        atualizar_versao(sessao)
+        auditar(user, sessao, 'Atendimento retomado; conferência anterior invalidada.')
+    return sessao
+
+
+def auditar(user, obj, mensagem):
+    from django.contrib.admin.models import LogEntry, CHANGE
+    from django.contrib.contenttypes.models import ContentType
+    LogEntry.objects.create(user=user, content_type=ContentType.objects.get_for_model(obj),
+        object_id=str(obj.pk), object_repr=str(obj)[:200], action_flag=CHANGE, change_message=mensagem)
+
+
+@transaction.atomic
+def cancelar_excepcional(pedido_id, motivo, user):
+    papel(user, ('ADMIN',))
+    motivo = motivo.strip()
+    if len(motivo) < 10 or len(motivo) > 500:
+        erro('Explique o motivo do cancelamento em 10 a 500 caracteres.')
+    ref = get_object_or_404(Pedido, pk=pedido_id)
+    sessao = sessao_bloqueada(ref.sessao_id)
+    pedido = get_object_or_404(Pedido.objects.select_for_update(), pk=pedido_id)
+    if not sessao.ativa or Conta.objects.filter(sessao=sessao, pago=True).exists():
+        erro('Conta encerrada ou paga. Cancelamento não substitui devolução de pagamento.')
+    if pedido.status == 'CANCELADO':
+        erro('O pedido já está cancelado.')
+    anterior = pedido.status
+    pedido.status = 'CANCELADO'
+    pedido.save(update_fields=['status', 'updated_at'])
+    HistoricoStatusPedido.objects.create(pedido=pedido, status_anterior=anterior,
+        status_novo='CANCELADO', alterado_por=user, motivo=motivo)
+    atualizar_versao(sessao)
+    auditar(user, pedido, f'Cancelamento excepcional ({anterior}): {motivo}')
+    return pedido
 
 
 def validar_finalizacao(sessao):
@@ -135,7 +201,7 @@ def encerrar(sessao):
 
 
 @transaction.atomic
-def pagar(sessao_id, meio, user):
+def pagar(sessao_id, meio, user, *, total_esperado, versao_conta):
     papel(user, ('ADMIN', 'GARCOM'))
     if meio not in dict(Conta.MEIO_PAGAMENTO_CHOICES):
         erro('Meio de pagamento inválido.')
@@ -143,10 +209,14 @@ def pagar(sessao_id, meio, user):
     if not sessao.ativa:
         erro('Esta sessão já foi encerrada; nenhum pagamento adicional foi registrado.')
     validar_finalizacao(sessao)
+    total = sessao.total_consumo()
+    if sessao.versao_conta != versao_conta or total != total_esperado:
+        erro('A conta mudou. Confira novamente o total e confirme o pagamento.')
     conta, _ = Conta.objects.get_or_create(sessao=sessao)
-    conta.calcular_total()
+    conta.valor_total = total
     conta.meio_pagamento, conta.pago, conta.pago_em = meio, True, timezone.now()
     conta.save()
+    auditar(user, conta, f'Pagamento simulado confirmado: {meio}, R$ {total}.')
     encerrar(sessao)
     return conta
 

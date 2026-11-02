@@ -57,26 +57,26 @@
   byId('buscar-produto').addEventListener('input', event => { search = event.target.value.trim(); renderProducts(); });
   async function refresh() {
     try {
-      const [mesa, categories] = await Promise.all([api(base), api('/api/cardapio/')]);
+      const [mesa, categories] = await Promise.all([api(base + '?equipe=1'), api('/api/cardapio/')]);
       byId('session-label').textContent = mesa.sessao_ativa ? 'Sessão aberta' : 'Sem sessão aberta';
       byId('session-warning').hidden = mesa.sessao_ativa;
-      byId('session-message').textContent = 'Abra o atendimento no painel do salão para receber pedidos dos clientes.';
+      byId('session-message').textContent = 'O primeiro pedido do cliente abre o atendimento automaticamente.';
       const menuSignature = JSON.stringify(categories);
       if (lastMenu !== menuSignature) {
         products = categories.flatMap(c => c.produtos);
         byId('categorias').innerHTML = `<button data-category="" class="${selected === null ? 'active' : ''}">Todos</button>` + categories.map(c => `<button data-category="${c.id}" class="${selected === c.id ? 'active' : ''}">${escape(c.nome)}</button>`).join('');
         lastMenu = menuSignature; renderProducts();
       }
-      const [orders, bill] = mesa.sessao_ativa ? await Promise.all([api(base + 'pedidos/'), api(base + 'conta/')]) : [[], null];
+      const [orders, bill] = mesa.sessao_ativa ? await Promise.all([api(base + 'pedidos/?equipe=1'), api(base + 'conta/?equipe=1')]) : [[], null];
       const ordersSignature = JSON.stringify(orders);
-      if (ordersSignature !== lastOrders) { byId('lista-pedidos').innerHTML = MF.renderOrders(orders); lastOrders = ordersSignature; }
+      if (ordersSignature !== lastOrders) { byId('lista-pedidos').innerHTML = MF.renderOrders(orders, {mostrarComanda:true}); lastOrders = ordersSignature; }
       byId('nav-orders-count').textContent = orders.length;
       byId('nav-orders-count').hidden = !orders.length;
       const billSignature = JSON.stringify(bill);
       if (billSignature !== lastBill) {
         byId('conta-total').textContent = money(bill?.valor_total || 0);
-        byId('conta-quantidade').textContent = bill ? `${bill.pedidos.length} pedido${bill.pedidos.length === 1 ? '' : 's'} nesta sessão` : 'Nenhuma sessão aberta.';
-        byId('resumo-conta').innerHTML = bill?.pedidos.length ? bill.pedidos.map(p => `<div class="bill-order"><div class="bill-row"><div><strong>Pedido #${p.id}</strong><p class="small muted mb-0">${statusNames[p.status]}${p.status === 'CANCELADO' ? ' · sem cobrança' : ''}</p></div><strong>${money(p.status === 'CANCELADO' ? 0 : p.valor_total)}</strong></div>${MF.itemList(p)}</div>`).join('') : '<p class="empty-state">Nenhum pedido nesta sessão.</p>';
+        byId('conta-quantidade').textContent = bill ? `${bill.pedidos.length} pedido${bill.pedidos.length === 1 ? '' : 's'} nas comandas abertas` : 'Nenhuma sessão aberta.';
+        byId('resumo-conta').innerHTML = bill?.pedidos.length ? bill.pedidos.map(p => `<div class="bill-order"><div class="bill-row"><div><strong>Comanda #${p.sessao} · Pedido #${p.id}</strong><p class="small muted mb-0">${statusNames[p.status]}${p.status === 'CANCELADO' ? ' · sem cobrança' : ''}</p></div><strong>${money(p.status === 'CANCELADO' ? 0 : p.valor_total)}</strong></div>${MF.itemList(p)}</div>`).join('') : '<p class="empty-state">Nenhum pedido nesta sessão.</p>';
         byId('gerenciar-conta').hidden = !bill?.conta_solicitada;
         byId('conta-status').textContent = !bill ? 'Nenhum atendimento aberto nesta mesa.' : bill.conta_solicitada ? 'Fechamento solicitado. Confira e finalize no painel de contas.' : 'Esta mesa ainda não solicitou o fechamento da conta.';
         lastBill = billSignature;

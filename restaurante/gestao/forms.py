@@ -161,5 +161,11 @@ class PeriodoForm(EstiloForm, forms.Form):
         return data
 
 
+class CancelamentoExcepcionalForm(forms.Form):
+    motivo = forms.CharField(label='Justificativa do cancelamento', min_length=10, max_length=500,
+        widget=forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
+        help_text='Explique o ocorrido. O pedido inteiro sairá da cobrança e a operação ficará no histórico.')
+
+
 class PedidoFiltroForm(PeriodoForm):
     status = forms.ChoiceField(label='Etapa do pedido', required=False, choices=[('', 'Todas as etapas'), *Pedido.STATUS_CHOICES])

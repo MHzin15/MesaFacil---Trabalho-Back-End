@@ -1,3 +1,4 @@
+from .test_support import entrar_cliente, conferencia
 from io import BytesIO
 from decimal import Decimal
 from django.contrib.auth.models import User
@@ -18,7 +19,7 @@ class SecurityTests(TestCase):
         self.client = APIClient(enforce_csrf_checks=True)
 
     def bootstrap(self):
-        response = self.client.get(f'/api/mesa/{self.mesa.token_uuid}/')
+        response = entrar_cliente(self.client, self.mesa)
         self.assertEqual(response.status_code, 200)
         return {'HTTP_X_CSRFTOKEN': self.client.cookies['csrftoken'].value}
 
@@ -87,7 +88,7 @@ class SecurityTests(TestCase):
                 self.assertEqual(self.client.get(f'/api/admin/{endpoint}/?{query}').status_code, 400)
 
     def test_request_account_after_payment_does_not_reactivate_session(self):
-        services.pagar(self.sessao.pk, 'PIX', self.admin)
+        services.pagar(self.sessao.pk, 'PIX', self.admin, **conferencia(self.sessao))
         from django.http import Http404
         with self.assertRaises(Http404):
             services.pedir_conta(self.mesa.token_uuid, self.sessao.pk)

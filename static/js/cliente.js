@@ -14,14 +14,14 @@
     img.replaceWith(fallback);
   }, true);
   let products = [], cart = [], sessionId = null, currentProduct = null, sending = false, selected = null, search = '';
-  let ended = false, menuSignature = '', reviewSignature = '';
+  let draftId = null, access = false, loadedContext = false, closing = false, ended = false, menuSignature = '', reviewSignature = '';
   let currentView = document.body.dataset.clientView;
   const mesaPath = `/mesa/${token}/`;
   const views = {
     cardapio: {path:mesaPath, title:'Cardápio', description:'Escolha seus produtos e personalize cada item.'},
     carrinho: {path:mesaPath + 'carrinho/', title:'Seu carrinho', description:'Confira as quantidades e os adicionais antes de enviar.'},
-    pedidos: {path:mesaPath + 'pedidos/', title:'Meus pedidos', description:'Acompanhe o preparo e a entrega dos pedidos desta mesa.'},
-    conta: {path:mesaPath + 'conta/', title:'Conta da mesa', description:'Veja o total do atendimento e peça o fechamento quando quiser.'},
+    pedidos: {path:mesaPath + 'pedidos/', title:'Meus pedidos', description:'Acompanhe o preparo e a entrega dos pedidos da sua comanda.'},
+    conta: {path:mesaPath + 'conta/', title:'Minha conta', description:'Veja o total da sua comanda e peça o fechamento quando quiser.'},
   };
   function showView(view, navigate = false, focus = false) {
     if (!Object.hasOwn(views, view)) return;
@@ -51,16 +51,16 @@
     showView(link.dataset.clientLink, true, true);
   });
   window.addEventListener('popstate', () => showView(viewFromPath(), false, true));
-  const cartSignature = () => JSON.stringify([sessionId, cart, byId('observacao-pedido').value]);
+  const cartSignature = () => JSON.stringify([draftId, cart, byId('observacao-pedido').value]);
   let lastOrders = '', lastBill = '', refreshing = false, attempt = null;
-  const attemptKey = () => `mf-attempt-${token}-${sessionId}`;
-  const noteKey = () => `mf-note-${token}-${sessionId}`;
+  const attemptKey = () => `mf-attempt-${token}-${draftId}`;
+  const noteKey = () => `mf-note-${token}-${draftId}`;
   function saveAttempt() { try { if (attempt) sessionStorage.setItem(attemptKey(), JSON.stringify(attempt)); else sessionStorage.removeItem(attemptKey()); } catch {} }
   const cartAvailable = () => cart.every(i => { const p = products.find(p => p.id === i.produto_id); return p?.disponivel && i.adicionais.every(a => p.adicionais.some(v => v.id === a.id)); });
   function saveCart() {
     try {
-      sessionStorage.setItem(`mf-cart-${token}-${sessionId}`, JSON.stringify(cart));
-      if (sessionId) sessionStorage.setItem(noteKey(), byId('observacao-pedido').value);
+      sessionStorage.setItem(`mf-cart-${token}-${draftId}`, JSON.stringify(cart));
+      sessionStorage.setItem(noteKey(), byId('observacao-pedido').value);
     } catch { /* Armazenamento pode estar indisponível. */ }
   }
   const unit = item => (Math.round(Number(item.preco) * 100) + item.adicionais.reduce((sum, a) => sum + Math.round(Number(a.preco) * 100), 0)) / 100;
@@ -70,9 +70,9 @@
     byId('cart-items').innerHTML = cart.length ? cart.map((item, i) => `<div class="cart-item"><div><strong>${escape(item.nome)}</strong><button class="remove-button" data-remove="${i}" aria-label="Remover ${escape(item.nome)}">Remover</button></div><p class="small muted">${item.adicionais.map(a => escape(a.nome)).join(', ')}${item.observacao ? ` · ${escape(item.observacao)}` : ''}</p><div class="quantity-row"><div class="quantity-control"><button data-quantity="${i}" data-delta="-1" aria-label="Diminuir quantidade de ${escape(item.nome)}" ${item.quantidade <= 1 ? 'disabled' : ''}>−</button><span>${item.quantidade}</span><button data-quantity="${i}" data-delta="1" aria-label="Aumentar quantidade de ${escape(item.nome)}" ${item.quantidade >= 99 ? 'disabled' : ''}>+</button></div><strong>${money(unit(item) * item.quantidade)}</strong></div></div>`).join('') : `<div class="screen-empty"><span class="empty-symbol" aria-hidden="true">＋</span><h2>Seu carrinho está vazio</h2><p>Escolha algo no cardápio para começar seu pedido.</p><a class="btn btn-primary" href="${mesaPath}" data-client-link="cardapio">Explorar o cardápio</a></div>`;
     byId('cart-count').textContent = cart.reduce((sum, item) => sum + item.quantidade, 0);
     byId('cart-total').textContent = money(total());
-    byId('revisar').disabled = !cart.length || !sessionId || !navigator.onLine || sending || (!cartAvailable() && !attempt);
+    byId('revisar').disabled = !cart.length || !access || closing || !navigator.onLine || sending || (!cartAvailable() && !attempt);
     byId('cart-warning').hidden = !cart.length || cartAvailable();
-    byId('revisar-help').textContent = !sessionId ? 'A mesa precisa estar aberta pelo garçom para receber pedidos.' : !navigator.onLine ? 'Reconecte para revisar e enviar o pedido.' : attempt ? 'Aguardando confirmação de um envio. Confira seus pedidos antes de tentar novamente.' : !cart.length ? 'Adicione um produto para continuar.' : !cartAvailable() ? 'Remova os itens indisponíveis para continuar.' : 'Você ainda vai conferir os itens antes de enviar à cozinha.';
+    byId('revisar-help').textContent = closing ? 'Conta em fechamento. Peça à equipe para retomar o atendimento se quiser pedir mais.' : !access ? 'Inicie um novo atendimento para continuar.' : !navigator.onLine ? 'Reconecte para revisar e enviar o pedido.' : attempt ? 'Aguardando confirmação de um envio. Confira seus pedidos antes de tentar novamente.' : !cart.length ? 'Adicione um produto para continuar.' : !cartAvailable() ? 'Remova os itens indisponíveis para continuar.' : 'Você ainda vai conferir os itens antes de enviar à cozinha.';
     byId('nav-cart-count').textContent = byId('cart-count').textContent;
     byId('nav-cart-count').hidden = !cart.length;
     byId('cart-shortcut').hidden = !cart.length || currentView !== 'cardapio';
@@ -82,7 +82,7 @@
   function renderProducts() {
     const visible = products.filter(p => (selected === null || p.categoria === selected) && normalize(`${p.nome} ${p.descricao}`).includes(normalize(search)));
     byId('menu-results').textContent = `${visible.length} produto${visible.length === 1 ? '' : 's'}`;
-    byId('produtos').innerHTML = visible.map(p => `<article class="product-card ${p.disponivel ? '' : 'unavailable'}"><div class="product-image">${p.foto ? `<img src="${escape(p.foto)}" alt="${escape(p.nome)}" loading="lazy">` : `<span aria-hidden="true" class="food-placeholder">${escape(p.nome.charAt(0))}</span>`}${!p.disponivel ? '<span class="unavailable-tag">Indisponível</span>' : ''}</div><div class="product-body"><h3>${escape(p.nome)}</h3><p>${escape(p.descricao)}</p><div class="product-footer"><strong>${money(p.preco)}</strong><button type="button" class="add-button" data-product="${p.id}" ${!p.disponivel || !sessionId ? 'disabled' : ''} title="${!p.disponivel ? 'Produto indisponível' : !sessionId ? 'Aguarde o garçom abrir a mesa' : 'Personalizar e adicionar ao carrinho'}" aria-label="Adicionar ${escape(p.nome)}">${p.disponivel ? 'Adicionar' : 'Indisponível'}</button></div></div></article>`).join('') || '<div class="menu-empty"><h3>Nenhum produto encontrado</h3><p>Tente outro nome ou consulte todas as categorias.</p><button type="button" class="btn btn-outline-primary" data-clear-menu>Limpar busca e filtros</button></div>';
+    byId('produtos').innerHTML = visible.map(p => `<article class="product-card ${p.disponivel ? '' : 'unavailable'}"><div class="product-image">${p.foto ? `<img src="${escape(p.foto)}" alt="${escape(p.nome)}" loading="lazy">` : `<span aria-hidden="true" class="food-placeholder">${escape(p.nome.charAt(0))}</span>`}${!p.disponivel ? '<span class="unavailable-tag">Indisponível</span>' : ''}</div><div class="product-body"><h3>${escape(p.nome)}</h3><p>${escape(p.descricao)}</p><div class="product-footer"><strong>${money(p.preco)}</strong><button type="button" class="add-button" data-product="${p.id}" ${!p.disponivel || !access || closing ? 'disabled' : ''} title="${!p.disponivel ? 'Produto indisponível' : closing ? 'Conta em fechamento' : !access ? 'Inicie um novo atendimento'  : 'Personalizar e adicionar ao carrinho'}" aria-label="Adicionar ${escape(p.nome)}">${p.disponivel ? 'Adicionar' : 'Indisponível'}</button></div></div></article>`).join('') || '<div class="menu-empty"><h3>Nenhum produto encontrado</h3><p>Tente outro nome ou consulte todas as categorias.</p><button type="button" class="btn btn-outline-primary" data-clear-menu>Limpar busca e filtros</button></div>';
   }
   function syncCartPrices() {
     if (sending || attempt) return;
@@ -114,7 +114,7 @@
     if (byId('produto-dialog').open && currentProduct) {
       const previous = currentProduct;
       currentProduct = products.find(p => p.id === currentProduct.id);
-      byId('adicionar-item').disabled = !sessionId || !currentProduct?.disponivel;
+      byId('adicionar-item').disabled = !access || closing || !currentProduct?.disponivel;
       if (!currentProduct?.disponivel) feedback('Este produto ficou indisponível. Feche esta janela e escolha outro item.', true);
       else {
         byId('produto-preco').textContent = money(currentProduct.preco);
@@ -129,40 +129,60 @@
     try {
     await loadMenu();
     const mesa = await api(base);
-    if (mesa.sessao_id !== sessionId) {
-      if (sessionId && !mesa.sessao_id) { ended = true; feedback('Sua sessão foi encerrada. Obrigado pela visita!'); }
-      if (mesa.sessao_id) ended = false;
-      sessionId = mesa.sessao_id;
+    access = mesa.acesso_liberado;
+    if (!ended && mesa.atendimento_encerrado) feedback('Seu atendimento foi encerrado. Obrigado pela visita!');
+    ended = mesa.atendimento_encerrado;
+    byId('novo-atendimento').hidden = !ended;
+    if (!loadedContext || mesa.atendimento_id !== draftId) {
+      if (byId('compartilhar-dialog').open) byId('compartilhar-dialog').close();
+      draftId = mesa.atendimento_id;
       attempt = null;
-      try { attempt = JSON.parse(sessionStorage.getItem(attemptKey()) || 'null'); } catch {}
       cart = [];
       byId('observacao-pedido').value = '';
-      try {
-        const stored = JSON.parse(sessionStorage.getItem(`mf-cart-${token}-${sessionId}`) || '[]');
-        if (Array.isArray(stored)) cart = stored.filter(i => i && Number.isInteger(i.quantidade) && i.quantidade > 0 && Array.isArray(i.adicionais));
-        if (sessionId) byId('observacao-pedido').value = sessionStorage.getItem(noteKey()) || '';
-      } catch { cart = []; }
-      syncCartPrices();
-      renderCart();
-      renderProducts();
+      if (access) {
+        try {
+          attempt = JSON.parse(sessionStorage.getItem(attemptKey()) || 'null');
+          const stored = JSON.parse(sessionStorage.getItem(`mf-cart-${token}-${draftId}`) || '[]');
+          if (Array.isArray(stored)) cart = stored.filter(i => i && Number.isInteger(i.quantidade) && i.quantidade > 0 && Array.isArray(i.adicionais));
+          byId('observacao-pedido').value = sessionStorage.getItem(noteKey()) || '';
+        } catch { cart = []; }
+      }
+      syncCartPrices(); renderCart(); renderProducts();
     }
-    byId('session-label').textContent = sessionId ? 'Sessão aberta' : ended ? 'Sessão encerrada' : 'Aguardando abertura';
-    byId('session-warning').hidden = Boolean(sessionId);
+    sessionId = mesa.sessao_id;
+    byId('comanda-label').textContent = sessionId ? `Comanda #${sessionId} · Mesa ${document.querySelector('.table-tag strong').textContent}` : ended ? 'Sua comanda foi encerrada' : 'Seu pedido em conta separada';
+    byId('compartilhar-comanda').disabled = !sessionId || !access;
+    byId('compartilhar-comanda').title = sessionId ? 'Convidar sua família para esta comanda' : 'Envie o primeiro pedido para compartilhar';
+    byId('separar-comanda').hidden = !sessionId;
+    const ownTabs = mesa.comandas || [];
+    byId('minhas-comandas-label').hidden = ownTabs.length < 2 && !(ownTabs.length && !sessionId);
+    const tabsSignature = JSON.stringify([sessionId, ownTabs]);
+    if (byId('minhas-comandas').dataset.signature !== tabsSignature) {
+      byId('minhas-comandas').innerHTML = (!sessionId ? '<option value="">Novo pedido separado</option>' : '') + ownTabs.map(tab => `<option value="${tab.id}">Comanda #${tab.id}${tab.conta_solicitada ? ' · em fechamento' : ''}</option>`).join('');
+      byId('minhas-comandas').value = sessionId || '';
+      byId('minhas-comandas').dataset.signature = tabsSignature;
+    }
+    loadedContext = true;
+    byId('session-label').textContent = sessionId ? 'Sessão aberta' : ended ? 'Sessão encerrada' : 'Pronta para seu pedido';
+    byId('session-warning').hidden = true;
     byId('session-warning').querySelector('strong').textContent = ended ? 'Atendimento encerrado' : 'Mesa sem sessão aberta';
-    byId('session-message').textContent = ended ? 'Sua sessão foi encerrada. Obrigado pela visita! Para fazer outro pedido, peça a abertura de uma nova sessão.' : 'Você pode consultar o cardápio. Para adicionar produtos e enviar pedidos, peça ao garçom para abrir esta mesa.';
     byId('client-error').hidden = true;
-    byId('pedir-conta').disabled = !sessionId || !navigator.onLine;
+    byId('pedir-conta').disabled = !sessionId || !access || !navigator.onLine;
     if (!sessionId) {
-      byId('lista-pedidos').innerHTML = '<p class="empty-state">Nenhuma sessão aberta nesta mesa.</p>';
-      byId('resumo-conta').textContent = 'Aguardando abertura da sessão.';
+      closing = false; byId('fechamento-aviso').hidden = true;
+      byId('lista-pedidos').innerHTML = '<p class="empty-state">Seus pedidos aparecerão aqui depois da confirmação.</p>';
+      byId('resumo-conta').textContent = 'Escolha seus produtos. O atendimento será aberto ao confirmar o primeiro pedido.';
       byId('conta-total').textContent = money(0);
       byId('conta-quantidade').textContent = 'Nenhuma sessão aberta.';
-      byId('conta-status').textContent = ended ? 'Atendimento encerrado. Obrigado pela visita!' : 'Aguarde a abertura da mesa para começar o atendimento.';
+      byId('conta-status').textContent = ended ? 'Atendimento encerrado. Obrigado pela visita!' : 'O atendimento começa automaticamente no primeiro pedido.';
       byId('nav-orders-count').hidden = true;
       lastOrders = ''; lastBill = '';
       return;
     }
     const [orders, bill] = await Promise.all([api(`${base}pedidos/`), api(`${base}conta/`)]);
+    if (closing !== bill.conta_solicitada) { closing = bill.conta_solicitada; renderCart(); renderProducts(); }
+    byId('fechamento-aviso').hidden = !closing;
+    byId('session-label').textContent = closing ? 'Em fechamento' : 'Sessão aberta';
     if (attempt && orders.some(p => p.chave_envio === attempt.chave_envio)) {
       attempt = null; saveAttempt(); cart = []; byId('observacao-pedido').value = ''; saveCart(); renderCart();
       byId('revisao-dialog').close(); feedback('Pedido recebido pela cozinha.');
@@ -181,7 +201,7 @@
     byId('nav-orders-count').hidden = !orders.length;
     byId('conta-total').textContent = money(bill.valor_total);
     byId('conta-quantidade').textContent = `${bill.pedidos.length} ${bill.pedidos.length === 1 ? 'pedido nesta sessão' : 'pedidos nesta sessão'}`;
-    byId('conta-status').textContent = bill.conta_solicitada ? 'Conta solicitada. O garçom já foi avisado.' : 'O pagamento é feito com a equipe do restaurante.';
+    byId('conta-status').textContent = bill.conta_solicitada ? 'Conta em fechamento. Para pedir mais, solicite à equipe a retomada do atendimento.' : 'O pagamento é feito com a equipe do restaurante.';
     byId('pedir-conta').disabled = bill.conta_solicitada || !navigator.onLine;
     byId('pedir-conta').textContent = bill.conta_solicitada ? 'Conta solicitada ✓' : 'Pedir a conta';
     } catch (error) {
@@ -239,7 +259,7 @@
   byId('produto-form').addEventListener('submit', event => {
     event.preventDefault();
     currentProduct = products.find(p => p.id === currentProduct?.id);
-    if (!sessionId || !currentProduct?.disponivel || attempt) { feedback('Este item não pode ser adicionado agora.', true); return; }
+    if (!access || closing || !currentProduct?.disponivel || attempt) { feedback('Este item não pode ser adicionado agora.', true); return; }
     const ids = [...document.querySelectorAll('[name="adicional"]:checked')].map(n => Number(n.value));
     const sabor = document.querySelector('input[name="sabor"]:checked')?.value;
     const observacao = [sabor ? `Sabor: ${sabor}` : '', byId('produto-observacao').value.trim()].filter(Boolean).join(' · ');
@@ -255,14 +275,14 @@
   byId('revisar').addEventListener('click', async () => {
     try { await refresh(); } catch (error) { feedback(error.message, true); return; }
     if (sending) return;
-    if (!cart.length || (!cartAvailable() && !attempt)) return;
+    if (!access || closing || !cart.length || (!cartAvailable() && !attempt)) return;
     renderReview();
   });
   byId('confirmar').addEventListener('click', async () => {
     if (sending || !cart.length) return;
     try { await refresh(); } catch (error) { feedback(error.message, true); return; }
     if (sending) return;
-    if (!cart.length || (!cartAvailable() && !attempt)) return;
+    if (!access || closing || !cart.length || (!cartAvailable() && !attempt)) return;
     if (!attempt && cartSignature() !== reviewSignature) { renderReview(); feedback('O carrinho ou os preços mudaram. Confira o novo total e confirme novamente.', true); return; }
     sending = true; byId('confirmar').disabled = true; byId('confirmar').textContent = 'Enviando…';
     try {
@@ -277,6 +297,44 @@
       showView('pedidos', true, true);
     } catch (error) { if (error.status && error.status < 500) { attempt = null; saveAttempt(); } feedback(`${error.message} Confira os pedidos antes de tentar novamente.`, true); await loadMenu().catch(() => {}); }
     finally { sending = false; byId('confirmar').disabled = false; byId('confirmar').textContent = 'Confirmar e enviar pedido →'; renderCart(); refresh().catch(e => feedback(e.message, true)); }
+  });
+  async function iniciarSeparado() {
+    byId('iniciar-atendimento').disabled = true;
+    try {
+      await api(`${base}novo-atendimento/`, {method:'POST'});
+      loadedContext = false;
+      await refresh(); showView('cardapio', true, true);
+    } catch (error) { feedback(error.message, true); }
+    finally { byId('iniciar-atendimento').disabled = false; }
+  }
+  byId('iniciar-atendimento').addEventListener('click', iniciarSeparado);
+  byId('separar-comanda').addEventListener('click', iniciarSeparado);
+  byId('minhas-comandas').addEventListener('change', async event => {
+    if (!event.target.value) return;
+    try {
+      await api(`${base}selecionar-comanda/`, {method:'POST', body:JSON.stringify({comanda_id:Number(event.target.value)})});
+      loadedContext = false; await refresh();
+    } catch (error) { feedback(error.message, true); }
+  });
+  byId('compartilhar-comanda').addEventListener('click', async () => {
+    byId('compartilhar-comanda').disabled = true;
+    try {
+      const invite = await api(`${base}compartilhar/`, {method:'POST'});
+      byId('compartilhar-link').value = invite.url;
+      byId('compartilhar-qr').src = invite.qr_url;
+      byId('compartilhar-validade').textContent = `Convite válido até ${new Date(invite.expira_em).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo'})}. Após o pagamento ele deixa de funcionar.`;
+      byId('enviar-convite').hidden = !navigator.share;
+      byId('compartilhar-dialog').showModal();
+    } catch (error) { feedback(error.message, true); }
+    finally { byId('compartilhar-comanda').disabled = !sessionId || !access; }
+  });
+  byId('copiar-convite').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(byId('compartilhar-link').value); feedback('Link copiado. Envie somente à sua família.'); }
+    catch { byId('compartilhar-link').select(); feedback('Selecione e copie o link para enviar à sua família.'); }
+  });
+  byId('enviar-convite').addEventListener('click', async () => {
+    try { await navigator.share({title:'Nossa comanda · MesaFácil', text:'Entre na nossa comanda para pedir junto.', url:byId('compartilhar-link').value}); }
+    catch (error) { if (error.name !== 'AbortError') feedback('Não foi possível compartilhar. Copie o link.', true); }
   });
   byId('pedir-conta').addEventListener('click', async () => {
     byId('pedir-conta').disabled = true;

@@ -23,7 +23,7 @@ from restaurante.pages import equipe
 from restaurante.serializers import ProdutoSerializer
 from restaurante.models import Produto
 from .forms import (AdicionalForm, CategoriaForm, FuncionarioForm, MesaForm, PedidoFiltroForm,
-                    PeriodoForm, PrecoForm, ProdutoForm, RedefinirSenhaForm)
+                    PeriodoForm, PrecoForm, ProdutoForm, RedefinirSenhaForm, CancelamentoExcepcionalForm)
 
 
 def page(request, template, section, title, description='', **context):
@@ -77,7 +77,7 @@ def inicio(request):
                 hoje=today, recebidos=recebidos, pedidos_hoje=pedidos.count(),
                 em_preparo=counts.get('RECEBIDO', 0) + counts.get('EM_PREPARACAO', 0),
                 cancelados=counts.get('CANCELADO', 0),
-                ocupadas=SessaoMesa.objects.filter(ativa=True).count(),
+                ocupadas=Mesa.objects.filter(sessoes__ativa=True).distinct().count(),
                 contas_pendentes=SessaoMesa.objects.filter(ativa=True, conta_solicitada=True).select_related('mesa'),
                 indisponiveis=Produto.objects.filter(disponivel=False).count(),
                 recentes=Pedido.objects.para_exibicao()[:5],
@@ -314,6 +314,22 @@ def cancelar(request, pk):
     return page(request, 'confirmar', 'pedidos', f'Cancelar pedido #{pk}?',
                 'O cancelamento só é permitido antes de iniciar o preparo e fica registrado no histórico.',
                 voltar=reverse('gestao:pedido', args=[pk]), botao='Confirmar cancelamento')
+
+
+@equipe('ADMIN')
+def cancelar_excepcional(request, pk):
+    obj = get_object_or_404(Pedido.objects.select_related('sessao__mesa'), pk=pk)
+    form = CancelamentoExcepcionalForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        try:
+            services.cancelar_excepcional(pk, form.cleaned_data['motivo'], request.user)
+            messages.success(request, 'Pedido cancelado com justificativa e retirado da cobrança.')
+            return redirect('gestao:pedido', pk=pk)
+        except APIException as exc:
+            form.add_error(None, str(exc.detail))
+    return page(request, 'cancelar_excepcional', 'pedidos', f'Resolver exceção · Pedido #{pk}',
+                'Cancelamento do pedido inteiro. Conta paga exige um fluxo próprio de devolução.',
+                form=form, pedido=obj)
 
 
 @equipe('ADMIN')
