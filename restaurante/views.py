@@ -33,7 +33,7 @@ from .serializers import (
     PedidoCozinhaSerializer, ProdutoDisponibilidadeSerializer,
     ContaSerializer, PagamentoSerializer,
 )
-from .permissions import IsAdmin, IsEquipe, IsCozinhaOuAdmin, IsGarcomOuAdmin
+from .permissions import IsAdmin, IsEquipe, IsCozinhaOuAdmin, IsGarcomOuAdmin, PodeCriarPedido
 
 
 # ============================================================
@@ -195,7 +195,7 @@ def fechar_sessao(request, sessao_id):
 # ============================================================
 @extend_schema(request=PedidoCriarSerializer, responses={201: PedidoSerializer, **ERROS})
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([PodeCriarPedido])
 @transaction.atomic
 def criar_pedido(request):
     serializer = PedidoCriarSerializer(data=request.data)

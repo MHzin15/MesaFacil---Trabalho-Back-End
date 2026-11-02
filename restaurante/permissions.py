@@ -1,4 +1,12 @@
 from rest_framework import permissions
+from .security import usuario_garcom
+
+
+class PodeCriarPedido(permissions.BasePermission):
+    message = 'O perfil de garçom permite acompanhar pedidos, mas não criar novos pedidos.'
+
+    def has_permission(self, request, view):
+        return not usuario_garcom(request.user)
 
 
 class IsAdmin(permissions.BasePermission):

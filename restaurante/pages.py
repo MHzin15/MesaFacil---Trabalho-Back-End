@@ -11,7 +11,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from PIL import Image, UnidentifiedImageError
 
 from .models import Mesa
-from .security import vincular_mesa
+from .security import vincular_mesa, usuario_garcom
 
 
 def foto_produto(request, path):
@@ -55,6 +55,9 @@ def inicio(request):
 @ensure_csrf_cookie
 def cliente(request, uuid, tela='cardapio'):
     mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
+    modo_garcom = usuario_garcom(request.user)
+    if modo_garcom and tela == 'carrinho':
+        return redirect('cliente-pedidos', uuid=mesa.token_uuid)
     vincular_mesa(request, mesa)
     titulos = {
         'cardapio': ('Cardápio', 'Escolha seus produtos e personalize cada item.'),
@@ -62,9 +65,16 @@ def cliente(request, uuid, tela='cardapio'):
         'pedidos': ('Meus pedidos', 'Acompanhe o preparo e a entrega dos pedidos desta mesa.'),
         'conta': ('Conta da mesa', 'Veja o total do atendimento e peça o fechamento quando quiser.'),
     }
+    if modo_garcom:
+        titulos.update({
+            'cardapio': ('Cardápio', 'Consulte os produtos disponíveis para esta mesa.'),
+            'pedidos': ('Pedidos', 'Acompanhe o preparo e a entrega dos pedidos desta mesa.'),
+            'conta': ('Contas', 'Confira o consumo da mesa e acesse o fechamento no salão.'),
+        })
     titulo, descricao = titulos[tela]
     response = render(request, 'restaurante/cliente.html', {
         'mesa': mesa, 'cliente_tela': tela,
+        'modo_garcom': modo_garcom,
         'cliente_titulo': titulo, 'cliente_descricao': descricao,
     })
     response['Cache-Control'] = 'no-store'

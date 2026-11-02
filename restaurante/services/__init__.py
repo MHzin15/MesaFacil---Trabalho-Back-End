@@ -6,6 +6,7 @@ from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from restaurante.security import usuario_garcom
 from restaurante.models import (
     Mesa, SessaoMesa, Produto, Adicional, Pedido, ItemPedido,
     ItemPedidoAdicional, HistoricoStatusPedido, Conta,
@@ -44,6 +45,8 @@ def abrir(mesa_id, user):
 
 @transaction.atomic
 def criar(dados, user):
+    if usuario_garcom(user):
+        raise PermissionDenied('O perfil de garçom não pode criar pedidos.')
     mesa = get_object_or_404(Mesa.objects.select_for_update(), token_uuid=dados['mesa_uuid'], ativa=True)
     sessao = SessaoMesa.objects.select_for_update().filter(mesa=mesa, ativa=True).first()
     if not sessao:

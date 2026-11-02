@@ -4,6 +4,10 @@ from rest_framework.exceptions import ParseError, PermissionDenied
 from rest_framework.parsers import JSONParser
 
 
+def usuario_garcom(user):
+    return user.is_authenticated and getattr(getattr(user, 'perfil', None), 'role', None) == 'GARCOM'
+
+
 class SafeJSONParser(JSONParser):
     """Preserva o limite de bytes do DRF e trata excesso de profundidade."""
 

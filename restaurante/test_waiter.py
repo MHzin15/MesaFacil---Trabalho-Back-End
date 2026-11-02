@@ -20,6 +20,51 @@ class WaiterTests(TestCase):
         self.addon = Adicional.objects.create(produto=self.produto, nome='Bacon', preco='5.00')
         self.client = APIClient()
 
+    def test_waiter_cannot_create_order_through_api_or_service(self):
+        from rest_framework.exceptions import PermissionDenied
+        sessao = services.abrir(self.mesa.pk, self.garcom)
+        data = {'mesa_uuid': str(self.mesa.token_uuid), 'sessao_id': sessao.pk,
+                'itens': [{'produto_id': self.produto.pk, 'quantidade': 1}]}
+        self.client.force_login(self.garcom)
+        self.client.get(f'/api/mesa/{self.mesa.token_uuid}/')
+        response = self.client.post('/api/pedidos/criar/', data, format='json')
+        self.assertEqual(response.status_code, 403)
+        with self.assertRaises(PermissionDenied):
+            services.criar(data, self.garcom)
+        self.assertFalse(Pedido.objects.exists())
+
+    def test_waiter_table_pages_have_no_cart_or_order_form(self):
+        self.client.force_login(self.garcom)
+        for suffix, title in (('', 'Cardápio'), ('pedidos/', 'Pedidos'), ('conta/', 'Contas')):
+            with self.subTest(suffix=suffix):
+                response = self.client.get(f'/mesa/{self.mesa.token_uuid}/{suffix}')
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, f'>{title}</h1>')
+                self.assertContains(response, 'data-modo-garcom="true"')
+                self.assertNotContains(response, 'data-client-link="carrinho"')
+                self.assertNotContains(response, 'id="produto-form"')
+                self.assertNotContains(response, 'Fazer outro pedido')
+                self.assertNotContains(response, 'Meus pedidos')
+                self.assertNotContains(response, 'Minha conta')
+                self.assertNotContains(response, 'Atualiza automaticamente')
+                self.assertNotContains(response, 'garçom será avisado')
+        self.assertRedirects(self.client.get(f'/mesa/{self.mesa.token_uuid}/carrinho/'),
+                             f'/mesa/{self.mesa.token_uuid}/pedidos/')
+        self.assertContains(self.client.get(f'/mesa/{self.mesa.token_uuid}/conta/'), 'href="/garcom/contas/"')
+
+    def test_guest_keeps_cart_and_can_send_order(self):
+        sessao = services.abrir(self.mesa.pk, self.garcom)
+        response = self.client.get(f'/mesa/{self.mesa.token_uuid}/carrinho/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-client-link="carrinho"')
+        self.assertContains(response, 'id="produto-form"')
+        self.assertContains(response, 'Meus pedidos')
+        self.assertContains(response, 'Minha conta')
+        response = self.client.post('/api/pedidos/criar/', {
+            'mesa_uuid': str(self.mesa.token_uuid), 'sessao_id': sessao.pk,
+            'itens': [{'produto_id': self.produto.pk, 'quantidade': 1}]}, format='json')
+        self.assertEqual(response.status_code, 201)
+
     def test_waiter_page_and_staff_bill_require_correct_profile(self):
         sessao = services.abrir(self.mesa.pk, self.garcom)
         self.assertEqual(self.client.get('/garcom/').status_code, 302)

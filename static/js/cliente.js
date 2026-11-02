@@ -65,15 +65,7 @@
   }
   const unit = item => (Math.round(Number(item.preco) * 100) + item.adicionais.reduce((sum, a) => sum + Math.round(Number(a.preco) * 100), 0)) / 100;
   const total = () => cart.reduce((sum, item) => sum + Math.round(unit(item) * 100) * item.quantidade, 0) / 100;
-  function renderOrders(orders) {
-    if (!orders.length) return `<div class="surface screen-empty"><span class="empty-symbol" aria-hidden="true">✓</span><h2>Nenhum pedido enviado ainda</h2><p>Depois de confirmar seu carrinho, acompanhe o preparo por aqui.</p><a class="btn btn-primary" href="${mesaPath}" data-client-link="cardapio">Escolher produtos</a></div>`;
-    const steps = ['RECEBIDO', 'EM_PREPARACAO', 'PRONTO', 'A_CAMINHO', 'ENTREGUE'];
-    return orders.map(p => {
-      const current = steps.indexOf(p.status);
-      const progress = p.status === 'CANCELADO' ? '<p class="small muted">Pedido cancelado antes do preparo. Não será cobrado.</p>' : `<ol class="order-progress" aria-label="Andamento do pedido">${steps.map((s, i) => `<li class="${i <= current ? 'done' : ''}" ${i === current ? 'aria-current="step"' : ''}><span aria-hidden="true">${i < current ? '✓' : i + 1}</span><small>${statusNames[s]}</small></li>`).join('')}</ol>`;
-      return `<article class="surface order-card"><div class="order-header"><strong>Pedido #${p.id}</strong><span class="status-label ${p.status.toLowerCase()}">${statusNames[p.status]}</span></div>${itemList(p)}${p.observacao ? `<p class="order-note">${escape(p.observacao)}</p>` : ''}<div class="order-bottom"><span class="small muted">${new Date(p.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'})}</span><strong>${money(p.valor_total)}</strong></div>${progress}</article>`;
-    }).join('');
-  }
+  const renderOrders = orders => MF.renderOrders(orders, {mesaPath, permitirPedido:true});
   function renderCart() {
     byId('cart-items').innerHTML = cart.length ? cart.map((item, i) => `<div class="cart-item"><div><strong>${escape(item.nome)}</strong><button class="remove-button" data-remove="${i}" aria-label="Remover ${escape(item.nome)}">Remover</button></div><p class="small muted">${item.adicionais.map(a => escape(a.nome)).join(', ')}${item.observacao ? ` · ${escape(item.observacao)}` : ''}</p><div class="quantity-row"><div class="quantity-control"><button data-quantity="${i}" data-delta="-1" aria-label="Diminuir quantidade de ${escape(item.nome)}" ${item.quantidade <= 1 ? 'disabled' : ''}>−</button><span>${item.quantidade}</span><button data-quantity="${i}" data-delta="1" aria-label="Aumentar quantidade de ${escape(item.nome)}" ${item.quantidade >= 99 ? 'disabled' : ''}>+</button></div><strong>${money(unit(item) * item.quantidade)}</strong></div></div>`).join('') : `<div class="screen-empty"><span class="empty-symbol" aria-hidden="true">＋</span><h2>Seu carrinho está vazio</h2><p>Escolha algo no cardápio para começar seu pedido.</p><a class="btn btn-primary" href="${mesaPath}" data-client-link="cardapio">Explorar o cardápio</a></div>`;
     byId('cart-count').textContent = cart.reduce((sum, item) => sum + item.quantidade, 0);
