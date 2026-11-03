@@ -26,6 +26,8 @@ Com a árvore limpa, executar:
 
 O script verifica o arquivo inteiro, confere o commit de segurança, troca para a branch anterior e restaura os bytes. **Recusa alterações não salvas**, em vez de descartá-las. Não executa reset destrutivo, limpeza de diretórios ou downgrade do banco. A implementação permanece guardada em sua branch.
 
+O retorno completo foi exercitado nesta entrega, incluindo conferência dos 229 hashes e troca de volta à implementação. No Windows, o script também atualiza marcações do índice somente quando os bytes já são idênticos ao commit, mantendo o Git limpo sem alterar conteúdo.
+
 Para voltar às melhorias:
 
 ```powershell

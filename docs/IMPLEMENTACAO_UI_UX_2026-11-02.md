@@ -55,6 +55,7 @@ Para subir esta branch em um banco local de desenvolvimento, aplicar normalmente
 - JavaScript real em ambiente controlado: troca de comanda durante reenvio, confirmação já recebida, falha apenas do catálogo, resposta atrasada de conta, mudança de preço e mudança de opções antes do envio.
 - Worker real em ambiente controlado: revalidação sem hash, cache imutável, fallback público e ausência de interceptação de conta/escrita.
 - Django check, migrações sem divergências, OpenAPI validado sem warnings, sintaxe JS e diff sem erros.
+- Retorno completo à branch anterior exercitado, com os 229 arquivos conferidos byte a byte e volta à implementação; ajustes de índice do Git no Windows restritos a arquivos idênticos ao commit.
 - Navegador local com dados artificiais: escolher água → editar → remover/desfazer → enviar; opção aparece no pedido; cadastrar novo grupo no editor e voltar à busca preservada; cozinha por etapa; mapa com duas colunas; conferência da comanda #5 com meio inicialmente vazio; gestão em 320 px sem overflow horizontal.
 - Cozinha por etapa também verificada em 768×1024, sem overflow horizontal; observações de 16 px verificadas no desktop. Linha de produto do gestor observada com 140 px de altura no desktop.
 

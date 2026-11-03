@@ -55,6 +55,18 @@ def main():
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(archive.read(name))
         assert all(hashlib.sha256((root / n).read_bytes()).hexdigest() == h for n, h in manifest['files'].items())
+        # O Git no Windows pode manter marcações de finais de linha da troca
+        # anterior. Atualize somente entradas cujos bytes já sejam o próprio blob;
+        # nunca adicione uma diferença de conteúdo ao checkpoint.
+        status = subprocess.check_output(['git', 'status', '--porcelain=v1', '-z'])
+        pending = [row[3:].decode('utf-8') for row in status.split(b'\0') if row]
+        for name in pending:
+            if name not in names or (root / name).read_bytes() != subprocess.check_output(['git', 'show', f'HEAD:{name}']):
+                raise SystemExit('Arquivos restaurados; há uma diferença de índice que requer conferência manual.')
+        if pending:
+            subprocess.run(['git', 'add', '--', *pending], check=True)
+        if git('status', '--porcelain=v1', '--untracked-files=all'):
+            raise SystemExit('Arquivos restaurados; confira o índice antes de trocar de branch.')
     print('Versão anterior restaurada e conferida byte a byte. Banco, .env e arquivos ignorados preservados.')
 
 
