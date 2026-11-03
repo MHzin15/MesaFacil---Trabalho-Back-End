@@ -1,7 +1,7 @@
 """Contratos dos endpoints compostos; os CRUD usam ModelSerializer."""
 from rest_framework import serializers
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes
-from .serializers import MesaClienteSerializer, MesaSerializer, PedidoSerializer, PedidoCozinhaSerializer, ContaSerializer, PerfilSerializer, SessaoMesaSerializer
+from .serializers import MesaClienteSerializer, MesaSerializer, PedidoSerializer, PedidoCozinhaSerializer, ContaSerializer, PerfilSerializer, SessaoMesaResumoSerializer
 
 
 class ComandaAcessivelSerializer(serializers.Serializer):
@@ -53,7 +53,7 @@ class CozinhaSerializer(serializers.Serializer):
 class GarcomSerializer(serializers.Serializer):
     pedidos_prontos = PedidoSerializer(many=True)
     mesas_aguardando_conta = MesaSerializer(many=True)
-    comandas_aguardando_conta = SessaoMesaSerializer(many=True)
+    comandas_aguardando_conta = SessaoMesaResumoSerializer(many=True)
 
 
 class PagamentoResultadoSerializer(MensagemSerializer):

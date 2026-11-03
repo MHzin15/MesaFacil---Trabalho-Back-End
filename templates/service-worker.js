@@ -1,6 +1,6 @@
 {% load static %}
 'use strict';
-const CACHE = 'mesafacil-public-v5';
+const CACHE = 'mesafacil-public-v6';
 const OFFLINE = '/offline/';
 const ASSETS = [OFFLINE, '/manifest.webmanifest',
   '{% static "js/offline.js" %}', '{% static "css/style.css" %}', '{% static "css/cliente.css" %}', '{% static "css/equipe.css" %}', '{% static "vendor/bootstrap.min.css" %}',
@@ -42,9 +42,10 @@ self.addEventListener('fetch', event => {
       const stored = await cache.match(request);
       // Arquivos com hash são imutáveis. Sem hash, buscar a versão atual evita
       // manter CSS/JS antigos durante o desenvolvimento local.
-      if (stored && /\.[a-f0-9]{12}\./.test(url.pathname)) return stored;
+      const immutable = /\.[a-f0-9]{12}\./.test(url.pathname);
+      if (stored && immutable) return stored;
       try {
-        const response = await fetch(request);
+        const response = await fetch(request, {cache:immutable ? 'default' : 'no-cache'});
         if (response.ok && response.type === 'basic') await cache.put(request, response.clone());
         return response;
       } catch { return stored || Response.error(); }

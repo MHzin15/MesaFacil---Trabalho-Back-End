@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from restaurante.security import usuario_garcom
+from restaurante.opcoes import selecionar_opcoes
 from restaurante.models import (
     Mesa, SessaoMesa, Produto, Adicional, Pedido, ItemPedido,
     ItemPedidoAdicional, HistoricoStatusPedido, Conta,
@@ -93,7 +94,8 @@ def criar(dados, user, *, geracao=None):
         if not produto.disponivel:
             erro(f'O produto "{produto.nome}" está indisponível.')
         saved = ItemPedido.objects.create(pedido=pedido, produto=produto,
-            quantidade=item['quantidade'], preco_unitario=produto.preco, observacao=item.get('observacao', ''))
+            quantidade=item['quantidade'], preco_unitario=produto.preco, observacao=item.get('observacao', ''),
+            opcoes=selecionar_opcoes(produto, item.get('opcoes', []), item.get('opcoes_versao')))
         for aid in item.get('adicionais_ids', []):
             adicional = addons.get(aid)
             if not adicional or adicional.produto_id != produto.pk:
@@ -145,7 +147,8 @@ def pedir_conta(mesa_uuid, sessao_id):
     sessao = get_object_or_404(SessaoMesa.objects.select_for_update(), mesa=mesa, pk=sessao_id, ativa=True)
     if not sessao.conta_solicitada:
         sessao.conta_solicitada = True
-        sessao.save(update_fields=['conta_solicitada'])
+        sessao.conta_solicitada_em = timezone.now()
+        sessao.save(update_fields=['conta_solicitada', 'conta_solicitada_em'])
         atualizar_versao(sessao)
     return sessao
 
@@ -158,7 +161,8 @@ def retomar(sessao_id, user):
         erro('A sessão foi encerrada.')
     if sessao.conta_solicitada:
         sessao.conta_solicitada = False
-        sessao.save(update_fields=['conta_solicitada'])
+        sessao.conta_solicitada_em = None
+        sessao.save(update_fields=['conta_solicitada', 'conta_solicitada_em'])
         atualizar_versao(sessao)
         auditar(user, sessao, 'Atendimento retomado; conferência anterior invalidada.')
     return sessao

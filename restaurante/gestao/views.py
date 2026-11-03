@@ -11,6 +11,8 @@ from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Sum
 from django.http import HttpResponse
+from django.http import QueryDict
+from urllib.parse import urlsplit
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -39,6 +41,27 @@ def paginate(request, queryset):
 
 def busca(request):
     return request.GET.get('q', '').strip()[:120]
+
+
+def retorno(request, destino, anchor=''):
+    """Somente a listagem esperada e filtros conhecidos; nunca aceite URL externa."""
+    fallback = reverse(f'gestao:{destino}')
+    raw = request.POST.get('retorno') if request.method == 'POST' else request.GET.get('retorno')
+    if not raw or len(raw) > 2000:
+        return fallback
+    try:
+        parsed = urlsplit(raw)
+    except ValueError:
+        return fallback
+    if parsed.scheme or parsed.netloc or parsed.path != fallback or raw.startswith('//'):
+        return fallback
+    allowed = QueryDict(mutable=True)
+    original = QueryDict(parsed.query)
+    for key in ('q', 'categoria', 'status', 'page', 'vista'):
+        if key in original:
+            allowed[key] = original[key][:120]
+    query = allowed.urlencode()
+    return fallback + (f'?{query}' if query else '') + (f'#{anchor}' if anchor else '')
 
 
 def registrar(actor, obj, message, created=False):
@@ -112,11 +135,11 @@ def funcionario_editar(request, pk=None):
                     user = form.save()
                     registrar(request.user, user, 'Dados e função de acesso atualizados.' if pk else 'Funcionário cadastrado.', not pk)
                     messages.success(request, 'Funcionário atualizado.' if pk else 'Funcionário cadastrado. Informe o usuário e a senha inicial à pessoa.')
-                    return redirect('gestao:equipe')
+                    return redirect(retorno(request, 'equipe', f'pessoa-{user.pk}'))
         except IntegrityError:
             form.add_error(None, 'Este usuário já está cadastrado. Escolha outro nome para entrar.')
     return page(request, 'formulario', 'equipe', 'Editar funcionário' if pk else 'Cadastrar funcionário',
-                'O acesso é definido pela função no restaurante.', form=form, voltar=reverse('gestao:equipe'),
+                'O acesso é definido pela função no restaurante.', form=form, voltar=retorno(request, 'equipe'),
                 dica='Para trocar uma senha esquecida, use “Redefinir senha” na lista da equipe.')
 
 
@@ -134,10 +157,10 @@ def senha(request, pk):
                 if user.pk == request.user.pk:
                     update_session_auth_hash(request, user)
                 messages.success(request, f'Senha de {user.get_full_name() or user.username} redefinida. As sessões anteriores dessa pessoa serão encerradas.')
-                return redirect('gestao:equipe')
+                return redirect(retorno(request, 'equipe', f'pessoa-{user.pk}'))
     return page(request, 'formulario', 'equipe', f'Redefinir senha de {user.get_full_name() or user.username}',
                 f'Usuário: {user.username}. A nova senha substitui a anterior.', form=form,
-                voltar=reverse('gestao:equipe'), botao='Redefinir senha',
+                voltar=retorno(request, 'equipe'), botao='Redefinir senha',
                 dica='Informe a nova senha diretamente à pessoa. O sistema não envia senhas por e-mail nem as registra no histórico.')
 
 
@@ -182,12 +205,12 @@ def cadastro(request, tipo, pk=None):
                         detalhe += f' Preço: R$ {old_price:.2f} → R$ {saved.preco:.2f}.'
                     registrar(request.user, saved, detalhe, not pk)
                     messages.success(request, f'{nome.capitalize()} salvo com sucesso.')
-                    return redirect(f'gestao:{destino}')
+                    return redirect(retorno(request, destino, f'produto-{saved.pk}' if tipo == 'produtos' else ''))
         except IntegrityError:
             form.add_error(None, 'Já existe um cadastro com esses dados. Confira e tente novamente.')
     return page(request, 'formulario', 'mesas' if tipo == 'mesas' else 'cardapio',
                 f'Editar {nome}' if pk else f'Cadastrar {nome}', dica, form=form,
-                voltar=reverse(f'gestao:{destino}'), dica=dica)
+                voltar=retorno(request, destino), dica=dica)
 
 
 @equipe('ADMIN')
@@ -226,10 +249,10 @@ def preco(request, pk):
                     obj.save(update_fields=['preco'])
                     registrar(request.user, obj, f'Preço alterado de R$ {anterior:.2f} para R$ {obj.preco:.2f}.')
                     messages.success(request, f'Preço de {obj.nome} atualizado.')
-                    return redirect('gestao:cardapio')
+                    return redirect(retorno(request, 'cardapio', f'produto-{obj.pk}'))
     return page(request, 'formulario', 'cardapio', f'Alterar preço: {obj.nome}',
                 f'Preço atual: R$ {obj.preco:.2f}. O novo valor vale para os próximos pedidos.',
-                form=form, voltar=reverse('gestao:cardapio'), botao='Confirmar novo preço')
+                form=form, voltar=retorno(request, 'cardapio'), botao='Confirmar novo preço')
 
 
 @equipe('ADMIN')
@@ -245,7 +268,7 @@ def disponibilidade(request, pk):
             obj.save(update_fields=['disponivel'])
             registrar(request.user, obj, 'Produto liberado para venda.' if obj.disponivel else 'Produto pausado no cardápio.')
             messages.success(request, f'{obj.nome}: {"disponível" if obj.disponivel else "pausado"}.')
-    return redirect('gestao:cardapio')
+    return redirect(retorno(request, 'cardapio', f'produto-{obj.pk}'))
 
 
 @equipe('ADMIN')

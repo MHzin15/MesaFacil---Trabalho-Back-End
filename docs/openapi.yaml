@@ -2241,6 +2241,18 @@ components:
       - EM_PREPARACAO
       - PRONTO
       - RECEBIDO
+    EscolhaProduto:
+      type: object
+      properties:
+        grupo_id:
+          type: string
+          format: uuid
+        opcao_id:
+          type: string
+          format: uuid
+      required:
+      - grupo_id
+      - opcao_id
     Garcom:
       type: object
       properties:
@@ -2255,7 +2267,7 @@ components:
         comandas_aguardando_conta:
           type: array
           items:
-            $ref: '#/components/schemas/SessaoMesa'
+            $ref: '#/components/schemas/SessaoMesaResumo'
       required:
       - comandas_aguardando_conta
       - mesas_aguardando_conta
@@ -2296,9 +2308,12 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
+        opcoes:
+          readOnly: true
       required:
       - id
       - itens_adicionais
+      - opcoes
       - preco_unitario
       - produto
       - produto_nome
@@ -2331,6 +2346,14 @@ components:
       properties:
         produto_id:
           type: integer
+        opcoes:
+          type: array
+          items:
+            $ref: '#/components/schemas/EscolhaProduto'
+        opcoes_versao:
+          type: string
+          maxLength: 64
+          minLength: 64
         quantidade:
           type: integer
           maximum: 99
@@ -2721,6 +2744,11 @@ components:
           items:
             $ref: '#/components/schemas/Adicional'
           readOnly: true
+        grupos_opcoes:
+          title: Escolhas do produto
+        opcoes_versao:
+          type: string
+          readOnly: true
     PatchedProdutoDisponibilidade:
       type: object
       properties:
@@ -2941,12 +2969,18 @@ components:
           items:
             $ref: '#/components/schemas/Adicional'
           readOnly: true
+        grupos_opcoes:
+          title: Escolhas do produto
+        opcoes_versao:
+          type: string
+          readOnly: true
       required:
       - adicionais
       - categoria
       - categoria_nome
       - id
       - nome
+      - opcoes_versao
       - preco
     QrLinks:
       type: object
@@ -3014,13 +3048,79 @@ components:
         versao_conta:
           type: integer
           readOnly: true
+        conta_solicitada_em:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
       required:
       - aberta_em
       - aberta_por
+      - conta_solicitada_em
       - fechada_em
       - id
       - mesa
       - mesa_numero
+      - versao_conta
+    SessaoMesaResumo:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        mesa:
+          type: integer
+        mesa_numero:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+          title: Número da Mesa
+          readOnly: true
+        ativa:
+          type: boolean
+          title: Sessão Ativa
+        conta_solicitada:
+          type: boolean
+        aberta_em:
+          type: string
+          format: date-time
+          readOnly: true
+        fechada_em:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        aberta_por:
+          type: integer
+          readOnly: true
+          nullable: true
+        versao_conta:
+          type: integer
+          readOnly: true
+        conta_solicitada_em:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        valor_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,2})?$
+          readOnly: true
+        pedidos_pendentes:
+          type: integer
+          readOnly: true
+      required:
+      - aberta_em
+      - aberta_por
+      - conta_solicitada_em
+      - fechada_em
+      - id
+      - mesa
+      - mesa_numero
+      - pedidos_pendentes
+      - valor_total
       - versao_conta
     StatusEnum:
       enum:

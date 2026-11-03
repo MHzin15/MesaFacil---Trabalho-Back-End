@@ -10,11 +10,12 @@
   let tablesCache = [], tableFilter = '';
 
   function renderTables() {
+    const expanded = new Set([...document.querySelectorAll('[data-table-details][open]')].map(d => d.dataset.tableDetails));
     const search = StaffUI.normalize(byId('buscar-mesa').value.trim()).replace(/^mesa\s*/, '').replace(/^0+(?=\d)/, '');
     const visible = tablesCache.filter(t => (!tableFilter || t.status === tableFilter) && String(t.numero).includes(search));
     const free = tablesCache.filter(t => t.status === 'livre').length;
     byId('mesas-summary').textContent = `${visible.length} de ${tablesCache.length} mesas · ${free} livres`;
-    byId('mapa-mesas').innerHTML = visible.map(t => `<article class="surface table-card table-${t.status}"><div class="section-title"><h3>Mesa ${String(t.numero).padStart(2,'0')}</h3><span class="status-label">${labels[t.status]}</span></div><p class="table-hint">${t.sessao_ativa_id ? 'Atendimento em andamento.' : 'O primeiro pedido abre o atendimento automaticamente.'}</p><div class="table-actions">${t.comandas_abertas.map(c => `<button class="btn btn-outline-primary" data-bill="${c.id}">Comanda #${c.id}${c.conta_solicitada ? " · conta solicitada" : " · conferir"}</button>`).join("")}<a class="text-link" href="/mesa/${escape(t.token_uuid)}/" target="_blank" rel="noopener">Abrir cardápio da mesa ↗</a></div></article>`).join('') || '<div class="surface workspace-empty"><h3>Nenhuma mesa encontrada</h3><p>Tente outro número ou situação.</p><button type="button" class="btn btn-outline-primary" data-clear-tables>Limpar filtros</button></div>';
+    byId('mapa-mesas').innerHTML = visible.map(t => `<article class="surface table-card table-${t.status}"><div class="section-title"><h3>Mesa ${String(t.numero).padStart(2,'0')}</h3><span class="status-label">${labels[t.status]}</span></div><p class="table-hint">${t.comandas_abertas.length ? `${t.comandas_abertas.length} comanda(s) · ${t.comandas_abertas.filter(c => c.conta_solicitada).length} em fechamento` : 'Livre · o primeiro pedido abre a comanda'}</p>${t.comandas_abertas.length ? `<details data-table-details="${t.id}" ${expanded.has(String(t.id)) ? 'open' : ''}><summary>Ver comandas (${t.comandas_abertas.length})</summary><div class="table-actions">${t.comandas_abertas.map(c => `<button class="btn btn-outline-primary" data-bill="${c.id}">#${c.id} · ${c.conta_solicitada ? 'Conta solicitada' : 'Conferir'}</button>`).join('')}</div></details>` : ''}<a class="text-link table-menu-link" href="/mesa/${escape(t.token_uuid)}/" target="_blank" rel="noopener">Consultar cardápio ↗</a></article>`).join('') || '<div class="surface workspace-empty"><h3>Nenhuma mesa encontrada</h3><p>Tente outro número ou situação.</p><button type="button" class="btn btn-outline-primary" data-clear-tables>Limpar filtros</button></div>';
   }
 
   function renderDeliveries(orders) {
@@ -36,6 +37,7 @@
     byId('conta-alterada').hidden = !changed;
     byId('conferir-conta').hidden = !changed;
     byId('retomar-atendimento').hidden = !bill.conta_solicitada;
+    byId('retomar-opcoes').hidden = !bill.conta_solicitada;
     byId('retomar-atendimento').disabled = busy;
 
     byId('conta-titulo').textContent = `Comanda #${bill.sessao_id} · Mesa ${bill.mesa.numero}`;
@@ -46,10 +48,13 @@
     byId('conta-pendencias').textContent = 'Há pedidos pendentes. Entregue ou cancele os pedidos antes de finalizar a conta.';
     byId('pagamento-ajuda').textContent = pending ? 'O pagamento será liberado quando não houver pedidos pendentes.' : Number(bill.valor_total) === 0 ? 'Não há valor a cobrar. Você pode encerrar a sessão sem cobrança.' : 'Confira o valor e escolha o meio informado pelo cliente.';
     byId('pagamento-form').hidden = Number(bill.valor_total) === 0;
-    byId('pagar').disabled = changed || pending || busy || Number(bill.valor_total) === 0 || !navigator.onLine;
+    const method = byId('meio-pagamento');
+    byId('pagar').disabled = changed || pending || busy || Number(bill.valor_total) === 0 || !navigator.onLine || !method.value;
+    byId('pagar').textContent = method.value ? `Confirmar simulação · #${bill.sessao_id} · ${money(bill.valor_total)} · ${method.selectedOptions[0].textContent}` : 'Escolha o meio de pagamento';
     byId('fechar-sem-cobranca').hidden = pending || Number(bill.valor_total) !== 0;
     byId('fechar-sem-cobranca').disabled = changed || busy || !navigator.onLine;
     byId('solicitar-conta').disabled = bill.conta_solicitada || busy;
+    byId('solicitar-conta').hidden = bill.conta_solicitada;
     byId('solicitar-conta').textContent = bill.conta_solicitada ? 'Conta já solicitada' : 'Solicitar conta';
   }
 
@@ -67,7 +72,7 @@
         StaffUI.count('total-contas', panel.comandas_aguardando_conta.length);
         renderTables();
         renderDeliveries(panel.pedidos_prontos);
-        byId('contas-pendentes').innerHTML = panel.comandas_aguardando_conta.map(t => `<article class="surface table-card table-aguardando_conta"><p class="eyebrow">CONTA SOLICITADA</p><h3>Mesa ${t.mesa_numero} · Comanda #${t.id}</h3><p class="muted small">Confira os pedidos antes de finalizar.</p><button class="btn btn-primary w-100" data-bill="${t.id}">Conferir e finalizar</button></article>`).join('') || '<div class="surface workspace-empty"><h3>Nenhuma conta solicitada</h3><p>As mesas que pedirem o fechamento aparecerão aqui automaticamente.</p></div>';
+        byId('contas-pendentes').innerHTML = panel.comandas_aguardando_conta.map(t => `<article class="surface table-card table-aguardando_conta"><h3>Mesa ${t.mesa_numero} · Comanda #${t.id}</h3><strong class="bill-queue-total">${money(t.valor_total)}</strong><p class="small muted" ${t.conta_solicitada_em ? `data-age="${escape(t.conta_solicitada_em)}" data-age-label="Fechamento solicitado "` : ''}>${t.conta_solicitada_em ? `Fechamento solicitado ${MF.elapsed(t.conta_solicitada_em)}` : 'Fechamento solicitado · horário não registrado'}</p><p class="bill-queue-state">${t.pedidos_pendentes ? `${t.pedidos_pendentes} pedido(s) ainda pendente(s)` : 'Pedidos concluídos · disponível para conferir'}</p><button class="btn btn-primary w-100" data-bill="${t.id}">Conferir comanda #${t.id}</button></article>`).join('') || '<div class="surface workspace-empty"><h3>Nenhuma conta solicitada</h3><p>As comandas que pedirem o fechamento aparecerão aqui.</p></div>';
       }
       if (selected && byId('conta-dialog').open) {
         const id = selected, version = selectionVersion;
@@ -114,15 +119,17 @@
       selected = Number(button.dataset.bill);
       const id = selected, version = ++selectionVersion;
       currentBill = reviewedBill = null;
+      byId('meio-pagamento').value = '';
       document.querySelectorAll('#retomar-atendimento, #pagar, #fechar-sem-cobranca, #solicitar-conta').forEach(b => b.disabled = true);
       const bill = await api(billUrl(id));
       if (selected !== id || selectionVersion !== version) return;
       showBill(bill);
       byId('conta-error').hidden = true;
-      byId('conta-dialog').showModal();
+      MF.openDialog(byId('conta-dialog'));
     } catch (error) { feedback(error.message, true); }
   });
   byId('buscar-mesa').addEventListener('input', renderTables);
+  byId('meio-pagamento').addEventListener('change', () => { if (currentBill) showBill(currentBill); });
   byId('conta-dialog').addEventListener('close', () => {
     if (byId('conta-dialog').open) return;
     ++selectionVersion; selected = null; currentBill = reviewedBill = null;
@@ -145,7 +152,7 @@
   byId('fechar-sem-cobranca').addEventListener('click', () => billAction('fechar', 'Comanda encerrada. As outras comandas da mesa continuam abertas.', true));
   byId('pagamento-form').addEventListener('submit', event => {
     event.preventDefault();
-    if (!reviewedBill || !currentBill || currentBill.sessao_id !== selected || reviewedBill.sessao_id !== selected || reviewedBill.versao_conta !== currentBill.versao_conta || reviewedBill.total_esperado !== currentBill.valor_total) return;
+    if (!byId('pagamento-form').reportValidity() || !reviewedBill || !currentBill || currentBill.sessao_id !== selected || reviewedBill.sessao_id !== selected || reviewedBill.versao_conta !== currentBill.versao_conta || reviewedBill.total_esperado !== currentBill.valor_total) return;
     const confirmation = {...reviewedBill, meio_pagamento:byId('meio-pagamento').value};
     action(async () => {
       await api(`/api/sessoes/${confirmation.sessao_id}/pagamento/`, {method:'POST', body:JSON.stringify(confirmation)});

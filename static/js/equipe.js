@@ -33,6 +33,7 @@ window.StaffUI = (() => {
     if (link) show(link.dataset.staffLink, false, true);
   });
   function error(message) {
+    MF.connectionStatus('equipe', false);
     const node = document.getElementById('workspace-error-message');
     if (node.textContent !== message) node.textContent = message;
     document.getElementById('workspace-error').hidden = false;
@@ -42,6 +43,7 @@ window.StaffUI = (() => {
     if (node && node.textContent !== String(value)) node.textContent = value;
   }
   function synced() {
+    MF.connectionStatus('equipe', true);
     document.getElementById('workspace-error').hidden = true;
     document.getElementById('last-sync').textContent = `Atualizado às ${new Date().toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo'})}`;
   }

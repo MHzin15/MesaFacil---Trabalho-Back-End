@@ -1,0 +1,5 @@
+{% include 'django/forms/widgets/hidden.html' %}
+<section class="options-editor" id="{{ widget.attrs.id }}_editor" tabindex="-1" data-options-editor data-options-input="{{ widget.attrs.id }}" aria-labelledby="{{ widget.attrs.id }}_title">
+  <h2 id="{{ widget.attrs.id }}_title">Escolhas do produto</h2><p class="g-help">Exemplo: “Sabor” com Laranja, Abacaxi e Maracujá. O cliente escolhe uma opção por grupo. Não altera o preço; para cobrar extras, use Adicionais.</p>
+  <div data-option-groups></div><button type="button" class="btn btn-outline-primary" data-add-group>＋ Adicionar grupo de escolhas</button><p class="g-help">Até 6 grupos e 12 opções por grupo. Escolhas já enviadas continuam no histórico.</p><noscript>Ative JavaScript para editar os grupos de escolhas.</noscript>
+</section>

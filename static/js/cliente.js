@@ -14,8 +14,8 @@
     img.replaceWith(fallback);
   }, true);
   let products = [], cart = [], sessionId = null, currentProduct = null, sending = false, selected = null, search = '';
-  let draftId = null, access = false, loadedContext = false, closing = false, ended = false, menuSignature = '', reviewSignature = '';
-  let menuReady = false, refreshPromise = null;
+  let draftId = null, access = false, loadedContext = false, closing = false, ended = false, menuSignature = '';
+  let menuReady = false, refreshPromise = null, editingIndex = null, removedItem = null;
   const privateUrl = path => `${base}${path}?atendimento_id=${encodeURIComponent(draftId)}`;
   let currentView = document.body.dataset.clientView;
   const mesaPath = `/mesa/${token}/`;
@@ -58,7 +58,11 @@
   const attemptKey = () => `mf-attempt-${token}-${draftId}`;
   const noteKey = () => `mf-note-${token}-${draftId}`;
   function saveAttempt() { try { if (attempt) sessionStorage.setItem(attemptKey(), JSON.stringify(attempt)); else sessionStorage.removeItem(attemptKey()); } catch {} }
-  const cartAvailable = () => cart.every(i => { const p = products.find(p => p.id === i.produto_id); return p?.disponivel && i.adicionais.every(a => p.adicionais.some(v => v.id === a.id)); });
+  function optionsAvailable(item, product) {
+    const choices = item.opcoes || [];
+    return (product.grupos_opcoes || []).every(g => (!g.obrigatorio && !choices.some(c => c.grupo_id === g.id)) || choices.some(c => c.grupo_id === g.id && g.opcoes.some(o => o.id === c.opcao_id))) && choices.every(c => (product.grupos_opcoes || []).some(g => g.id === c.grupo_id && g.opcoes.some(o => o.id === c.opcao_id)));
+  }
+  const cartAvailable = () => cart.every(i => { const p = products.find(p => p.id === i.produto_id); return p?.disponivel && optionsAvailable(i, p) && i.adicionais.every(a => p.adicionais.some(v => v.id === a.id)); });
   function saveCart() {
     try {
       sessionStorage.setItem(`mf-cart-${token}-${draftId}`, JSON.stringify(cart));
@@ -69,12 +73,16 @@
   const total = () => cart.reduce((sum, item) => sum + Math.round(unit(item) * 100) * item.quantidade, 0) / 100;
   const renderOrders = orders => MF.renderOrders(orders, {mesaPath, permitirPedido:true});
   function renderCart() {
-    byId('cart-items').innerHTML = cart.length ? cart.map((item, i) => `<div class="cart-item"><div><strong>${escape(item.nome)}</strong><button class="remove-button" data-remove="${i}" aria-label="Remover ${escape(item.nome)}">Remover</button></div><p class="small muted">${item.adicionais.map(a => escape(a.nome)).join(', ')}${item.observacao ? ` · ${escape(item.observacao)}` : ''}</p><div class="quantity-row"><div class="quantity-control"><button data-quantity="${i}" data-delta="-1" aria-label="Diminuir quantidade de ${escape(item.nome)}" ${item.quantidade <= 1 ? 'disabled' : ''}>−</button><span>${item.quantidade}</span><button data-quantity="${i}" data-delta="1" aria-label="Aumentar quantidade de ${escape(item.nome)}" ${item.quantidade >= 99 ? 'disabled' : ''}>+</button></div><strong>${money(unit(item) * item.quantidade)}</strong></div></div>`).join('') : `<div class="screen-empty"><span class="empty-symbol" aria-hidden="true">＋</span><h2>Seu carrinho está vazio</h2><p>Escolha algo no cardápio para começar seu pedido.</p><a class="btn btn-primary" href="${mesaPath}" data-client-link="cardapio">Explorar o cardápio</a></div>`;
+    byId('cart-items').innerHTML = cart.length ? cart.map((item, i) => `<div class="cart-item"><div><strong>${escape(item.nome)}</strong><div class="cart-item-actions"><button class="text-link" data-edit="${i}" ${attempt ? 'disabled' : ''} aria-label="Editar ${escape(item.nome)}">Editar item</button><button class="remove-button" data-remove="${i}" ${attempt ? 'disabled' : ''} aria-label="Remover ${escape(item.nome)}">Remover</button></div></div><p class="small muted">${(item.opcoes || []).map(c => `${escape(c.grupo)}: ${escape(c.opcao)}`).concat(item.adicionais.map(a => escape(a.nome)), item.observacao ? [escape(item.observacao)] : []).join(' · ')}</p><div class="quantity-row"><div class="quantity-control"><button data-quantity="${i}" data-delta="-1" aria-label="Diminuir quantidade de ${escape(item.nome)}" ${attempt || item.quantidade <= 1 ? 'disabled' : ''}>−</button><span>${item.quantidade}</span><button data-quantity="${i}" data-delta="1" aria-label="Aumentar quantidade de ${escape(item.nome)}" ${attempt || item.quantidade >= 99 ? 'disabled' : ''}>+</button></div><strong>${money(unit(item) * item.quantidade)}</strong></div></div>`).join('') : `<div class="screen-empty"><span class="empty-symbol" aria-hidden="true">＋</span><h2>Seu carrinho está vazio</h2><p>Escolha algo no cardápio para começar seu pedido.</p><a class="btn btn-primary" href="${mesaPath}" data-client-link="cardapio">Explorar o cardápio</a></div>`;
     byId('cart-count').textContent = cart.reduce((sum, item) => sum + item.quantidade, 0);
     byId('cart-total').textContent = money(total());
     byId('revisar').disabled = !cart.length || !access || closing || !navigator.onLine || sending || ((!menuReady || !cartAvailable()) && !attempt);
     byId('cart-warning').hidden = !cart.length || cartAvailable();
-    byId('revisar-help').textContent = closing ? 'Conta em fechamento. Peça à equipe para retomar o atendimento se quiser pedir mais.' : !access ? 'Inicie um novo atendimento para continuar.' : !navigator.onLine ? 'Reconecte para revisar e enviar o pedido.' : attempt ? 'Aguardando confirmação de um envio. Confira seus pedidos antes de tentar novamente.' : !cart.length ? 'Adicione um produto para continuar.' : !cartAvailable() ? 'Remova os itens indisponíveis para continuar.' : 'Você ainda vai conferir os itens antes de enviar à cozinha.';
+    byId('cart-warning').textContent = 'Há itens ou escolhas que mudaram. Edite os itens sinalizados ou remova-os para continuar.';
+    byId('pedido-destino').textContent = `${sessionId ? `Comanda #${sessionId}` : 'Nova comanda privada'} · Mesa ${document.querySelector('.table-tag strong').textContent}`;
+    byId('cart-undo').hidden = !removedItem || Boolean(attempt);
+    byId('revisar').textContent = sending ? 'Enviando…' : attempt ? 'Conferir envio pendente' : `Enviar pedido · ${money(total())}`;
+    byId('revisar-help').textContent = closing ? 'Conta em fechamento. Peça à equipe para retomar o atendimento se quiser pedir mais.' : !access ? 'Inicie um novo atendimento para continuar.' : !navigator.onLine ? 'Reconecte para revisar e enviar o pedido.' : attempt ? 'Há um envio sem confirmação. Esta ação consulta os pedidos e repete somente a mesma tentativa, sem criar outro pedido.' : !cart.length ? 'Adicione um produto para continuar.' : !cartAvailable() ? 'Edite as escolhas que mudaram ou remova o item indisponível.' : 'Ao enviar, você confirma os itens e o total exibidos neste carrinho.';
     byId('nav-cart-count').textContent = byId('cart-count').textContent;
     byId('nav-cart-count').hidden = !cart.length;
     byId('cart-shortcut').hidden = !cart.length || currentView !== 'cardapio';
@@ -94,17 +102,25 @@
       if (!product) return;
       if (item.preco !== product.preco) changed = true;
       item.preco = product.preco;
+      if (item.opcoes_versao !== product.opcoes_versao) changed = true;
+      item.opcoes_versao = product.opcoes_versao;
+      item.opcoes = (item.opcoes || []).map(c => {
+        const group = (product.grupos_opcoes || []).find(g => g.id === c.grupo_id);
+        const option = group?.opcoes.find(o => o.id === c.opcao_id);
+        return option ? {...c, grupo:group.nome, opcao:option.nome} : c;
+      });
       item.adicionais = item.adicionais.map(a => {
         const current = product.adicionais.find(v => v.id === a.id);
         if (current && current.preco !== a.preco) changed = true;
         return current || a;
       });
     });
-    if (changed) { saveCart(); feedback('Os preços do cardápio foram atualizados. Revise seu carrinho.'); }
+    if (changed) { saveCart(); feedback('O cardápio foi atualizado. Confira os preços e as escolhas no carrinho.'); }
     return changed;
   }
   async function loadMenu() {
     const categories = await api('/api/cardapio/');
+    MF.connectionStatus('cardapio', true);
     const recovered = !menuReady;
     menuReady = true;
     const signature = JSON.stringify(categories);
@@ -113,7 +129,7 @@
     products = categories.flatMap(c => c.produtos);
     syncCartPrices();
     renderCart();
-    byId('categorias').innerHTML = `<button data-category="" class="${selected === null ? 'active' : ''}">Todos</button>` + categories.map(c => `<button data-category="${c.id}" class="${selected === c.id ? 'active' : ''}">${escape(c.nome)}</button>`).join('');
+    byId('categorias').innerHTML = `<button data-category="" aria-pressed="${selected === null}" class="${selected === null ? 'active' : ''}">Todos</button>` + categories.map(c => `<button data-category="${c.id}" aria-pressed="${selected === c.id}" class="${selected === c.id ? 'active' : ''}">${escape(c.nome)}</button>`).join('');
     renderProducts();
     if (byId('produto-dialog').open && currentProduct) {
       const previous = currentProduct;
@@ -121,6 +137,9 @@
       byId('adicionar-item').disabled = !menuReady || !access || closing || !currentProduct?.disponivel;
       if (!currentProduct?.disponivel) feedback('Este produto ficou indisponível. Feche esta janela e escolha outro item.', true);
       else {
+        if (JSON.stringify(previous.grupos_opcoes) !== JSON.stringify(currentProduct.grupos_opcoes)) {
+          renderOptionGroups(); feedback('As escolhas deste produto mudaram. Selecione novamente antes de adicionar.', true);
+        }
         byId('produto-preco').textContent = money(currentProduct.preco);
         updateProductTotal();
         if (previous.preco !== currentProduct.preco) feedback('O preço deste produto foi atualizado. Confira o total antes de adicionar.');
@@ -131,6 +150,7 @@
     if (sending) return Promise.resolve();
     if (!refreshPromise) {
       const menu = loadMenu().catch(error => {
+        MF.connectionStatus('cardapio', false);
         menuReady = false; renderCart(); renderProducts();
         feedback(`Cardápio indisponível. ${error.message}`, true);
       });
@@ -147,6 +167,8 @@
     ended = mesa.atendimento_encerrado;
     byId('novo-atendimento').hidden = !ended;
     if (!loadedContext || mesa.atendimento_id !== draftId) {
+      if (byId('produto-dialog').open) byId('produto-dialog').close();
+      currentProduct = null; editingIndex = null;
       byId('resumo-conta').textContent = 'Carregando esta comanda…';
       byId('lista-pedidos').textContent = 'Carregando os pedidos desta comanda…';
       byId('conta-total').textContent = money(0);
@@ -154,7 +176,7 @@
       if (byId('compartilhar-dialog').open) byId('compartilhar-dialog').close();
       draftId = mesa.atendimento_id;
       attempt = null;
-      cart = [];
+      cart = []; removedItem = null;
       byId('observacao-pedido').value = '';
       if (access) {
         try {
@@ -172,9 +194,13 @@
       }
       syncCartPrices(); renderCart(); renderProducts();
     }
+    const previousSessionId = sessionId;
     sessionId = mesa.sessao_id;
-    byId('comanda-label').textContent = sessionId ? `Comanda #${sessionId} · Mesa ${document.querySelector('.table-tag strong').textContent}` : ended ? 'Sua comanda foi encerrada' : 'Seu pedido em conta separada';
+    if (previousSessionId !== sessionId) renderCart();
+    byId('comanda-label').textContent = sessionId ? `Comanda #${sessionId} · Mesa ${document.querySelector('.table-tag strong').textContent}` : ended ? 'Sua comanda foi encerrada' : 'Sua comanda privada';
     byId('compartilhar-comanda').disabled = !sessionId || !access;
+    byId('compartilhar-comanda').hidden = !sessionId || !access;
+    byId('comanda-help').textContent = sessionId ? `Convide quem vai consumir com você na comanda #${sessionId}. Só entra quem confirmar o convite privado. As outras pessoas da mesa têm suas próprias comandas.` : 'Seu primeiro pedido abre uma comanda só sua. Para consumir junto, entre pelo convite de alguém da sua família que já fez um pedido.';
     byId('compartilhar-comanda').title = sessionId ? 'Convidar sua família para esta comanda' : 'Envie o primeiro pedido para compartilhar';
     byId('separar-comanda').hidden = !sessionId;
     const ownTabs = mesa.comandas || [];
@@ -186,7 +212,7 @@
       byId('minhas-comandas').dataset.signature = tabsSignature;
     }
     loadedContext = true;
-    byId('session-label').textContent = sessionId ? 'Sessão aberta' : ended ? 'Sessão encerrada' : 'Pronta para seu pedido';
+    byId('session-label').textContent = sessionId ? `Comanda #${sessionId}` : ended ? 'Comanda encerrada' : 'Peça sem chamar a equipe';
     byId('session-warning').hidden = true;
     byId('session-warning').querySelector('strong').textContent = ended ? 'Atendimento encerrado' : 'Mesa sem sessão aberta';
     byId('client-error').hidden = true;
@@ -196,20 +222,21 @@
       byId('lista-pedidos').innerHTML = '<p class="empty-state">Seus pedidos aparecerão aqui depois da confirmação.</p>';
       byId('resumo-conta').textContent = 'Escolha seus produtos. O atendimento será aberto ao confirmar o primeiro pedido.';
       byId('conta-total').textContent = money(0);
-      byId('conta-quantidade').textContent = 'Nenhuma sessão aberta.';
+      byId('conta-quantidade').textContent = 'Nenhum pedido enviado.';
       byId('conta-status').textContent = ended ? 'Atendimento encerrado. Obrigado pela visita!' : 'O atendimento começa automaticamente no primeiro pedido.';
       byId('nav-orders-count').hidden = true;
       lastOrders = ''; lastBill = '';
+      MF.connectionStatus('comanda', true);
       return;
     }
     const [orders, bill] = await Promise.all([api(privateUrl('pedidos/')), api(privateUrl('conta/'))]);
     if (bill.sessao_id !== sessionId || orders.some(p => p.sessao !== sessionId)) throw new Error('A comanda mudou. Atualize a página.');
     if (closing !== bill.conta_solicitada) { closing = bill.conta_solicitada; renderCart(); renderProducts(); }
     byId('fechamento-aviso').hidden = !closing;
-    byId('session-label').textContent = closing ? 'Em fechamento' : 'Sessão aberta';
+    byId('session-label').textContent = closing ? `Comanda #${sessionId} · em fechamento` : `Comanda #${sessionId}`;
     if (attempt && orders.some(p => p.chave_envio === attempt.chave_envio)) {
-      attempt = null; saveAttempt(); cart = []; byId('observacao-pedido').value = ''; saveCart(); renderCart();
-      byId('revisao-dialog').close(); feedback('Pedido recebido pela cozinha.');
+      attempt = null; saveAttempt(); cart = []; removedItem = null; byId('observacao-pedido').value = ''; saveCart(); renderCart();
+      feedback('Pedido recebido pela cozinha.');
       showView('pedidos', true, true);
     }
     const signature = JSON.stringify(orders);
@@ -219,16 +246,18 @@
     }
     if (JSON.stringify(bill) !== lastBill) {
       lastBill = JSON.stringify(bill);
-      byId('resumo-conta').innerHTML = bill.pedidos.length ? bill.pedidos.map(p => `<div class="bill-order"><div class="bill-row"><div><strong>Pedido #${p.id}</strong><p class="small muted mb-0">${statusNames[p.status]}${p.status === 'CANCELADO' ? ' · sem cobrança' : ''}</p></div><strong>${money(p.status === 'CANCELADO' ? 0 : p.valor_total)}</strong></div>${itemList(p)}</div>`).join('') : '<p class="empty-state">Ainda não há pedidos na conta desta mesa.</p>';
+      byId('resumo-conta').innerHTML = bill.pedidos.length ? bill.pedidos.map(p => `<div class="bill-order"><div class="bill-row"><div><strong>Pedido #${p.id}</strong><p class="small muted mb-0">${statusNames[p.status]}${p.status === 'CANCELADO' ? ' · sem cobrança' : ''}</p></div><strong>${money(p.status === 'CANCELADO' ? 0 : p.valor_total)}</strong></div>${itemList(p)}</div>`).join('') : '<p class="empty-state">Ainda não há pedidos na sua comanda.</p>';
     }
     byId('nav-orders-count').textContent = orders.length;
     byId('nav-orders-count').hidden = !orders.length;
     byId('conta-total').textContent = money(bill.valor_total);
-    byId('conta-quantidade').textContent = `${bill.pedidos.length} ${bill.pedidos.length === 1 ? 'pedido nesta sessão' : 'pedidos nesta sessão'}`;
+    byId('conta-quantidade').textContent = `${bill.pedidos.length} ${bill.pedidos.length === 1 ? 'pedido nesta comanda' : 'pedidos nesta comanda'}`;
     byId('conta-status').textContent = bill.conta_solicitada ? 'Conta em fechamento. Para pedir mais, solicite à equipe a retomada do atendimento.' : 'O pagamento é feito com a equipe do restaurante.';
     byId('pedir-conta').disabled = bill.conta_solicitada || !navigator.onLine;
-    byId('pedir-conta').textContent = bill.conta_solicitada ? 'Conta solicitada ✓' : 'Pedir a conta';
+    byId('pedir-conta').textContent = bill.conta_solicitada ? 'Fechamento solicitado ✓' : 'Solicitar fechamento';
+    MF.connectionStatus('comanda', true);
     } catch (error) {
+      MF.connectionStatus('comanda', false);
       byId('client-error-message').textContent = error.message;
       byId('client-error').hidden = false;
       throw error;
@@ -240,37 +269,60 @@
     if (button.hasAttribute('data-continue-menu')) { showView('cardapio', true, true); return; }
     if (button.hasAttribute('data-clear-menu')) {
       selected = null; search = ''; byId('buscar-produto').value = '';
-      document.querySelectorAll('[data-category]').forEach(b => b.classList.toggle('active', b.dataset.category === ''));
+      document.querySelectorAll('[data-category]').forEach(b => { b.classList.toggle('active', b.dataset.category === ''); b.setAttribute('aria-pressed', String(b.dataset.category === '')); });
       renderProducts();
     }
-    if (attempt && (button.dataset.product || button.dataset.remove !== undefined || button.dataset.quantity !== undefined)) { feedback('Há um envio aguardando confirmação. Revise e tente novamente antes de alterar o carrinho.', true); return; }
+    if (attempt && (button.dataset.product || button.dataset.edit !== undefined || button.dataset.remove !== undefined || button.dataset.quantity !== undefined)) { feedback('Há um envio aguardando confirmação. Confira seus pedidos e tente confirmar antes de alterar o carrinho.', true); return; }
     if (button.hasAttribute('data-category')) {
       selected = button.dataset.category ? Number(button.dataset.category) : null;
-      document.querySelectorAll('[data-category]').forEach(b => b.classList.toggle('active', b === button));
+      document.querySelectorAll('[data-category]').forEach(b => { b.classList.toggle('active', b === button); b.setAttribute('aria-pressed', String(b === button)); });
       renderProducts();
     }
-    if (button.dataset.product) {
-      currentProduct = products.find(p => p.id === Number(button.dataset.product));
-      byId('produto-titulo').textContent = currentProduct.nome;
-      byId('produto-descricao').textContent = currentProduct.descricao;
-      byId('produto-quantidade').value = '1'; byId('produto-observacao').value = '';
-      const soda = currentProduct.nome.trim().toLocaleLowerCase('pt-BR') === 'refrigerante lata';
-      byId('produto-opcoes').hidden = !soda;
-      document.querySelectorAll('input[name="sabor"]').forEach(input => { input.checked = false; input.required = soda; });
-      byId('produto-observacao').maxLength = soda ? 230 : 255;
-      byId('produto-preco').textContent = money(currentProduct.preco);
-      byId('adicionar-item').disabled = false;
-      byId('produto-adicionais').innerHTML = currentProduct.adicionais.length ? '<h3 class="small-heading">Deixe do seu jeito</h3>' + currentProduct.adicionais.map(a => `<label class="extra-option"><span><input type="checkbox" name="adicional" value="${a.id}"> ${escape(a.nome)}</span><strong>+ ${money(a.preco)}</strong></label>`).join('') : '';
-      byId('produto-dialog').showModal();
-      updateProductTotal();
+    if (button.dataset.product) openProduct(Number(button.dataset.product));
+    if (button.dataset.edit !== undefined) {
+      const index = Number(button.dataset.edit);
+      openProduct(cart[index].produto_id, index);
     }
-    if (button.dataset.remove !== undefined) { cart.splice(Number(button.dataset.remove),1); saveCart(); renderCart(); }
+    if (button.dataset.remove !== undefined) {
+      const index = Number(button.dataset.remove);
+      removedItem = {item:cart[index], index, draftId};
+      cart.splice(index,1); saveCart(); renderCart();
+      byId('cart-undo-message').textContent = `${removedItem.item.nome} removido.`;
+      byId('desfazer-remocao').focus({preventScroll:true});
+    }
     if (button.dataset.quantity !== undefined) {
       const item = cart[Number(button.dataset.quantity)];
       item.quantidade = Math.min(99, Math.max(1,item.quantidade + Number(button.dataset.delta)));
       saveCart(); renderCart();
+      byId('cart-items').querySelector(`[data-quantity="${button.dataset.quantity}"][data-delta="${button.dataset.delta}"]`)?.focus({preventScroll:true});
     }
   });
+  byId('desfazer-remocao').addEventListener('click', () => {
+    if (!removedItem || removedItem.draftId !== draftId || attempt) return;
+    cart.splice(Math.min(removedItem.index, cart.length), 0, removedItem.item);
+    removedItem = null; saveCart(); renderCart();
+    feedback('Item devolvido ao carrinho.');
+  });
+  function renderOptionGroups(choices = []) {
+    byId('produto-opcoes').innerHTML = (currentProduct.grupos_opcoes || []).map(g => `<fieldset class="drink-options"><legend>${escape(g.nome)}</legend><p>Escolha 1 · ${g.obrigatorio ? 'obrigatório' : 'opcional'} · sem acréscimo</p><div class="drink-options-list">${g.opcoes.map(o => `<label><input type="radio" name="opcao-${g.id}" data-option-group="${g.id}" value="${o.id}" ${g.obrigatorio ? 'required' : ''} ${choices.some(c => c.grupo_id === g.id && c.opcao_id === o.id) ? 'checked' : ''}> ${escape(o.nome)}</label>`).join('')}${!g.obrigatorio ? `<label><input type="radio" name="opcao-${g.id}" value="" ${!choices.some(c => c.grupo_id === g.id) ? 'checked' : ''}> Sem preferência</label>` : ''}</div></fieldset>`).join('');
+  }
+  function openProduct(id, index = null) {
+    currentProduct = products.find(p => p.id === id);
+    if (!currentProduct?.disponivel || !menuReady || closing || !access) { feedback('Este produto está indisponível. Remova-o do carrinho ou escolha outro.', true); return; }
+    editingIndex = index;
+    const item = index === null ? null : cart[index];
+    byId('produto-titulo').textContent = currentProduct.nome;
+    byId('produto-descricao').textContent = currentProduct.descricao;
+    byId('produto-quantidade').value = item?.quantidade || 1;
+    byId('produto-observacao').value = item?.observacao || '';
+    renderOptionGroups(item?.opcoes || []);
+    byId('produto-preco').textContent = money(currentProduct.preco);
+    byId('adicionar-item').disabled = false;
+    byId('adicionar-item').textContent = item ? 'Salvar item no carrinho' : 'Adicionar ao carrinho';
+    byId('produto-adicionais').innerHTML = currentProduct.adicionais.length ? '<h3 class="small-heading">Adicionais · opcionais</h3>' + currentProduct.adicionais.map(a => `<label class="extra-option"><span><input type="checkbox" name="adicional" value="${a.id}" ${item?.adicionais.some(c => c.id === a.id) ? 'checked' : ''}> ${escape(a.nome)}</span><strong>+ ${money(a.preco)}</strong></label>`).join('') : '';
+    MF.openDialog(byId('produto-dialog'));
+    updateProductTotal();
+  }
   function updateProductTotal() {
     if (!currentProduct) return;
     const ids = [...byId('produto-adicionais').querySelectorAll('input:checked')].map(n => Number(n.value));
@@ -285,42 +337,42 @@
     currentProduct = products.find(p => p.id === currentProduct?.id);
     if (!menuReady || !access || closing || !currentProduct?.disponivel || attempt) { feedback('Este item não pode ser adicionado agora.', true); return; }
     const ids = [...document.querySelectorAll('[name="adicional"]:checked')].map(n => Number(n.value));
-    const sabor = document.querySelector('input[name="sabor"]:checked')?.value;
-    const observacao = [sabor ? `Sabor: ${sabor}` : '', byId('produto-observacao').value.trim()].filter(Boolean).join(' · ');
-    cart.push({produto_id: currentProduct.id, nome: currentProduct.nome, preco: currentProduct.preco, quantidade: Number(byId('produto-quantidade').value), adicionais: currentProduct.adicionais.filter(a => ids.includes(a.id)), observacao});
-    saveCart(); renderCart(); byId('produto-dialog').close(); feedback('Adicionado ao carrinho.');
+    const opcoes = [...byId('produto-opcoes').querySelectorAll('[data-option-group]:checked')].map(input => {
+      const group = currentProduct.grupos_opcoes.find(g => g.id === input.dataset.optionGroup);
+      const option = group?.opcoes.find(o => o.id === input.value);
+      return option ? {grupo_id:group.id, grupo:group.nome, opcao_id:option.id, opcao:option.nome} : null;
+    }).filter(Boolean);
+    const item = {produto_id:currentProduct.id, nome:currentProduct.nome, preco:currentProduct.preco, quantidade:Number(byId('produto-quantidade').value), adicionais:currentProduct.adicionais.filter(a => ids.includes(a.id)), observacao:byId('produto-observacao').value.trim(), opcoes, opcoes_versao:currentProduct.opcoes_versao};
+    if (!optionsAvailable(item, currentProduct) || !byId('produto-form').reportValidity()) { feedback('Escolha as opções obrigatórias deste produto.', true); return; }
+    if (editingIndex === null) cart.push(item); else cart[editingIndex] = item;
+    const edited = editingIndex !== null;
+    saveCart(); renderCart(); byId('produto-dialog').close();
+    feedback(edited ? 'Item atualizado no carrinho.' : 'Adicionado ao carrinho. Você pode editar antes de enviar.');
   });
-  function renderReview() {
-    byId('revisao-itens').innerHTML = cart.map(i => `<div class="bill-row"><div><strong>${i.quantidade}× ${escape(i.nome)}</strong><p class="small muted mb-0">${i.adicionais.map(a => escape(a.nome)).join(', ')} ${escape(i.observacao)}</p></div><strong>${money(unit(i)*i.quantidade)}</strong></div>`).join('') + `<p class="small muted">${escape(byId('observacao-pedido').value)}</p>`;
-    byId('revisao-total').textContent = money(total());
-    reviewSignature = cartSignature();
-    if (!byId('revisao-dialog').open) byId('revisao-dialog').showModal();
-  }
   byId('revisar').addEventListener('click', async () => {
-    try { await refresh(); } catch (error) { feedback(error.message, true); return; }
-    if (sending) return;
-    if (!access || closing || !cart.length || ((!menuReady || !cartAvailable()) && !attempt)) return;
-    renderReview();
-  });
-  byId('confirmar').addEventListener('click', async () => {
     if (sending || !cart.length) return;
+    // Compare com o que estava visível no clique, antes de qualquer atualização remota.
+    const seen = cartSignature();
     try { await refresh(); } catch (error) { feedback(error.message, true); return; }
-    if (sending) return;
-    if (!access || closing || !cart.length || ((!menuReady || !cartAvailable()) && !attempt)) return;
-    if (!attempt && cartSignature() !== reviewSignature) { renderReview(); feedback('O carrinho ou os preços mudaram. Confira o novo total e confirme novamente.', true); return; }
-    sending = true; byId('confirmar').disabled = true; byId('confirmar').textContent = 'Enviando…';
+    if (sending || !cart.length) return;
+    if (!access || closing || ((!menuReady || !cartAvailable()) && !attempt)) return;
+    if (!attempt && seen !== cartSignature()) { feedback('O carrinho, os preços ou a comanda mudaram. Confira o total atualizado e toque em Enviar pedido novamente.', true); return; }
+    sending = true; renderCart();
     try {
       if (!attempt) {
-        attempt = {chave_envio:MF.uuid(), mesa_uuid:token, atendimento_id:draftId, sessao_id:sessionId, total_esperado:total().toFixed(2), observacao:byId('observacao-pedido').value, itens:cart.map(i => ({produto_id:i.produto_id, quantidade:i.quantidade, observacao:i.observacao, adicionais_ids:i.adicionais.map(a => a.id)}))};
+        attempt = {chave_envio:MF.uuid(), mesa_uuid:token, atendimento_id:draftId, sessao_id:sessionId, total_esperado:total().toFixed(2), observacao:byId('observacao-pedido').value, itens:cart.map(i => ({produto_id:i.produto_id, quantidade:i.quantidade, observacao:i.observacao, adicionais_ids:i.adicionais.map(a => a.id), ...((i.opcoes || []).length ? {opcoes:i.opcoes.map(c => ({grupo_id:c.grupo_id, opcao_id:c.opcao_id}))} : {}), ...(i.opcoes_versao ? {opcoes_versao:i.opcoes_versao} : {})}))};
         saveAttempt();
       }
-      await api('/api/pedidos/criar/', {method:'POST', body:JSON.stringify(attempt)});
-      attempt = null; saveAttempt();
-      cart = []; byId('observacao-pedido').value = ''; saveCart(); byId('revisao-dialog').close();
-      feedback('Pedido enviado! A cozinha já recebeu.'); await refresh();
+      const sent = await api('/api/pedidos/criar/', {method:'POST', body:JSON.stringify(attempt)});
+      attempt = null; saveAttempt(); removedItem = null;
+      cart = []; byId('observacao-pedido').value = ''; saveCart();
+      feedback(`Pedido #${sent.id} enviado! Acompanhe o preparo por aqui.`);
       showView('pedidos', true, true);
-    } catch (error) { if (error.status && error.status < 500) { attempt = null; saveAttempt(); } feedback(`${error.message} Confira os pedidos antes de tentar novamente.`, true); await loadMenu().catch(() => {}); }
-    finally { sending = false; byId('confirmar').disabled = false; byId('confirmar').textContent = 'Confirmar e enviar pedido →'; renderCart(); refresh().catch(e => feedback(e.message, true)); }
+    } catch (error) {
+      if (error.status && error.status < 500) { attempt = null; saveAttempt(); }
+      feedback(`${error.message} Confira os pedidos antes de tentar novamente.`, true);
+      await loadMenu().catch(() => {});
+    } finally { sending = false; renderCart(); refresh().catch(e => feedback(e.message, true)); }
   });
   async function iniciarSeparado() {
     byId('iniciar-atendimento').disabled = true;
@@ -348,7 +400,7 @@
       byId('compartilhar-qr').src = invite.qr_url;
       byId('compartilhar-validade').textContent = `Convite válido até ${new Date(invite.expira_em).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo'})}. Após o pagamento ele deixa de funcionar.`;
       byId('enviar-convite').hidden = !navigator.share;
-      byId('compartilhar-dialog').showModal();
+      MF.openDialog(byId('compartilhar-dialog'));
     } catch (error) { feedback(error.message, true); }
     finally { byId('compartilhar-comanda').disabled = !sessionId || !access; }
   });

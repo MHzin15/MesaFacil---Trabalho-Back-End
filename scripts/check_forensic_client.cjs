@@ -12,10 +12,12 @@ const node = id => {
     showModal(){this.open=true;},close(){this.open=false;}});
   return nodes.get(id);
 };
+const scenario = process.argv[2] || 'race';
+const reviewChange = ['price-change','options-change'].includes(scenario);
 const store = new Map();
 const attempt = {atendimento_id:'draft-A',chave_envio:'original-A',mesa_uuid:'table',sessao_id:null,total_esperado:'10.00',
   observacao:'',itens:[{produto_id:1,quantidade:1,adicionais_ids:[],observacao:''}]};
-store.set('mf-attempt-table-draft-A',JSON.stringify(attempt));
+if (!reviewChange) store.set('mf-attempt-table-draft-A',JSON.stringify(attempt));
 store.set('mf-cart-table-draft-A',JSON.stringify([{produto_id:1,nome:'Item',preco:'10.00',
   quantidade:1,adicionais:[],observacao:''}]));
 const context = id => ({acesso_liberado:true,atendimento_id:`draft-${id}`,sessao_id:id==='A'?1:2,
@@ -26,7 +28,7 @@ const sent=[];
 const api = async (url,options={}) => {
   if (url==='/api/cardapio/' && phase==='menu-failure') throw new Error('Catálogo indisponível');
   if (url==='/api/cardapio/') return [{id:1,nome:'Categoria',produtos:[{id:1,nome:'Item',
-    descricao:'',categoria:1,preco:'10.00',adicionais:[],disponivel:true}]}];
+    descricao:'',categoria:1,preco:phase==='price-change'?'12.00':'10.00',adicionais:[],disponivel:true, ...(reviewChange ? {opcoes_versao:(phase==='options-change'?'b':'a').repeat(64),grupos_opcoes:phase==='options-change'?[{id:'group',nome:'Novo grupo',obrigatorio:false,opcoes:[{id:'option',nome:'Escolha'}]}]:[]} : {})}]}];
   if (url==='/api/mesa/table/') {
     if (phase==='race'&&!changed) {
       const read=context('A');
@@ -38,7 +40,7 @@ const api = async (url,options={}) => {
   }
   if (url.startsWith('/api/mesa/table/pedidos/')) {
     assert.equal(new URL(url, 'http://local').searchParams.get('atendimento_id'), 'draft-A');
-    if (phase==='bootstrap') throw new Error('Resposta HTTP perdida');
+    if (phase==='bootstrap' && !reviewChange) throw new Error('Resposta HTTP perdida');
     if (phase==='stable') return [{id:1,sessao:1,chave_envio:'original-A'}];
     return []; // B não contém o pedido já gravado em A.
   }
@@ -58,13 +60,22 @@ const document={body:{dataset:{mesa:'table',clientView:'carrinho'}},documentElem
 const ctx={document,window:{addEventListener(){},scrollTo(){}},location:{pathname:'/mesa/table/carrinho/',hash:'',search:''},
   history:{pushState(){},replaceState(){}},navigator:{onLine:true},HTMLImageElement:class {},
   sessionStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value),removeItem:key=>store.delete(key)},
-  URL,MF:{api,money:String,escape:String,feedback(){},poll:fn=>{poll=fn;},statusNames:{},itemList(){return '';},renderOrders(){return '';},uuid(){return 'unused';}},console};
+  URL,MF:{api,connectionStatus(){},money:String,escape:String,feedback(){},poll:fn=>{poll=fn;},statusNames:{},itemList(){return '';},renderOrders(){return '';},uuid(){return 'unused';}},console};
 vm.runInNewContext(fs.readFileSync('static/js/cliente.js','utf8'),ctx,{filename:'cliente.js'});
 (async()=>{
   // Após a primeira gravação A, uma indisponibilidade de leitura mantém o envio pendente.
   try { await poll(); } catch {}
-  phase=process.argv[2]||'race';
-  await node('confirmar').handlers.click();
+  phase=scenario;
+  await node('revisar').handlers.click();
+  if (reviewChange) {
+    assert.equal(sent.length,0,'Uma alteração após a revisão não pode gerar POST no primeiro clique.');
+    await node('revisar').handlers.click();
+    assert.equal(sent.length,1);
+    assert.equal(sent[0].payload.total_esperado,phase==='price-change'?'12.00':'10.00');
+    assert.equal(sent[0].payload.itens[0].opcoes_versao,(phase==='options-change'?'b':'a').repeat(64));
+    console.log(JSON.stringify({resultado:'OK',cenario:phase,primeiro_clique:'exige nova revisão',segundo_clique:'um único POST com valor e versão atualizados'}));
+    return;
+  }
   if (phase==='stable') {
     assert.equal(sent.length,0);
     console.log(JSON.stringify({resultado:'CONTROLE_ESTAVEL',reenvios:0,efeito:'A chave encontrada nos pedidos A é reconhecida e o JS não reenvia.'}));

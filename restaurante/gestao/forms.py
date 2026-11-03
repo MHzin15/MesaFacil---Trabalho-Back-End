@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import SetPasswordForm
 from django.contrib.auth.password_validation import validate_password
 from restaurante.models import Adicional, Categoria, Mesa, Perfil, Produto, Pedido
+from restaurante.opcoes import validar_grupos_opcoes
+from .widgets import EscolhasWidget, FotoProdutoWidget
 
 PAPEIS = [('GARCOM', 'Garçom — mesas, entregas e contas'),
           ('COZINHA', 'Cozinha — preparo e disponibilidade'),
@@ -106,6 +108,8 @@ class MesaForm(EstiloForm, forms.ModelForm):
 
 
 class ProdutoForm(EstiloForm, forms.ModelForm):
+    grupos_opcoes = forms.JSONField(label='Escolhas do produto', required=False,
+                                    widget=EscolhasWidget, validators=[validar_grupos_opcoes])
     preco_anterior = forms.DecimalField(max_digits=10, decimal_places=2, required=False,
                                         widget=forms.HiddenInput)
 
@@ -113,6 +117,15 @@ class ProdutoForm(EstiloForm, forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance.pk:
             self.initial['preco_anterior'] = self.instance.preco
+        self.fields['categoria'].empty_label = 'Escolha uma categoria'
+        if self.instance.pk:
+            from restaurante.serializers import ProdutoSerializer
+            self.fields['foto'].widget.preview_url = ProdutoSerializer(self.instance).data['foto']
+
+    def clean_grupos_opcoes(self):
+        if self.instance.pk and 'grupos_opcoes' not in self.data:
+            return self.instance.grupos_opcoes
+        return self.cleaned_data['grupos_opcoes'] or []
 
     def clean(self):
         data = super().clean()
@@ -122,14 +135,15 @@ class ProdutoForm(EstiloForm, forms.ModelForm):
 
     class Meta:
         model = Produto
-        fields = ['nome', 'categoria', 'descricao', 'preco', 'foto', 'disponivel']
+        fields = ['nome', 'categoria', 'descricao', 'preco', 'foto', 'disponivel', 'grupos_opcoes']
         localized_fields = ['preco']
         labels = {'nome': 'Nome no cardápio', 'descricao': 'Descrição para o cliente', 'preco': 'Preço de venda (R$)',
                   'foto': 'Foto do produto', 'disponivel': 'Disponível para novos pedidos'}
         help_texts = {'preco': 'O novo preço vale para os próximos pedidos. Pedidos anteriores mantêm o valor original.',
                       'foto': 'Envie uma imagem de até 5 MB. Fotos horizontais ficam melhores no cardápio.',
                       'disponivel': 'Desmarque quando o produto acabar. Ele continua no histórico.'}
-        widgets = {'descricao': forms.Textarea(attrs={'rows': 3}), 'preco': forms.TextInput(attrs={'inputmode': 'decimal'})}
+        widgets = {'descricao': forms.Textarea(attrs={'rows': 3}), 'preco': forms.TextInput(attrs={'inputmode': 'decimal'}),
+                   'foto': FotoProdutoWidget(attrs={'accept': 'image/*'})}
 
 
 class PrecoForm(EstiloForm, forms.Form):

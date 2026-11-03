@@ -130,3 +130,68 @@ body[data-client-view=cardapio] .feedback{bottom:104px}
 .private-tab-bar{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:24px}
 .private-tab-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.private-tab-actions label{font-size:.8rem}
 .share-dialog{text-align:center}.share-qr{display:block;max-width:100%;width:240px;height:240px;object-fit:contain;margin:16px auto}.share-dialog input{font-size:.8rem}
+
+/* Hierarquia compacta; contexto privado sempre próximo do cardápio. */
+body[data-page=cliente]{font-size:16px}
+body[data-page=cliente] .client-heading{padding:20px 0 12px;gap:16px}
+.client-heading .eyebrow{display:none}
+.client-heading h1{font-size:2.2rem;margin-bottom:5px}
+.client-heading .table-tag{min-width:110px;padding:8px 12px}
+.client-heading .table-tag span{font-size:.72rem}
+.private-tab-bar{position:relative;display:flex;align-items:center;padding:12px 0;margin:0 0 16px;border-bottom:1px solid var(--line);gap:12px}
+.private-tab-bar>strong{font-size:.95rem}
+.private-tab-help{max-width:600px;font-size:.9rem}
+.private-tab-help summary{cursor:pointer;color:var(--accent);min-height:44px;display:flex;align-items:center;list-style:revert}
+.private-tab-help[open]{flex-basis:100%}
+.private-tab-actions{gap:12px;margin:12px 0}
+.menu-toolbar{justify-content:flex-end;margin-bottom:10px}
+.menu-search-field{width:100%;max-width:none}
+.cart-item-actions{display:flex;align-items:center;gap:12px}
+.cart-item-actions button{min-height:44px;background:none;border:0;padding:8px;color:var(--accent);font-size:.85rem}
+.cart-item>div:first-child{flex-wrap:wrap;gap:8px}
+.cart-lines .quantity-control button{width:44px;height:44px}
+.cart-undo{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#f0f0e5}
+.cart-undo button{min-height:44px;background:none;color:var(--accent);border:0;font-weight:600}
+.drink-options-list{grid-template-columns:repeat(auto-fit,minmax(135px,1fr))}
+.drink-options-list label{font-size:1rem;min-height:48px}
+.drink-options legend{font-size:1rem}
+.drink-options p{font-size:.85rem}
+.closure-warning{margin:16px 0 0;color:#67481c;background:#f6edda;padding:12px;border-radius:8px;font-size:.9rem}
+.category-tabs button{min-height:44px}
+.category-tabs::-webkit-scrollbar{height:5px}
+.category-tabs::-webkit-scrollbar-thumb{background:#bcb9aa;border-radius:8px}
+.category-tabs::-webkit-scrollbar-track{background:transparent}
+body[data-page=cliente] .feedback{position:static;bottom:auto;left:auto;transform:none}
+@media(max-width:600px){
+  body[data-page=cliente] .topbar{min-height:60px;padding:10px 16px;gap:8px}
+  body[data-page=cliente] .topnav{gap:8px}
+  body[data-page=cliente] .brand-mark{font-size:1.2rem}
+  body[data-page=cliente] .client-heading{padding:16px 0 8px;align-items:center}
+  .client-heading h1{font-size:1.8rem;margin-bottom:0}
+  .client-heading #client-description{display:none}
+  .client-heading .table-tag{min-width:100px;padding:6px 8px;font-size:.6rem}
+  .client-heading .table-tag strong{font-size:1.4rem}
+  .client-heading .table-tag span{font-size:.66rem}
+  .private-tab-bar{gap:0;margin-bottom:12px;padding:0 0 8px}
+  .private-tab-bar>strong{font-size:.85rem}
+  .private-tab-help{font-size:.85rem}
+  .private-tab-help summary{min-height:36px}
+  .client-heading .table-tag{min-width:116px;padding:6px 8px;line-height:1.4}
+  .client-heading .table-tag strong{display:inline;font-size:1.2rem;margin-left:5px}
+  .client-heading .table-tag span{font-size:.6rem;margin-top:2px}
+  .menu-filter-row .category-tabs{padding:0 0 4px;scrollbar-width:thin}
+  .menu-filter-row{flex-wrap:wrap;gap:0}
+  .menu-filter-row .category-tabs{flex-basis:100%}
+  .menu-filter-row #menu-results{font-size:.75rem;margin:0 0 10px}
+  #cardapio .product-card{grid-template-columns:80px minmax(0,1fr);gap:12px}
+  #cardapio .product-image{width:80px;height:88px}
+  #cardapio .product-body h3{font-size:1rem}
+  #cardapio .product-body p{font-size:.85rem;margin:4px 0 10px}
+  #cardapio .add-button{min-height:44px;font-size:.85rem}
+  #cardapio .product-footer strong{font-size:.95rem}
+  .checkout-confirmation{position:static;box-shadow:none;border:0;padding:0;background:transparent}
+  .checkout-confirmation .cart-total{margin:20px 0}
+  body[data-client-view=carrinho] .page-shell,body[data-client-view=conta] .page-shell{padding-bottom:110px}
+  .checkout-summary{padding:20px}
+  .orders-grid .order-item{font-size:1rem}
+}

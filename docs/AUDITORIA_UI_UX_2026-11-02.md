@@ -1,5 +1,7 @@
 # Auditoria de UI/UX e proposta de evolução — MesaFácil
 
+> Proposta aprovada e implementada posteriormente em branch isolada. Consulte [patches, validações e capturas](IMPLEMENTACAO_UI_UX_2026-11-02.md) e o [ponto de retorno](RETORNO_UI_UX_2026-11-02.md). O diagnóstico abaixo registra a situação anterior à implementação.
+
 **Data:** 02/11/2026. **Escopo:** cliente, garçom, cozinha e gestão.  
 **Base:** árvore local da main em 21ddef4, incluindo as correções forenses ainda locais. Não representa necessariamente a interface publicada no Render.  
 **Entrega:** diagnóstico + prioridades + critérios de aceite + [proposta navegável](uiux/proposta.html). O layout real não foi redesenhado nesta auditoria.

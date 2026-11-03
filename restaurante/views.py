@@ -27,6 +27,7 @@ from .serializers import (
     PerfilSerializer,
     MesaSerializer, MesaClienteSerializer,
     SessaoMesaSerializer,
+    SessaoMesaResumoSerializer,
     CategoriaSerializer, CategoriaComProdutosSerializer,
     ProdutoSerializer, AdicionalSerializer,
     PedidoSerializer, PedidoCriarSerializer, PedidoStatusSerializer,
@@ -342,7 +343,7 @@ def painel_garcom(request):
     return Response({
         'pedidos_prontos': PedidoSerializer(pedidos_prontos, many=True).data,
         'mesas_aguardando_conta': MesaSerializer(mesas_aguardando, many=True, context={'request': request}).data,
-        'comandas_aguardando_conta': SessaoMesaSerializer(SessaoMesa.objects.filter(ativa=True, conta_solicitada=True).select_related('mesa'), many=True).data,
+        'comandas_aguardando_conta': SessaoMesaResumoSerializer(SessaoMesa.objects.filter(ativa=True, conta_solicitada=True).com_resumo().select_related('mesa').order_by('conta_solicitada_em', 'id'), many=True).data,
     })
 
 

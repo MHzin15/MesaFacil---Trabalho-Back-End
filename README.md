@@ -178,3 +178,5 @@ As [correções da auditoria de 02/11](docs/CORRECOES_AUDITORIA_FORENSE_2026-11-
 A [auditoria de UI/UX](docs/AUDITORIA_UI_UX_2026-11-02.md) avalia cliente, salão,
 cozinha e gestão e apresenta uma [proposta navegável](docs/uiux/proposta.html)
 para revisão. O Render permanece Free até nova autorização.
+
+A proposta aprovada foi [implementada em branch isolada](docs/IMPLEMENTACAO_UI_UX_2026-11-02.md), com [ponto de retorno ao estado local anterior](docs/RETORNO_UI_UX_2026-11-02.md). As [capturas da aplicação](docs/uiux/implementacao/README.md) mostram os fluxos reais com dados de teste.

@@ -1,0 +1,7 @@
+<div class="photo-editor" data-photo-editor>
+  {% if widget.preview_url %}<img src="{{ widget.preview_url }}" alt="Foto atual do produto" data-photo-preview>{% else %}<img alt="Prévia da foto escolhida" data-photo-preview hidden>{% endif %}
+  <p class="g-help" data-photo-empty {% if widget.preview_url %}hidden{% endif %}>Sem foto própria. Produtos de exemplo usam a foto padrão, quando disponível.</p>
+  <label class="form-label" for="{{ widget.attrs.id }}">{% if widget.preview_url %}Trocar foto{% else %}Escolher foto{% endif %}</label>
+  <input type="{{ widget.type }}" name="{{ widget.name }}"{% include 'django/forms/widgets/attrs.html' %}>
+  {% if widget.is_initial and not widget.required %}<label class="g-check mt-3"><input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}"{% if widget.attrs.checked %} checked{% endif %}> Remover foto própria ao salvar</label>{% endif %}
+</div>

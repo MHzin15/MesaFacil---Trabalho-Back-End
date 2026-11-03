@@ -12,6 +12,21 @@ window.MF = (() => {
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));
   const statusNames = {RECEBIDO:'Recebido', EM_PREPARACAO:'Em preparação', PRONTO:'Pronto', A_CAMINHO:'A caminho', ENTREGUE:'Entregue', CANCELADO:'Cancelado'};
   let noticeTimer;
+  const unavailable = new Set();
+  const connectionStatus = (scope, ok) => {
+    if (ok) unavailable.delete(scope); else unavailable.add(scope);
+    network(!navigator.onLine ? 'offline' : unavailable.size ? 'stale' : 'online');
+  };
+  let networkStatus = '';
+  function network(state) {
+    const node = document.querySelector('#network-state');
+    if (!node || networkStatus === state) return;
+    const previous = networkStatus;
+    networkStatus = state;
+    node.dataset.state = state;
+    node.hidden = state === 'online' && !previous;
+    node.textContent = state === 'offline' ? 'Sem conexão. Os dados exibidos podem estar antigos. Reconecte antes de enviar ou pagar.' : state === 'stale' ? 'Não foi possível atualizar. Os dados exibidos podem estar antigos. O serviço pode levar um momento para responder; tente novamente.' : 'Conexão restabelecida. Dados atualizados.';
+  }
   function feedback(message, error = false) {
     const node = document.querySelector('#feedback');
     const dialog = document.querySelector('dialog[open]');
@@ -48,9 +63,10 @@ window.MF = (() => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 12000);
     try { response = await fetch(url, {...options, signal: options.signal || controller.signal, headers, credentials: 'same-origin', cache: 'no-store'}); }
-    catch { throw new Error('Sem conexão com o restaurante. Confira a internet e tente novamente.'); }
+    catch { network(navigator.onLine ? 'stale' : 'offline'); throw new Error('Não foi possível confirmar a resposta do restaurante. Tente atualizar e confira os pedidos antes de reenviar.'); }
     finally { clearTimeout(timeout); }
     const data = await response.json().catch(() => ({}));
+    if (response.status >= 500) network('stale');
     if (!response.ok) {
       if (response.status === 403 && document.body.dataset.page !== 'cliente') {
         throw new Error('Acesso negado ou sessão expirada. Entre novamente na área da equipe.');
@@ -80,10 +96,24 @@ window.MF = (() => {
     window.addEventListener('pageshow', event => { if (event.persisted) { active = true; tick(); } });
   }
   function itemList(pedido) {
-    return pedido.itens.map(item => `<div class="order-item"><strong>${item.quantidade}× ${escape(item.produto_nome)}</strong>${item.itens_adicionais.length ? `<div class="extras">+ ${item.itens_adicionais.map(a => escape(a.nome)).join(', ')}</div>` : ''}${item.observacao ? `<div class="item-note">${escape(item.observacao)}</div>` : ''}</div>`).join('');
+    return pedido.itens.map(item => `<div class="order-item"><strong>${item.quantidade}× ${escape(item.produto_nome)}</strong>${(item.opcoes || []).map(o => `<div class="item-choice">${escape(o.grupo)}: ${escape(o.opcao)}</div>`).join('')}${item.itens_adicionais.length ? `<div class="extras">+ ${item.itens_adicionais.map(a => escape(a.nome)).join(', ')}</div>` : ''}${item.observacao ? `<div class="item-note"><strong>Observação:</strong> ${escape(item.observacao)}</div>` : ''}</div>`).join('');
   }
+  function elapsed(date) {
+    if (!date || !Number.isFinite(Date.parse(date))) return 'Horário não registrado';
+    const minutes = Math.max(0, Math.floor((Date.now() - Date.parse(date)) / 60000));
+    return minutes < 1 ? 'agora' : minutes < 60 ? `há ${minutes} min` : `há ${Math.floor(minutes / 60)} h ${minutes % 60} min`;
+  }
+  function updateAges() {
+    document.querySelectorAll('[data-age]').forEach(n => {
+      const text = `${n.dataset.ageLabel || ''}${elapsed(n.dataset.age)}`;
+      if (n.textContent !== text) n.textContent = text;
+      const limit = Number(document.getElementById('kitchen-attention')?.value || 0);
+      n.closest('.order-card')?.classList.toggle('order-attention', limit > 0 && (Date.now() - Date.parse(n.dataset.age)) >= limit * 60000);
+    });
+  }
+  setInterval(updateAges, 30000);
   function orderCard(pedido, action = '') {
-    return `<article class="surface order-card"><div class="order-header"><strong>Mesa ${String(pedido.mesa_numero).padStart(2,'0')} · Comanda #${pedido.sessao}</strong><span class="muted small">#${pedido.id} · ${new Date(pedido.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'})}</span></div>${itemList(pedido)}${pedido.observacao ? `<p class="order-note">${escape(pedido.observacao)}</p>` : ''}${action}</article>`;
+    return `<article class="surface order-card"><div class="order-header"><div><strong class="ticket-table">Mesa ${String(pedido.mesa_numero).padStart(2,'0')}</strong><span class="ticket-identity">Comanda #${pedido.sessao} · Pedido #${pedido.id}</span></div><time class="order-age" datetime="${escape(pedido.created_at)}" data-age="${escape(pedido.created_at)}" data-age-label="Pedido ">Pedido ${elapsed(pedido.created_at)}</time></div>${itemList(pedido)}${pedido.observacao ? `<p class="order-note"><strong>Observação do pedido:</strong> ${escape(pedido.observacao)}</p>` : ''}${action}</article>`;
   }
   document.addEventListener('click', event => {
     const button = event.target.closest('[data-close]');
@@ -91,10 +121,12 @@ window.MF = (() => {
   });
   document.addEventListener('close', event => {
     event.target.querySelectorAll?.('[data-dialog-feedback]').forEach(node => { node.hidden = true; });
+    if (event.target.returnFocus?.isConnected) event.target.returnFocus.focus({preventScroll:true});
   }, true);
-  const connection = () => { document.querySelector('#connection').hidden = navigator.onLine; };
+  const connection = () => { document.querySelector('#connection').hidden = navigator.onLine || Boolean(document.querySelector('#network-state')); if (!navigator.onLine) network('offline'); };
   window.addEventListener('online', connection);
   window.addEventListener('offline', connection);
   connection();
-  return {uuid, money, escape, statusNames, api, feedback, poll, itemList, orderCard};
+  const openDialog = dialog => { dialog.returnFocus = document.activeElement; dialog.showModal(); };
+  return {uuid, money, escape, statusNames, api, feedback, poll, itemList, orderCard, elapsed, updateAges, openDialog, connectionStatus};
 })();

@@ -17,7 +17,7 @@ class PaginasTestCase(TestCase):
         Perfil.objects.create(user=cls.garcom, role='GARCOM')
 
     def test_inicio_cardapio_e_login_renderizam(self):
-        for url, texto in (('/', 'Seu próximo'), (reverse('cliente', args=[self.mesa.token_uuid]), 'Nosso cardápio'),
+        for url, texto in (('/', 'Seu próximo'), (reverse('cliente', args=[self.mesa.token_uuid]), 'Buscar no cardápio'),
                            ('/entrar/', 'Acessar meu painel')):
             with self.subTest(url=url):
                 response = self.client.get(url)

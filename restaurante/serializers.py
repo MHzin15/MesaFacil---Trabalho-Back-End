@@ -37,6 +37,7 @@ FOTOS_EXEMPLO = {
 
 
 class ProdutoSerializer(serializers.ModelSerializer):
+    opcoes_versao = serializers.ReadOnlyField()
     adicionais = AdicionalSerializer(many=True, read_only=True)
     categoria_nome = serializers.ReadOnlyField(source='categoria.nome')
 
@@ -51,7 +52,7 @@ class ProdutoSerializer(serializers.ModelSerializer):
         model = Produto
         fields = [
             'id', 'nome', 'descricao', 'preco', 'foto',
-            'disponivel', 'categoria', 'categoria_nome', 'adicionais',
+            'disponivel', 'categoria', 'categoria_nome', 'adicionais', 'grupos_opcoes', 'opcoes_versao',
         ]
 
 
@@ -122,9 +123,17 @@ class SessaoMesaSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'mesa', 'mesa_numero', 'ativa',
             'conta_solicitada', 'aberta_em', 'fechada_em', 'aberta_por',
-            'versao_conta',
+            'versao_conta', 'conta_solicitada_em',
         ]
         read_only_fields = ['aberta_em', 'fechada_em', 'aberta_por', 'versao_conta']
+
+
+class SessaoMesaResumoSerializer(SessaoMesaSerializer):
+    valor_total = serializers.DecimalField(max_digits=22, decimal_places=2, read_only=True)
+    pedidos_pendentes = serializers.IntegerField(read_only=True)
+
+    class Meta(SessaoMesaSerializer.Meta):
+        fields = SessaoMesaSerializer.Meta.fields + ['valor_total', 'pedidos_pendentes']
 
 
 # ============================================================
@@ -148,14 +157,21 @@ class ItemPedidoSerializer(serializers.ModelSerializer):
         model = ItemPedido
         fields = [
             'id', 'produto', 'produto_nome', 'quantidade',
-            'preco_unitario', 'observacao', 'itens_adicionais', 'subtotal',
+            'preco_unitario', 'observacao', 'itens_adicionais', 'subtotal', 'opcoes',
         ]
         read_only_fields = ['preco_unitario']
+
+
+class EscolhaProdutoSerializer(serializers.Serializer):
+    grupo_id = serializers.UUIDField()
+    opcao_id = serializers.UUIDField()
 
 
 class ItemPedidoCriarSerializer(serializers.Serializer):
     """Serializer para criar item dentro de um pedido (nested)."""
     produto_id = serializers.IntegerField()
+    opcoes = EscolhaProdutoSerializer(many=True, required=False, max_length=6)
+    opcoes_versao = serializers.CharField(required=False, min_length=64, max_length=64)
     quantidade = serializers.IntegerField(min_value=1, max_value=99, default=1)
     observacao = serializers.CharField(
         required=False, default='', allow_blank=True, max_length=255,

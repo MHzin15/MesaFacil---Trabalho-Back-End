@@ -37,7 +37,7 @@ const document = {
   addEventListener(name, handler) { if (name === 'click') click = handler; },
 };
 const ctx = {document, navigator:{onLine:true}, window:{addEventListener(){}},
-  MF:{api,escape:String,feedback(){},poll:fn=>{poll=fn;},orderCard(){},money:String,statusNames:{},itemList(){}},
+  MF:{api,openDialog:dialog=>dialog.showModal(),escape:String,feedback(){},poll:fn=>{poll=fn;},orderCard(){},money:String,statusNames:{},itemList(){}},
   StaffUI:{normalize:String,count(){},synced(){},error(){}},console};
 vm.runInNewContext(fs.readFileSync(path.resolve('static/js/garcom.js'),'utf8'),ctx,{filename:'garcom.js'});
 const openBill = id => click({target:{closest(selector){return selector.includes('data-bill') ? {dataset:{bill:String(id)}} : null;}}});

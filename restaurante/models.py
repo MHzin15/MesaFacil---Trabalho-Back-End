@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.conf import settings
 from .validators import validar_tamanho_foto
+from .opcoes import validar_grupos_opcoes, versao_opcoes
 import uuid
 
 
@@ -53,6 +54,22 @@ class MesaQuerySet(models.QuerySet):
             'sessoes', queryset=SessaoMesa.objects.filter(ativa=True),
             to_attr='_sessoes_ativas',
         ))
+
+
+class SessaoMesaQuerySet(models.QuerySet):
+    def com_resumo(self):
+        money = models.DecimalField(max_digits=22, decimal_places=2)
+        base = ItemPedido.objects.filter(pedido__sessao_id=models.OuterRef('pk')).exclude(
+            pedido__status='CANCELADO').order_by().values('pedido__sessao_id').annotate(
+            total=models.Sum(models.F('preco_unitario') * models.F('quantidade'), output_field=money)).values('total')
+        extras = ItemPedidoAdicional.objects.filter(item_pedido__pedido__sessao_id=models.OuterRef('pk')).exclude(
+            item_pedido__pedido__status='CANCELADO').order_by().values('item_pedido__pedido__sessao_id').annotate(
+            total=models.Sum(models.F('preco') * models.F('item_pedido__quantidade'), output_field=money)).values('total')
+        from django.db.models.functions import Coalesce
+        return self.annotate(valor_total=Coalesce(models.Subquery(base), Decimal('0.00'), output_field=money)
+                             + Coalesce(models.Subquery(extras), Decimal('0.00'), output_field=money),
+                             pedidos_pendentes=models.Count('pedidos', filter=~models.Q(
+                                 pedidos__status__in=['ENTREGUE', 'CANCELADO'])))
 
 
 class Mesa(models.Model):
@@ -111,6 +128,7 @@ class Mesa(models.Model):
 # Sessão da Mesa (RF03, RN04, RN05)
 # ============================================================
 class SessaoMesa(models.Model):
+    objects = SessaoMesaQuerySet.as_manager()
     acesso_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     versao_conta = models.PositiveIntegerField(default=1, editable=False)
     mesa = models.ForeignKey(
@@ -126,6 +144,7 @@ class SessaoMesa(models.Model):
         default=False,
         verbose_name='Conta Solicitada',
     )
+    conta_solicitada_em = models.DateTimeField(null=True, blank=True, editable=False)
     aberta_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -184,6 +203,8 @@ class Categoria(models.Model):
 
 
 class Produto(models.Model):
+    grupos_opcoes = models.JSONField(default=list, blank=True, validators=[validar_grupos_opcoes],
+                                    verbose_name='Escolhas do produto')
     categoria = models.ForeignKey(
         Categoria,
         on_delete=models.PROTECT,
@@ -216,6 +237,10 @@ class Produto(models.Model):
 
     def __str__(self):
         return f"{self.nome} — R$ {self.preco}"
+
+    @property
+    def opcoes_versao(self) -> str:
+        return versao_opcoes(self.grupos_opcoes)
 
 
 class Adicional(models.Model):
@@ -322,6 +347,7 @@ class Pedido(models.Model):
 
 
 class ItemPedido(models.Model):
+    opcoes = models.JSONField(default=list, blank=True, editable=False)
     pedido = models.ForeignKey(
         Pedido,
         on_delete=models.CASCADE,

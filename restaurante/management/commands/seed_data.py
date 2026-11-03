@@ -11,6 +11,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User
 
 from restaurante.models import Mesa, Categoria, Produto, Adicional, Perfil
+from restaurante.opcoes import escolhas_exemplo
 
 
 class Command(BaseCommand):
@@ -265,6 +266,7 @@ class Command(BaseCommand):
                 defaults={
                     'categoria': categoria,
                     'descricao': prod_data['descricao'],
+                    'grupos_opcoes': escolhas_exemplo(prod_data['nome']),
                     'preco': prod_data['preco'],
                 },
             )

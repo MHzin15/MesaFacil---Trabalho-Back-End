@@ -54,7 +54,11 @@
 .app-dialog:not(.product-dialog)>.dialog-actions{position:sticky;bottom:-28px;padding-top:16px;padding-bottom:4px}
 .dialog-feedback{padding:12px;background:#e5eee5;color:var(--green);border-radius:8px;font-size:.85rem;line-height:1.5;margin-bottom:12px}
 .dialog-feedback.error{color:#873d2c;background:#f7e7e1;border:1px solid #d6a898}
-.feedback{pointer-events:none}
+.feedback{position:static;transform:none;width:auto;max-width:none;margin:16px 0;padding:14px 18px;box-shadow:none;pointer-events:auto;overflow-wrap:anywhere}
+.network-state{padding:12px 16px;margin:12px 0;border:1px solid #b6beab;border-radius:8px;background:#edf2e9;color:var(--green);font-size:.9rem}
+.network-state[data-state=stale],.network-state[data-state=offline]{background:#f6edda;color:#67481c;border-color:#cfb880}
+.item-choice{font-size:inherit;margin:6px 0;padding:8px 10px;background:#f0f0e5;border-radius:6px}
+.icon-button{min-width:44px;min-height:44px}
 .service-summary{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
 .service-summary a{display:flex;align-items:center;gap:10px;padding:12px 18px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:.9rem}
 .service-summary strong{font-size:1.2rem;color:var(--accent)}

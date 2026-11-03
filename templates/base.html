@@ -32,8 +32,7 @@
     </nav>
   </header>
   <div id="connection" class="connection-banner" role="status" hidden>Você está sem conexão. Pedidos e pagamentos precisam de internet.</div>
-  <main id="conteudo" class="page-shell">{% block content %}{% endblock %}</main>
-  <div id="feedback" class="feedback" role="status" aria-live="polite" hidden></div>
+  <main id="conteudo" class="page-shell"><div id="network-state" class="network-state" role="status" hidden></div><div id="feedback" class="feedback" role="status" aria-live="polite" hidden></div>{% block content %}{% endblock %}</main>
   <footer class="site-footer"><span>MesaFácil · Feito para bons momentos à mesa.</span><span>Pedidos com cuidado, do início ao fim.</span></footer>
 </body>
 </html>
