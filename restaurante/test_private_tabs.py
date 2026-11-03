@@ -35,6 +35,7 @@ class PrivateTabsTests(TestCase):
         ctx = client.get(self.base).data
         return self.post(client, '/api/pedidos/criar/', {
             'mesa_uuid': str(self.mesa.token_uuid), 'sessao_id': ctx['sessao_id'],
+            'atendimento_id': ctx['atendimento_id'],
             'chave_envio': str(uuid4()), 'itens': [{'produto_id': self.produto.pk, 'quantidade': 1}], **extra})
 
     def convite(self, client):

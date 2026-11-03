@@ -81,7 +81,7 @@ class MesaFacilRegrasNegocioTestCase(TestCase):
                 {'produto_id': self.produto_hamburguer.id, 'quantidade': 1}
             ]
         }
-        entrar_cliente(self.client, self.mesa)
+        payload['atendimento_id'] = entrar_cliente(self.client, self.mesa).data['atendimento_id']
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(SessaoMesa.objects.filter(mesa=self.mesa, ativa=True).count(), 1)

@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.conf import settings
+from .validators import validar_tamanho_foto
 import uuid
 
 
@@ -197,6 +198,7 @@ class Produto(models.Model):
     )
     foto = models.ImageField(
         upload_to='produtos/',
+        validators=[validar_tamanho_foto],
         blank=True,
         null=True,
         verbose_name='Foto',

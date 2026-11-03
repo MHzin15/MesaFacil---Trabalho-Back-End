@@ -4,6 +4,7 @@
   const byId = id => document.getElementById(id);
   const labels = {livre:'Livre', ocupada:'Ocupada', aguardando_conta:'Aguardando conta'};
   let busy = false, refreshing = false, selected = null, lastData = '';
+  let selectionVersion = 0;
   const billUrl = id => `/api/sessoes/${id}/conta/`;
   let reviewedBill = null, currentBill = null;
   let tablesCache = [], tableFilter = '';
@@ -28,6 +29,7 @@
   }
 
   function showBill(bill) {
+    if (bill.sessao_id !== selected) return;
     currentBill = bill;
     if (!reviewedBill || reviewedBill.sessao_id !== bill.sessao_id) reviewedBill = {sessao_id:bill.sessao_id, versao_conta:bill.versao_conta, total_esperado:bill.valor_total};
     const changed = reviewedBill.versao_conta !== bill.versao_conta || reviewedBill.total_esperado !== bill.valor_total;
@@ -68,8 +70,12 @@
         byId('contas-pendentes').innerHTML = panel.comandas_aguardando_conta.map(t => `<article class="surface table-card table-aguardando_conta"><p class="eyebrow">CONTA SOLICITADA</p><h3>Mesa ${t.mesa_numero} · Comanda #${t.id}</h3><p class="muted small">Confira os pedidos antes de finalizar.</p><button class="btn btn-primary w-100" data-bill="${t.id}">Conferir e finalizar</button></article>`).join('') || '<div class="surface workspace-empty"><h3>Nenhuma conta solicitada</h3><p>As mesas que pedirem o fechamento aparecerão aqui automaticamente.</p></div>';
       }
       if (selected && byId('conta-dialog').open) {
+        const id = selected, version = selectionVersion;
         const table = tables.find(t => t.comandas_abertas.some(c => c.id === selected));
-        if (table) showBill(await api(billUrl(selected)));
+        if (table) {
+          const bill = await api(billUrl(id));
+          if (selected === id && selectionVersion === version && byId('conta-dialog').open) showBill(bill);
+        }
         else { selected = null; byId('conta-dialog').close(); feedback('Esta sessão já foi encerrada.'); }
       }
       StaffUI.synced();
@@ -106,26 +112,40 @@
     if (button.dataset.order) return action(() => api(`/api/pedidos/${button.dataset.order}/status/`, {method:'PATCH', body:JSON.stringify({status:button.dataset.status})}), 'Entrega atualizada.');
     try {
       selected = Number(button.dataset.bill);
-      showBill(await api(billUrl(selected)));
+      const id = selected, version = ++selectionVersion;
+      currentBill = reviewedBill = null;
+      document.querySelectorAll('#retomar-atendimento, #pagar, #fechar-sem-cobranca, #solicitar-conta').forEach(b => b.disabled = true);
+      const bill = await api(billUrl(id));
+      if (selected !== id || selectionVersion !== version) return;
+      showBill(bill);
       byId('conta-error').hidden = true;
       byId('conta-dialog').showModal();
     } catch (error) { feedback(error.message, true); }
   });
   byId('buscar-mesa').addEventListener('input', renderTables);
+  byId('conta-dialog').addEventListener('close', () => {
+    if (byId('conta-dialog').open) return;
+    ++selectionVersion; selected = null; currentBill = reviewedBill = null;
+  });
+  function billAction(endpoint, success, close = false) {
+    if (!currentBill || currentBill.sessao_id !== selected || !byId('conta-dialog').open) return;
+    const id = currentBill.sessao_id;
+    return action(async () => {
+      await api(`/api/sessoes/${id}/${endpoint}/`, {method:'POST'});
+      if (close) { byId('conta-dialog').close(); selected = null; }
+    }, success);
+  }
   byId('conferir-conta').addEventListener('click', () => {
     if (!currentBill) return;
     reviewedBill = {sessao_id:currentBill.sessao_id, versao_conta:currentBill.versao_conta, total_esperado:currentBill.valor_total};
     showBill(currentBill);
   });
-  byId('retomar-atendimento').addEventListener('click', () => action(() => api(`/api/sessoes/${selected}/retomar/`, {method:'POST'}), 'Atendimento retomado. Confira a conta novamente antes de cobrar.'));
-  byId('solicitar-conta').addEventListener('click', () => action(() => api(`/api/sessoes/${selected}/solicitar-conta/`, {method:'POST'}), 'Conta solicitada.'));
-  byId('fechar-sem-cobranca').addEventListener('click', () => action(async () => {
-    await api(`/api/sessoes/${selected}/fechar/`, {method:'POST'});
-    byId('conta-dialog').close(); selected = null;
-  }, 'Comanda encerrada. As outras comandas da mesa continuam abertas.'));
+  byId('retomar-atendimento').addEventListener('click', () => billAction('retomar', 'Atendimento retomado. Confira a conta novamente antes de cobrar.'));
+  byId('solicitar-conta').addEventListener('click', () => billAction('solicitar-conta', 'Conta solicitada.'));
+  byId('fechar-sem-cobranca').addEventListener('click', () => billAction('fechar', 'Comanda encerrada. As outras comandas da mesa continuam abertas.', true));
   byId('pagamento-form').addEventListener('submit', event => {
     event.preventDefault();
-    if (!reviewedBill || !currentBill || reviewedBill.versao_conta !== currentBill.versao_conta) return;
+    if (!reviewedBill || !currentBill || currentBill.sessao_id !== selected || reviewedBill.sessao_id !== selected || reviewedBill.versao_conta !== currentBill.versao_conta || reviewedBill.total_esperado !== currentBill.valor_total) return;
     const confirmation = {...reviewedBill, meio_pagamento:byId('meio-pagamento').value};
     action(async () => {
       await api(`/api/sessoes/${confirmation.sessao_id}/pagamento/`, {method:'POST', body:JSON.stringify(confirmation)});

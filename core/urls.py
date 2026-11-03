@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.auth import views as auth_views
 from restaurante import pages, pwa
 from restaurante import comandas
+from restaurante import health
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
@@ -14,6 +15,8 @@ from drf_spectacular.views import (
 )
 
 urlpatterns = [
+    path('health/live/', health.live, name='health-live'),
+    path('health/ready/', health.ready, name='health-ready'),
     path('manifest.webmanifest', pwa.manifest, name='manifest'),
     path('service-worker.js', pwa.service_worker, name='service-worker'),
     path('offline/', pwa.offline, name='offline'),

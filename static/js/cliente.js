@@ -15,6 +15,8 @@
   }, true);
   let products = [], cart = [], sessionId = null, currentProduct = null, sending = false, selected = null, search = '';
   let draftId = null, access = false, loadedContext = false, closing = false, ended = false, menuSignature = '', reviewSignature = '';
+  let menuReady = false, refreshPromise = null;
+  const privateUrl = path => `${base}${path}?atendimento_id=${encodeURIComponent(draftId)}`;
   let currentView = document.body.dataset.clientView;
   const mesaPath = `/mesa/${token}/`;
   const views = {
@@ -52,7 +54,7 @@
   });
   window.addEventListener('popstate', () => showView(viewFromPath(), false, true));
   const cartSignature = () => JSON.stringify([draftId, cart, byId('observacao-pedido').value]);
-  let lastOrders = '', lastBill = '', refreshing = false, attempt = null;
+  let lastOrders = '', lastBill = '', attempt = null;
   const attemptKey = () => `mf-attempt-${token}-${draftId}`;
   const noteKey = () => `mf-note-${token}-${draftId}`;
   function saveAttempt() { try { if (attempt) sessionStorage.setItem(attemptKey(), JSON.stringify(attempt)); else sessionStorage.removeItem(attemptKey()); } catch {} }
@@ -70,7 +72,7 @@
     byId('cart-items').innerHTML = cart.length ? cart.map((item, i) => `<div class="cart-item"><div><strong>${escape(item.nome)}</strong><button class="remove-button" data-remove="${i}" aria-label="Remover ${escape(item.nome)}">Remover</button></div><p class="small muted">${item.adicionais.map(a => escape(a.nome)).join(', ')}${item.observacao ? ` · ${escape(item.observacao)}` : ''}</p><div class="quantity-row"><div class="quantity-control"><button data-quantity="${i}" data-delta="-1" aria-label="Diminuir quantidade de ${escape(item.nome)}" ${item.quantidade <= 1 ? 'disabled' : ''}>−</button><span>${item.quantidade}</span><button data-quantity="${i}" data-delta="1" aria-label="Aumentar quantidade de ${escape(item.nome)}" ${item.quantidade >= 99 ? 'disabled' : ''}>+</button></div><strong>${money(unit(item) * item.quantidade)}</strong></div></div>`).join('') : `<div class="screen-empty"><span class="empty-symbol" aria-hidden="true">＋</span><h2>Seu carrinho está vazio</h2><p>Escolha algo no cardápio para começar seu pedido.</p><a class="btn btn-primary" href="${mesaPath}" data-client-link="cardapio">Explorar o cardápio</a></div>`;
     byId('cart-count').textContent = cart.reduce((sum, item) => sum + item.quantidade, 0);
     byId('cart-total').textContent = money(total());
-    byId('revisar').disabled = !cart.length || !access || closing || !navigator.onLine || sending || (!cartAvailable() && !attempt);
+    byId('revisar').disabled = !cart.length || !access || closing || !navigator.onLine || sending || ((!menuReady || !cartAvailable()) && !attempt);
     byId('cart-warning').hidden = !cart.length || cartAvailable();
     byId('revisar-help').textContent = closing ? 'Conta em fechamento. Peça à equipe para retomar o atendimento se quiser pedir mais.' : !access ? 'Inicie um novo atendimento para continuar.' : !navigator.onLine ? 'Reconecte para revisar e enviar o pedido.' : attempt ? 'Aguardando confirmação de um envio. Confira seus pedidos antes de tentar novamente.' : !cart.length ? 'Adicione um produto para continuar.' : !cartAvailable() ? 'Remova os itens indisponíveis para continuar.' : 'Você ainda vai conferir os itens antes de enviar à cozinha.';
     byId('nav-cart-count').textContent = byId('cart-count').textContent;
@@ -82,7 +84,7 @@
   function renderProducts() {
     const visible = products.filter(p => (selected === null || p.categoria === selected) && normalize(`${p.nome} ${p.descricao}`).includes(normalize(search)));
     byId('menu-results').textContent = `${visible.length} produto${visible.length === 1 ? '' : 's'}`;
-    byId('produtos').innerHTML = visible.map(p => `<article class="product-card ${p.disponivel ? '' : 'unavailable'}"><div class="product-image">${p.foto ? `<img src="${escape(p.foto)}" alt="${escape(p.nome)}" loading="lazy">` : `<span aria-hidden="true" class="food-placeholder">${escape(p.nome.charAt(0))}</span>`}${!p.disponivel ? '<span class="unavailable-tag">Indisponível</span>' : ''}</div><div class="product-body"><h3>${escape(p.nome)}</h3><p>${escape(p.descricao)}</p><div class="product-footer"><strong>${money(p.preco)}</strong><button type="button" class="add-button" data-product="${p.id}" ${!p.disponivel || !access || closing ? 'disabled' : ''} title="${!p.disponivel ? 'Produto indisponível' : closing ? 'Conta em fechamento' : !access ? 'Inicie um novo atendimento'  : 'Personalizar e adicionar ao carrinho'}" aria-label="Adicionar ${escape(p.nome)}">${p.disponivel ? 'Adicionar' : 'Indisponível'}</button></div></div></article>`).join('') || '<div class="menu-empty"><h3>Nenhum produto encontrado</h3><p>Tente outro nome ou consulte todas as categorias.</p><button type="button" class="btn btn-outline-primary" data-clear-menu>Limpar busca e filtros</button></div>';
+    byId('produtos').innerHTML = visible.map(p => `<article class="product-card ${p.disponivel ? '' : 'unavailable'}"><div class="product-image">${p.foto ? `<img src="${escape(p.foto)}" alt="${escape(p.nome)}" loading="lazy">` : `<span aria-hidden="true" class="food-placeholder">${escape(p.nome.charAt(0))}</span>`}${!p.disponivel ? '<span class="unavailable-tag">Indisponível</span>' : ''}</div><div class="product-body"><h3>${escape(p.nome)}</h3><p>${escape(p.descricao)}</p><div class="product-footer"><strong>${money(p.preco)}</strong><button type="button" class="add-button" data-product="${p.id}" ${!menuReady || !p.disponivel || !access || closing ? 'disabled' : ''} title="${!p.disponivel ? 'Produto indisponível' : closing ? 'Conta em fechamento' : !access ? 'Inicie um novo atendimento'  : 'Personalizar e adicionar ao carrinho'}" aria-label="Adicionar ${escape(p.nome)}">${p.disponivel ? 'Adicionar' : 'Indisponível'}</button></div></div></article>`).join('') || '<div class="menu-empty"><h3>Nenhum produto encontrado</h3><p>Tente outro nome ou consulte todas as categorias.</p><button type="button" class="btn btn-outline-primary" data-clear-menu>Limpar busca e filtros</button></div>';
   }
   function syncCartPrices() {
     if (sending || attempt) return;
@@ -103,8 +105,10 @@
   }
   async function loadMenu() {
     const categories = await api('/api/cardapio/');
+    const recovered = !menuReady;
+    menuReady = true;
     const signature = JSON.stringify(categories);
-    if (signature === menuSignature) { if (syncCartPrices()) renderCart(); return; }
+    if (signature === menuSignature) { if (syncCartPrices() || recovered) { renderCart(); renderProducts(); } return; }
     menuSignature = signature;
     products = categories.flatMap(c => c.produtos);
     syncCartPrices();
@@ -114,7 +118,7 @@
     if (byId('produto-dialog').open && currentProduct) {
       const previous = currentProduct;
       currentProduct = products.find(p => p.id === currentProduct.id);
-      byId('adicionar-item').disabled = !access || closing || !currentProduct?.disponivel;
+      byId('adicionar-item').disabled = !menuReady || !access || closing || !currentProduct?.disponivel;
       if (!currentProduct?.disponivel) feedback('Este produto ficou indisponível. Feche esta janela e escolha outro item.', true);
       else {
         byId('produto-preco').textContent = money(currentProduct.preco);
@@ -123,17 +127,30 @@
       }
     }
   }
-  async function refresh() {
-    if (refreshing || sending) return;
-    refreshing = true;
+  function refresh() {
+    if (sending) return Promise.resolve();
+    if (!refreshPromise) {
+      const menu = loadMenu().catch(error => {
+        menuReady = false; renderCart(); renderProducts();
+        feedback(`Cardápio indisponível. ${error.message}`, true);
+      });
+      // Conta e andamento continuam atualizando quando só o catálogo falha.
+      refreshPromise = Promise.all([menu, refreshContext()]).finally(() => { refreshPromise = null; });
+    }
+    return refreshPromise;
+  }
+  async function refreshContext() {
     try {
-    await loadMenu();
     const mesa = await api(base);
     access = mesa.acesso_liberado;
     if (!ended && mesa.atendimento_encerrado) feedback('Seu atendimento foi encerrado. Obrigado pela visita!');
     ended = mesa.atendimento_encerrado;
     byId('novo-atendimento').hidden = !ended;
     if (!loadedContext || mesa.atendimento_id !== draftId) {
+      byId('resumo-conta').textContent = 'Carregando esta comanda…';
+      byId('lista-pedidos').textContent = 'Carregando os pedidos desta comanda…';
+      byId('conta-total').textContent = money(0);
+      lastOrders = ''; lastBill = '';
       if (byId('compartilhar-dialog').open) byId('compartilhar-dialog').close();
       draftId = mesa.atendimento_id;
       attempt = null;
@@ -142,6 +159,12 @@
       if (access) {
         try {
           attempt = JSON.parse(sessionStorage.getItem(attemptKey()) || 'null');
+          // A chave de armazenamento já fixa o rascunho original do envio legado.
+          if (attempt && !attempt.atendimento_id) { attempt.atendimento_id = draftId; saveAttempt(); }
+          if (attempt && attempt.atendimento_id !== draftId) {
+            attempt = null; saveAttempt();
+            feedback('Atualizamos a confirmação de pedidos. Confira seus pedidos antes de enviar novamente.', true);
+          }
           const stored = JSON.parse(sessionStorage.getItem(`mf-cart-${token}-${draftId}`) || '[]');
           if (Array.isArray(stored)) cart = stored.filter(i => i && Number.isInteger(i.quantidade) && i.quantidade > 0 && Array.isArray(i.adicionais));
           byId('observacao-pedido').value = sessionStorage.getItem(noteKey()) || '';
@@ -167,7 +190,7 @@
     byId('session-warning').hidden = true;
     byId('session-warning').querySelector('strong').textContent = ended ? 'Atendimento encerrado' : 'Mesa sem sessão aberta';
     byId('client-error').hidden = true;
-    byId('pedir-conta').disabled = !sessionId || !access || !navigator.onLine;
+    byId('pedir-conta').disabled = true;
     if (!sessionId) {
       closing = false; byId('fechamento-aviso').hidden = true;
       byId('lista-pedidos').innerHTML = '<p class="empty-state">Seus pedidos aparecerão aqui depois da confirmação.</p>';
@@ -179,7 +202,8 @@
       lastOrders = ''; lastBill = '';
       return;
     }
-    const [orders, bill] = await Promise.all([api(`${base}pedidos/`), api(`${base}conta/`)]);
+    const [orders, bill] = await Promise.all([api(privateUrl('pedidos/')), api(privateUrl('conta/'))]);
+    if (bill.sessao_id !== sessionId || orders.some(p => p.sessao !== sessionId)) throw new Error('A comanda mudou. Atualize a página.');
     if (closing !== bill.conta_solicitada) { closing = bill.conta_solicitada; renderCart(); renderProducts(); }
     byId('fechamento-aviso').hidden = !closing;
     byId('session-label').textContent = closing ? 'Em fechamento' : 'Sessão aberta';
@@ -208,7 +232,7 @@
       byId('client-error-message').textContent = error.message;
       byId('client-error').hidden = false;
       throw error;
-    } finally { refreshing = false; }
+    }
   }
   document.addEventListener('click', event => {
     const button = event.target.closest('button');
@@ -259,7 +283,7 @@
   byId('produto-form').addEventListener('submit', event => {
     event.preventDefault();
     currentProduct = products.find(p => p.id === currentProduct?.id);
-    if (!access || closing || !currentProduct?.disponivel || attempt) { feedback('Este item não pode ser adicionado agora.', true); return; }
+    if (!menuReady || !access || closing || !currentProduct?.disponivel || attempt) { feedback('Este item não pode ser adicionado agora.', true); return; }
     const ids = [...document.querySelectorAll('[name="adicional"]:checked')].map(n => Number(n.value));
     const sabor = document.querySelector('input[name="sabor"]:checked')?.value;
     const observacao = [sabor ? `Sabor: ${sabor}` : '', byId('produto-observacao').value.trim()].filter(Boolean).join(' · ');
@@ -275,19 +299,19 @@
   byId('revisar').addEventListener('click', async () => {
     try { await refresh(); } catch (error) { feedback(error.message, true); return; }
     if (sending) return;
-    if (!access || closing || !cart.length || (!cartAvailable() && !attempt)) return;
+    if (!access || closing || !cart.length || ((!menuReady || !cartAvailable()) && !attempt)) return;
     renderReview();
   });
   byId('confirmar').addEventListener('click', async () => {
     if (sending || !cart.length) return;
     try { await refresh(); } catch (error) { feedback(error.message, true); return; }
     if (sending) return;
-    if (!access || closing || !cart.length || (!cartAvailable() && !attempt)) return;
+    if (!access || closing || !cart.length || ((!menuReady || !cartAvailable()) && !attempt)) return;
     if (!attempt && cartSignature() !== reviewSignature) { renderReview(); feedback('O carrinho ou os preços mudaram. Confira o novo total e confirme novamente.', true); return; }
     sending = true; byId('confirmar').disabled = true; byId('confirmar').textContent = 'Enviando…';
     try {
       if (!attempt) {
-        attempt = {chave_envio:MF.uuid(), mesa_uuid:token, sessao_id:sessionId, total_esperado:total().toFixed(2), observacao:byId('observacao-pedido').value, itens:cart.map(i => ({produto_id:i.produto_id, quantidade:i.quantidade, observacao:i.observacao, adicionais_ids:i.adicionais.map(a => a.id)}))};
+        attempt = {chave_envio:MF.uuid(), mesa_uuid:token, atendimento_id:draftId, sessao_id:sessionId, total_esperado:total().toFixed(2), observacao:byId('observacao-pedido').value, itens:cart.map(i => ({produto_id:i.produto_id, quantidade:i.quantidade, observacao:i.observacao, adicionais_ids:i.adicionais.map(a => a.id)}))};
         saveAttempt();
       }
       await api('/api/pedidos/criar/', {method:'POST', body:JSON.stringify(attempt)});
@@ -319,7 +343,7 @@
   byId('compartilhar-comanda').addEventListener('click', async () => {
     byId('compartilhar-comanda').disabled = true;
     try {
-      const invite = await api(`${base}compartilhar/`, {method:'POST'});
+      const invite = await api(privateUrl('compartilhar/'), {method:'POST'});
       byId('compartilhar-link').value = invite.url;
       byId('compartilhar-qr').src = invite.qr_url;
       byId('compartilhar-validade').textContent = `Convite válido até ${new Date(invite.expira_em).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo'})}. Após o pagamento ele deixa de funcionar.`;
@@ -338,7 +362,7 @@
   });
   byId('pedir-conta').addEventListener('click', async () => {
     byId('pedir-conta').disabled = true;
-    try { await api(`${base}solicitar-conta/`, {method:'POST'}); feedback('Conta solicitada. O garçom vem ajudar você.'); await refresh(); }
+    try { await api(privateUrl('solicitar-conta/'), {method:'POST'}); feedback('Conta solicitada. O garçom vem ajudar você.'); await refresh(); }
     catch (error) { feedback(error.message,true); byId('pedir-conta').disabled = false; }
   });
   window.addEventListener('offline', renderCart);

@@ -43,7 +43,7 @@ abrir também as telas do garçom e da cozinha, usando abas do mesmo navegador.
 | 1 | http://localhost:8000/garcom/ | Na Mesa 1, clique **Abrir sessão** | Mesa fica ocupada |
 | 2 | http://localhost:8000/admin/restaurante/mesa/ | Na linha da Mesa 1, clique **Abrir cardápio** | Abre o cardápio dessa mesa em outra aba |
 | 3 | Aba do cardápio | Clique no **+** de um produto, escolha adicionais e adicione ao carrinho | Item aparece no carrinho |
-| 4 | Aba do cardápio | Clique **Revisar pedido** e depois confirme o envio | Pedido aparece como recebido |
+  | 4 | Aba do cardápio | Clique **Revisar pedido** e depois confirme o envio | Pedido aparece como recebido |
 | 5 | http://localhost:8000/cozinha/ | Clique **Aceitar e iniciar preparo**, depois **Marcar como pronto** | Pedido fica pronto |
 | 6 | http://localhost:8000/garcom/ | Clique **Levar à mesa**, depois **Confirmar entrega** | Pedido fica entregue |
 

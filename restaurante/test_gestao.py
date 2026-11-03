@@ -182,7 +182,7 @@ class GestaoTests(TestCase):
 
     def test_product_editor_logs_prices_and_keeps_order_snapshot(self):
         response = self.client.post(f'/admin/cadastro/produtos/{self.produto.pk}/',
-            {'nome': 'Prato', 'categoria': self.categoria.pk, 'preco': '28,50', 'disponivel': 'on'})
+            {'nome': 'Prato', 'categoria': self.categoria.pk, 'preco': '28,50', 'preco_anterior': '25.00', 'disponivel': 'on'})
         self.assertEqual(response.status_code, 302)
         self.produto.refresh_from_db()
         self.assertEqual(self.produto.preco, Decimal('28.50'))

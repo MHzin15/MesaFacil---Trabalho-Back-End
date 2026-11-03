@@ -45,8 +45,11 @@ window.MF = (() => {
     const method = options.method || 'GET';
     if (method !== 'GET') headers['X-CSRFToken'] = document.querySelector('meta[name="csrf-token"]').content;
     let response;
-    try { response = await fetch(url, {...options, headers, credentials: 'same-origin', cache: 'no-store'}); }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    try { response = await fetch(url, {...options, signal: options.signal || controller.signal, headers, credentials: 'same-origin', cache: 'no-store'}); }
     catch { throw new Error('Sem conexão com o restaurante. Confira a internet e tente novamente.'); }
+    finally { clearTimeout(timeout); }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       if (response.status === 403 && document.body.dataset.page !== 'cliente') {

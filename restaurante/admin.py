@@ -4,6 +4,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from rest_framework.exceptions import APIException
 from . import services
+from .gestao.forms import ProdutoForm
 from django.contrib import admin
 from .models import (
     Perfil, Mesa, SessaoMesa, Categoria, Produto, Adicional,
@@ -14,8 +15,26 @@ from .models import (
 # ============================================================
 # Perfil
 # ============================================================
+class AcessoTecnico:
+    """Manutenção de credenciais/perfis fica com o responsável técnico.
+
+    Gestores usam o portal com confirmação de senha e proteção de autoacesso.
+    """
+    def has_module_permission(self, request):
+        return request.user.is_superuser and super().has_module_permission(request)
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser and super().has_view_permission(request, obj)
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser and super().has_add_permission(request)
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser and super().has_change_permission(request, obj)
+
+
 @admin.register(Perfil)
-class PerfilAdmin(admin.ModelAdmin):
+class PerfilAdmin(AcessoTecnico, admin.ModelAdmin):
     list_display = ('user', 'role')
     list_filter = ('role',)
     search_fields = ('user__username', 'user__first_name', 'user__last_name')
@@ -118,9 +137,16 @@ class CategoriaAdmin(admin.ModelAdmin):
 
 @admin.register(Produto)
 class ProdutoAdmin(admin.ModelAdmin):
+    form = ProdutoForm
     list_display = ('nome', 'categoria', 'preco', 'disponivel')
     list_filter = ('categoria', 'disponivel')
     search_fields = ('nome', 'descricao')
+
+    def get_object(self, request, object_id, from_field=None):
+        obj = super().get_object(request, object_id, from_field)
+        if obj and request.method == 'POST':
+            obj = Produto.objects.select_for_update().get(pk=obj.pk)
+        return obj
 
 
 @admin.register(Adicional)
@@ -205,7 +231,7 @@ admin.site.unregister(get_user_model())
 
 
 @admin.register(get_user_model())
-class EquipeUserAdmin(UserAdmin):
+class EquipeUserAdmin(AcessoTecnico, UserAdmin):
     inlines = [PerfilInline]
     list_display = (*UserAdmin.list_display, 'perfil_equipe')
     list_filter = ('perfil__role', *UserAdmin.list_filter)

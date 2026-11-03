@@ -178,6 +178,7 @@ class PedidoCriarSerializer(serializers.Serializer):
     Recebe o token_uuid da mesa e uma lista de itens.
     """
     mesa_uuid = serializers.UUIDField()
+    atendimento_id = serializers.UUIDField(required=False, help_text='Identidade privada e imutável da tentativa, obtida no contexto da mesa. Obrigatória para o primeiro pedido.')
     sessao_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
     observacao = serializers.CharField(required=False, default='', allow_blank=True)
     itens = ItemPedidoCriarSerializer(many=True, min_length=1, max_length=100)

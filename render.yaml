@@ -1,3 +1,4 @@
+# Plano atual: Free. Não mudar planos sem nova autorização do proprietário.
 services:
   - type: web
     name: mesafacil
@@ -8,7 +9,7 @@ services:
     autoDeployTrigger: commit
     buildCommand: bash scripts/render-build.sh
     startCommand: bash scripts/render-start.sh
-    healthCheckPath: /
+    healthCheckPath: /health/ready/
     envVars:
       - key: DEBUG
         value: "False"

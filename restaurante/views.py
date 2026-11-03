@@ -1,4 +1,4 @@
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 from .api_schema import (
     ERROS, FILTROS, ContaMesaSerializer, CozinhaSerializer, GarcomSerializer,
     MensagemSerializer, MesaContextoSerializer, PagamentoResultadoSerializer,
@@ -8,7 +8,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.db.models.deletion import ProtectedError
 from . import services
-from .security import vincular_mesa, validar_mesa, equipe_mesa, chave_comanda, comanda_cliente, comandas_acessiveis, guardar_comanda, visao_equipe
+from .security import vincular_mesa, validar_mesa, equipe_mesa, chave_comanda, comanda_cliente, comandas_acessiveis, guardar_comanda, visao_equipe, destino_comanda
 from .serializers import FiltroDatasSerializer
 from decimal import Decimal
 
@@ -71,7 +71,7 @@ class ProdutoViewSet(CatalogoViewSet):
 
 class AdicionalViewSet(CatalogoViewSet):
     """CRUD de adicionais. Leitura pública, escrita para Admin."""
-    queryset = Adicional.objects.select_related('produto').all()
+    queryset = Adicional.objects.select_related('produto').order_by('pk')
     serializer_class = AdicionalSerializer
 
     def get_permissions(self):
@@ -98,10 +98,18 @@ def cardapio(request):
 # ============================================================
 # Mesa e QR Code (RF01–RF04)
 # ============================================================
+@extend_schema_view(destroy=extend_schema(responses={204: None, **ERROS}))
 class MesaViewSet(viewsets.ModelViewSet):
     """CRUD de mesas. Admin gerencia; garçom pode ver."""
     queryset = Mesa.objects.com_sessao_ativa()
     serializer_class = MesaSerializer
+
+    def perform_destroy(self, instance):
+        try:
+            instance.delete()
+        except ProtectedError:
+            from .exceptions import Conflict
+            raise Conflict('Esta mesa possui histórico. Desative-a após encerrar as comandas.') from None
 
     @transaction.atomic
     def perform_update(self, serializer):
@@ -225,8 +233,20 @@ def criar_pedido(request):
     serializer.is_valid(raise_exception=True)
     dados = serializer.validated_data
     mesa = get_object_or_404(Mesa, token_uuid=dados['mesa_uuid'], ativa=True)
-    validar_mesa(request, mesa, dados.get('sessao_id'))
-    geracao = chave_comanda(request, mesa)
+    atendimento_id = dados.get('atendimento_id')
+    if atendimento_id is None:
+        # Compatibilidade segura com clientes antigos que já têm um destino.
+        sessao = comandas_acessiveis(request, mesa).filter(pk=dados.get('sessao_id')).first()
+        if not sessao:
+            if dados.get('sessao_id') is not None:
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied('Este pedido pertence a outra comanda ou a uma comanda encerrada.')
+            validar_mesa(request, mesa)
+            from .exceptions import Conflict
+            raise Conflict('Atualize a página antes de enviar o primeiro pedido.')
+        atendimento_id = sessao.acesso_uuid
+    geracao = destino_comanda(request, mesa, atendimento_id)
+    validar_mesa(request, mesa, dados.get('sessao_id'), atendimento_id=geracao)
     pedido = services.criar(dados, request.user, geracao=geracao)
     return Response(PedidoSerializer(pedido).data, status=201)
 

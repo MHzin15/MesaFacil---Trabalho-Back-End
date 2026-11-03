@@ -74,4 +74,4 @@ class QrLinksSerializer(serializers.Serializer):
 
 
 FILTROS = [OpenApiParameter('data_inicio', OpenApiTypes.DATE), OpenApiParameter('data_fim', OpenApiTypes.DATE)]
-ERROS = {400: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
+ERROS = {400: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT, 409: OpenApiTypes.OBJECT}

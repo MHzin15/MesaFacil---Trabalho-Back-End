@@ -8,9 +8,9 @@ Acompanhe as entregas em [docs/EXECUCAO.md](docs/EXECUCAO.md).
 Para ligar o projeto, conectar o pgAdmin e ensaiar cada papel pelas telas, siga
 [o guia de demonstração](docs/DEMONSTRACAO.md).
 Para publicar uma versão de testes com deploy automático a cada push,
-siga [o guia do Render Free](docs/RENDER.md).
+siga [o guia do Render Free](docs/RENDER.md). O plano permanece gratuito até nova autorização; a configuração paga fica apenas como exemplo futuro.
 Consulte também a [auditoria de requisitos, domínio e decisões técnicas de 28/10](docs/RELATORIO_TECNICO_E_PRODUTO_2026-10-28.md)
-para o parecer atual e as pendências de aceite.
+como registro histórico. A regra vigente está em [comandas privadas](docs/COMANDAS_PRIVADAS.md).
 As correções de segurança, evidências e orientações de atualização estão na
 [auditoria de segurança de 01/11](docs/AUDITORIA_SEGURANCA_2026-11-01.md).
 A administração agora oferece um [painel de gestão do restaurante](docs/GESTAO_RESTAURANTE.md),
@@ -141,7 +141,7 @@ não testa a rede nem substitui o fluxo presencial.
 A geração atual de QR é POST /api/mesas/<id>/gerar_qrcode/.
 A API usa sessões Django e exige CSRF em toda escrita, inclusive anônima.
 A identificação GET /api/mesa/<UUID>/ estabelece o contexto e cookie CSRF;
-criar pedido exige também sessao_id. Envie X-CSRFToken nas escritas Fetch.
+criar o primeiro pedido exige atendimento_id obtido no contexto. Cada tentativa mantém esse atendimento_id e chave_envio, mesmo em retries. sessao_id pode ser nulo no primeiro envio; os seguintes usam o ID da própria comanda. Leituras privadas aceitam ?atendimento_id=UUID para permanecer no destino da aba. Envie X-CSRFToken nas escritas Fetch.
 QR Code é baixado por GET /api/mesas/<id>/qr-code/ com perfil ADMIN.
 O garçom acessa /garcom/: mapa de mesas, entregas, contas e pagamento simulado.
 A cozinha também pode cancelar um pedido recebido, antes de iniciar o preparo.
@@ -172,3 +172,9 @@ evidências. [VALIDACAO_NAVEGADOR.md](docs/VALIDACAO_NAVEGADOR.md) descreve test
 reproduzíveis em banco isolado e sessões de navegador separadas, incluindo perda
 de resposta sem duplicar pedido. A demonstração em dois aparelhos físicos e a
 apresentação pela dupla continuam necessárias para o aceite do semestre.
+
+As [correções da auditoria de 02/11](docs/CORRECOES_AUDITORIA_FORENSE_2026-11-02.md) incluem integridade entre abas, concorrência, gestão, interface e recuperação. Consulte [backup e restauração](docs/RECUPERACAO.md) antes de operar ou atualizar dados reais.
+
+A [auditoria de UI/UX](docs/AUDITORIA_UI_UX_2026-11-02.md) avalia cliente, salão,
+cozinha e gestão e apresenta uma [proposta navegável](docs/uiux/proposta.html)
+para revisão. O Render permanece Free até nova autorização.

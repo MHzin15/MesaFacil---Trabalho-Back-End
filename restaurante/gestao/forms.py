@@ -106,6 +106,20 @@ class MesaForm(EstiloForm, forms.ModelForm):
 
 
 class ProdutoForm(EstiloForm, forms.ModelForm):
+    preco_anterior = forms.DecimalField(max_digits=10, decimal_places=2, required=False,
+                                        widget=forms.HiddenInput)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.initial['preco_anterior'] = self.instance.preco
+
+    def clean(self):
+        data = super().clean()
+        if self.instance.pk and data.get('preco_anterior') != self.instance.preco:
+            raise forms.ValidationError('O preço mudou desde que você abriu esta tela. Reabra o produto e confira o valor atual antes de salvar.')
+        return data
+
     class Meta:
         model = Produto
         fields = ['nome', 'categoria', 'descricao', 'preco', 'foto', 'disponivel']
@@ -116,12 +130,6 @@ class ProdutoForm(EstiloForm, forms.ModelForm):
                       'foto': 'Envie uma imagem de até 5 MB. Fotos horizontais ficam melhores no cardápio.',
                       'disponivel': 'Desmarque quando o produto acabar. Ele continua no histórico.'}
         widgets = {'descricao': forms.Textarea(attrs={'rows': 3}), 'preco': forms.TextInput(attrs={'inputmode': 'decimal'})}
-
-    def clean_foto(self):
-        foto = self.cleaned_data.get('foto')
-        if foto and getattr(foto, 'size', 0) > 5 * 1024 * 1024:
-            raise forms.ValidationError('Escolha uma imagem de até 5 MB.')
-        return foto
 
 
 class PrecoForm(EstiloForm, forms.Form):

@@ -4,14 +4,14 @@ from io import BytesIO
 
 import qrcode
 from django.db import transaction
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
 from drf_spectacular.utils import extend_schema, OpenApiTypes
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
@@ -38,7 +38,7 @@ def compartilhar(request, uuid):
         convite = ConviteComanda.objects.create(sessao=sessao, expira_em=timezone.now() + timedelta(minutes=15))
     return Response({
         'url': request.build_absolute_uri(reverse('convite-comanda', args=[convite.token])),
-        'qr_url': reverse('convite-qr', args=[uuid, convite.token]),
+        'qr_url': reverse('convite-qr', args=[uuid, convite.token]) + f'?atendimento_id={sessao.acesso_uuid}',
         'expira_em': convite.expira_em,
     })
 
@@ -48,7 +48,10 @@ def compartilhar(request, uuid):
 @permission_classes([AllowAny])
 def convite_qr(request, uuid, token):
     mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
-    sessao = validar_mesa(request, mesa)
+    try:
+        sessao = validar_mesa(request, mesa)
+    except PermissionDenied:
+        raise Http404 from None
     convite = get_object_or_404(ConviteComanda, token=token, sessao=sessao,
                                sessao__ativa=True, expira_em__gt=timezone.now())
     stream = BytesIO()

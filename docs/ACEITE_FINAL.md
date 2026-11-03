@@ -1,5 +1,7 @@
 # MesaFácil — conferência final do plano e do enunciado
 
+> Registro histórico de outubro de 2026. A regra de uma sessão ativa por mesa foi substituída em 02/11: o primeiro pedido abre uma comanda privada, várias comandas podem coexistir e o pagamento fecha somente a escolhida. Consulte [COMANDAS_PRIVADAS.md](COMANDAS_PRIVADAS.md) e [CORRECOES_AUDITORIA_FORENSE_2026-11-02.md](CORRECOES_AUDITORIA_FORENSE_2026-11-02.md) para o estado atual.
+
 Referência: [avaliação e plano](AVALIACAO_E_PLANO_2026-10-23.md), requisitos
 fornecidos pelo usuário e [registro das etapas](EXECUCAO.md).
 

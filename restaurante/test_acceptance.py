@@ -71,8 +71,11 @@ class AcceptanceTests(TestCase):
         manager = User.objects.create_user('administrador-comum', password='senha-local-de-teste')
         Perfil.objects.create(user=manager, role='ADMIN')
         self.client.force_login(manager)
-        response = self.client.post('/admin/auth/user/add/', {
+        self.assertEqual(self.client.post('/admin/auth/user/add/', {}).status_code, 403)
+        response = self.client.post('/admin/equipe/novo/', {
             'username': 'nova-cozinha', 'password1': 'CozinhaEquipe!2026', 'password2': 'CozinhaEquipe!2026',
+            'first_name': 'Ana', 'senha': 'CozinhaEquipe!2026', 'confirmar_senha': 'CozinhaEquipe!2026',
+            'role': 'COZINHA', 'is_active': 'on',
             'usable_password': 'true', 'perfil-TOTAL_FORMS': '1', 'perfil-INITIAL_FORMS': '0',
             'perfil-MIN_NUM_FORMS': '0', 'perfil-MAX_NUM_FORMS': '1', 'perfil-0-role': 'COZINHA',
             'is_superuser': 'on', 'is_staff': 'on', '_save': 'Salvar',
@@ -83,5 +86,5 @@ class AcceptanceTests(TestCase):
         self.assertTrue(created.check_password('CozinhaEquipe!2026'))
         self.assertFalse(created.is_superuser)
         self.assertFalse(created.is_staff)
-        self.assertRedirects(self.client.get(f'/admin/auth/user/{self.admin.pk}/change/'), '/admin/', fetch_redirect_response=False)
-        self.assertRedirects(self.client.get(f'/admin/restaurante/perfil/{self.admin.perfil.pk}/change/'), '/admin/', fetch_redirect_response=False)
+        self.assertEqual(self.client.get(f'/admin/auth/user/{self.admin.pk}/change/').status_code, 403)
+        self.assertEqual(self.client.get(f'/admin/restaurante/perfil/{self.admin.perfil.pk}/change/').status_code, 403)

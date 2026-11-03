@@ -57,6 +57,7 @@ class FlowSafetyTests(TestCase):
         headers = {'HTTP_X_CSRFTOKEN': self.client.cookies['csrftoken'].value}
         data = self.payload()
         data['sessao_id'] = None
+        data['atendimento_id'] = self.client.get(self.base).data['atendimento_id']
         data['itens'][0]['produto_id'] = 9999999
         self.assertEqual(self.client.post('/api/pedidos/criar/', data, format='json', **headers).status_code, 404)
         self.assertIsNone(Mesa.objects.get(pk=self.mesa.pk).sessao_ativa)
@@ -75,6 +76,7 @@ class FlowSafetyTests(TestCase):
             self.assertTrue(client.get(self.base).data['acesso_liberado'])
             data = self.payload()
             data['sessao_id'] = None
+            data['atendimento_id'] = client.get(self.base).data['atendimento_id']
             response = client.post('/api/pedidos/criar/', data, format='json', HTTP_X_CSRFTOKEN=client.cookies['csrftoken'].value)
             self.assertEqual(response.status_code, 201)
         self.assertEqual(Pedido.objects.values('sessao_id').distinct().count(), 2)

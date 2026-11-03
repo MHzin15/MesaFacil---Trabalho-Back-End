@@ -89,6 +89,7 @@ if min(LOGIN_RATE_LIMIT_WINDOW, LOGIN_RATE_LIMIT_ACCOUNT, LOGIN_RATE_LIMIT_IP) <
 # Database - Conexão via PostgreSQL usando a URL do .env
 # Exemplo no .env: DATABASE_URL=postgres://postgres:senha@localhost:5432/mesa_facil
 DATABASES = {'default': env.db('DATABASE_URL')}
+DATABASES['default'].setdefault('OPTIONS', {})['connect_timeout'] = 3
 if DATABASES['default']['ENGINE'] != 'django.db.backends.postgresql':
     raise ImproperlyConfigured('A aplicação exige PostgreSQL. SQLite só é permitido em core.test_settings.')
 
@@ -116,7 +117,7 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = Path(env('MEDIA_ROOT', default=str(BASE_DIR / 'media')))
 
 # WhiteNoise para servir estáticos em produção
 STORAGES = {
@@ -179,3 +180,15 @@ SECURE_HSTS_SECONDS = env.int('SECURE_HSTS_SECONDS', default=0 if DEBUG else 360
 if env.bool('RENDER', default=False):
     # Render termina o TLS no proxy; Django precisa reconhecer o HTTPS original.
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {'private_tokens': {'()': 'restaurante.logging.PrivateTokenFilter'}},
+    'handlers': {'safe_console': {'class': 'logging.StreamHandler', 'filters': ['private_tokens']}},
+    'loggers': {
+        'django': {'handlers': ['safe_console'], 'level': 'INFO', 'propagate': False},
+        'django.server': {'handlers': ['safe_console'], 'level': 'INFO', 'propagate': False},
+        'gunicorn.error': {'handlers': ['safe_console'], 'level': 'INFO', 'propagate': False},
+    },
+}

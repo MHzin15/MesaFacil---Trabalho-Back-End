@@ -47,6 +47,8 @@ def abrir(mesa_id, user):
 def criar(dados, user, *, geracao=None):
     if usuario_garcom(user):
         raise PermissionDenied('O perfil de garçom não pode criar pedidos.')
+    if dados.get('atendimento_id') and str(dados['atendimento_id']) != str(geracao):
+        erro('O destino da tentativa não corresponde à comanda autorizada.')
     mesa = get_object_or_404(Mesa.objects.select_for_update(), token_uuid=dados['mesa_uuid'], ativa=True)
     if geracao is not None:
         sessao = SessaoMesa.objects.select_for_update().filter(mesa=mesa, acesso_uuid=geracao).first()
@@ -64,7 +66,9 @@ def criar(dados, user, *, geracao=None):
     if dados.get('sessao_id') != sessao.pk and not (geracao is not None and dados.get('sessao_id') is None):
         erro('A comanda mudou ou foi encerrada. Revise o pedido.')
     key = dados.get('chave_envio')
-    digest = hashlib.sha256(json.dumps(dados, sort_keys=True, default=str).encode()).hexdigest()
+    # O destino já pertence ao escopo da chave; manter o hash de clientes anteriores.
+    conteudo = {k: v for k, v in dados.items() if k != 'atendimento_id'}
+    digest = hashlib.sha256(json.dumps(conteudo, sort_keys=True, default=str).encode()).hexdigest()
     if key:
         anterior = sessao.pedidos.filter(chave_envio=key).first()
         if anterior:
@@ -73,7 +77,9 @@ def criar(dados, user, *, geracao=None):
             return Pedido.objects.para_exibicao().get(pk=anterior.pk)
     if sessao.conta_solicitada:
         erro('A conta está em fechamento. Peça à equipe para retomar o atendimento antes de pedir.')
-    products = {p.pk: p for p in Produto.objects.select_for_update().filter(
+    # FOR NO KEY UPDATE preserva preço/disponibilidade, mas permite KEY SHARE
+    # da FK ao editar o produto de um adicional (evita ciclo Produto ↔ Adicional).
+    products = {p.pk: p for p in Produto.objects.select_for_update(no_key=True).filter(
         pk__in=[i['produto_id'] for i in dados['itens']]).order_by('pk')}
     addons = {a.pk: a for a in Adicional.objects.select_for_update().filter(
         pk__in=[a for i in dados['itens'] for a in i.get('adicionais_ids', [])]).order_by('pk')}
