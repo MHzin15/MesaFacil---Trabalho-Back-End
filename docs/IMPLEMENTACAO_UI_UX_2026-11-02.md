@@ -47,6 +47,8 @@ Os IDs de grupos/opções são UUIDs e os nomes aceitam até 80 caracteres; até
 
 Para subir esta branch em um banco local de desenvolvimento, aplicar normalmente `python manage.py migrate` antes de servir. A verificação desta entrega utilizou bancos exclusivos de teste/navegador; o banco real e o Render não foram migrados ou publicados. O processo de publicação existente já executa as migrações.
 
+Na inicialização local solicitada posteriormente em 02/11, o PostgreSQL foi religado e o banco de desenvolvimento atualizado de 0006 para 0010, com backup prévio e conferência das contagens existentes. O caminho da cópia está no [guia de retorno](RETORNO_UI_UX_2026-11-02.md). Saúde, início, cardápio e API responderam HTTP 200. Essa atualização foi somente local.
+
 ## Validação
 
 - PostgreSQL: **183 testes e 169 subtestes aprovados**, incluindo isolamento entre famílias, reenvio idempotente, concorrência, gestão, pagamento, escolhas obrigatórias, alteração de opção após revisão e matriz de métodos/perfis.
