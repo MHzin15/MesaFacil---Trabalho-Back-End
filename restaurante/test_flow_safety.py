@@ -28,6 +28,7 @@ class FlowSafetyTests(TestCase):
             'chave_envio': uuid4(), 'itens': [{'produto_id': self.produto.pk, 'quantidade': 1}]}
 
     def test_first_visit_has_no_code_or_staff_approval(self):
+        services.fechar(self.sessao.pk, self.admin)
         html = self.client.get(f'/mesa/{self.mesa.token_uuid}/')
         self.assertNotContains(html, 'codigo-atendimento')
         self.assertTrue(self.client.get(self.base).data['acesso_liberado'])
@@ -48,8 +49,8 @@ class FlowSafetyTests(TestCase):
         self.assertEqual(self.client.post('/api/pedidos/criar/', self.payload(), format='json', **headers).status_code, 403)
         # Novo atendimento é uma escolha do cliente, sem envolver o garçom.
         self.assertEqual(self.client.post(self.base + 'novo-atendimento/').status_code, 403)
-        self.assertEqual(self.client.post(self.base + 'novo-atendimento/', **headers).status_code, 200)
-        self.assertTrue(self.client.get(self.base).data['acesso_liberado'])
+        self.assertEqual(self.client.post(self.base + 'novo-atendimento/', **headers).status_code, 403)
+        self.assertFalse(self.client.get(self.base).data['acesso_liberado'])
 
     def test_first_order_opens_session_and_invalid_order_rolls_back_opening(self):
         services.fechar(self.sessao.pk, self.admin)
@@ -68,23 +69,23 @@ class FlowSafetyTests(TestCase):
         self.assertEqual(retry.data['id'], response.data['id'])
         self.assertIsNone(Pedido.objects.get(pk=response.data['id']).sessao.aberta_por)
 
-    def test_two_customers_start_separate_commands_without_invitation(self):
-        services.fechar(self.sessao.pk, self.admin)
+    def test_second_customer_is_blocked_while_first_is_ordering(self):
+        services.fechar(self.sessao.pk,self.admin)
+        self.client.get(f'/mesa/{self.mesa.token_uuid}/')
+        context = self.client.get(self.base).data
+        data = self.payload(); data['sessao_id'] = None; data['atendimento_id'] = context['atendimento_id']
+        self.assertEqual(self.client.post('/api/pedidos/criar/',data,format='json',HTTP_X_CSRFTOKEN=self.client.cookies['csrftoken'].value).status_code,201)
         other = APIClient(enforce_csrf_checks=True)
-        for client in (self.client, other):
-            client.get(f'/mesa/{self.mesa.token_uuid}/')
-            self.assertTrue(client.get(self.base).data['acesso_liberado'])
-            data = self.payload()
-            data['sessao_id'] = None
-            data['atendimento_id'] = client.get(self.base).data['atendimento_id']
-            response = client.post('/api/pedidos/criar/', data, format='json', HTTP_X_CSRFTOKEN=client.cookies['csrftoken'].value)
-            self.assertEqual(response.status_code, 201)
-        self.assertEqual(Pedido.objects.values('sessao_id').distinct().count(), 2)
+        other.get(f'/mesa/{self.mesa.token_uuid}/')
+        self.assertFalse(other.get(self.base).data['acesso_liberado'])
+        self.assertTrue(other.get(self.base).data['mesa_em_uso'])
+        self.assertEqual(other.post('/api/pedidos/criar/',data,format='json',HTTP_X_CSRFTOKEN=other.cookies['csrftoken'].value).status_code,403)
+        self.assertEqual(Pedido.objects.count(),1)
 
     def test_old_generation_cannot_open_new_session_from_service(self):
         generation = str(self.sessao.acesso_uuid)
         services.fechar(self.sessao.pk, self.admin)
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(PermissionDenied):
             services.criar(self.payload(), self.admin, geracao=generation)
         self.assertIsNone(Mesa.objects.get(pk=self.mesa.pk).sessao_ativa)
 

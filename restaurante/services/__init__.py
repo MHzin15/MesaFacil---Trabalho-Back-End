@@ -52,14 +52,21 @@ def criar(dados, user, *, geracao=None):
         erro('O destino da tentativa não corresponde à comanda autorizada.')
     mesa = get_object_or_404(Mesa.objects.select_for_update(), token_uuid=dados['mesa_uuid'], ativa=True)
     if geracao is not None:
+        from restaurante.atendimento import validar_responsavel
+        validar_responsavel(mesa, geracao)
         sessao = SessaoMesa.objects.select_for_update().filter(mesa=mesa, acesso_uuid=geracao).first()
         if sessao and not sessao.ativa:
             erro('Esta comanda foi encerrada. Comece uma nova comanda para pedir novamente.')
         if not sessao:
+            if mesa.sessoes.filter(ativa=True).exists():
+                erro('Esta mesa já está em atendimento.')
             if dados.get('sessao_id') is not None:
                 erro('A comanda mudou. Revise seu pedido antes de enviar.')
             sessao = SessaoMesa.objects.create(mesa=mesa, acesso_uuid=geracao,
                 aberta_por=user if user.is_authenticated else None)
+        if mesa.reserva_ate is not None:
+            mesa.reserva_ate = None
+            mesa.save(update_fields=['reserva_ate'])
     else:
         sessao = SessaoMesa.objects.select_for_update().filter(mesa=mesa, ativa=True, pk=dados.get('sessao_id')).first()
     if not sessao:
@@ -142,9 +149,12 @@ def transitar(pedido_id, novo, user):
 
 
 @transaction.atomic
-def pedir_conta(mesa_uuid, sessao_id):
+def pedir_conta(mesa_uuid, sessao_id, *, geracao=None):
     mesa = get_object_or_404(Mesa.objects.select_for_update(), token_uuid=mesa_uuid, ativa=True)
     sessao = get_object_or_404(SessaoMesa.objects.select_for_update(), mesa=mesa, pk=sessao_id, ativa=True)
+    if geracao is not None:
+        from restaurante.atendimento import validar_responsavel
+        validar_responsavel(mesa, geracao)
     if not sessao.conta_solicitada:
         sessao.conta_solicitada = True
         sessao.conta_solicitada_em = timezone.now()
@@ -208,6 +218,8 @@ def encerrar(sessao):
     sessao.conta_solicitada = False
     sessao.fechada_em = timezone.now()
     sessao.save(update_fields=['ativa', 'conta_solicitada', 'fechada_em'])
+    if not SessaoMesa.objects.filter(mesa_id=sessao.mesa_id, ativa=True).exists():
+        Mesa.objects.filter(pk=sessao.mesa_id).update(responsavel_uuid=None, reserva_ate=None)
 
 
 @transaction.atomic

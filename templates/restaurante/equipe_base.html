@@ -12,7 +12,7 @@
     <p class="sidebar-caption">{% if equipe_area == 'garcom' %}ATENDIMENTO DO SALÃO{% else %}OPERAÇÃO DA COZINHA{% endif %}</p>
     <nav class="staff-nav" aria-label="Área de trabalho">
       {% if equipe_area == 'garcom' %}
-      <a href="{% url 'garcom' %}" data-staff-link="mesas" data-title="Mesas do salão" data-description="O primeiro pedido abre a comanda. Acompanhe o salão e escolha a comanda para conferir." {% if equipe_tela == 'mesas' %}aria-current="page"{% endif %}><span>Mesas livres</span><span id="mesas-livres" class="staff-count" title="Mesas livres">—</span></a>
+      <a href="{% url 'garcom' %}" data-staff-link="mesas" data-title="Mesas do salão" data-description="O cliente começa pelo QR. Acompanhe as mesas e confira cada conta." {% if equipe_tela == 'mesas' %}aria-current="page"{% endif %}><span>Mesas livres</span><span id="mesas-livres" class="staff-count" title="Mesas livres">—</span></a>
       <a href="{% url 'garcom-entregas' %}" data-staff-link="entregas" data-title="Entregas" data-description="Retire os pedidos prontos e confirme quando chegarem à mesa." {% if equipe_tela == 'entregas' %}aria-current="page"{% endif %}><span>Entregas</span><span id="total-entregas" class="staff-count">—</span></a>
       <a href="{% url 'garcom-contas' %}" data-staff-link="contas" data-title="Contas solicitadas" data-description="Confira a comanda e registre o pagamento com o cliente." {% if equipe_tela == 'contas' %}aria-current="page"{% endif %}><span>Contas</span><span id="total-contas" class="staff-count">—</span></a>
       {% else %}

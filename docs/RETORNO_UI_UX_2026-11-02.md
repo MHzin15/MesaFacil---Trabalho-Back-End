@@ -38,6 +38,8 @@ Uma cópia do script também fica na pasta local do checkpoint, para continuar d
 
 ## Banco e publicação
 
+**Atualização do modelo de atendimento:** a migração 0011 de responsável único foi aplicada no desenvolvimento, com dump prévio e conferência de 66 registros em 13 tabelas. Cópia em `.local/antes-aplicar-responsavel-unico-20261102-235648/`. O checkpoint continua intacto, mas retornar arquivos não desfaz a migração nem as capacidades rotacionadas. Veja [a regra vigente e a transição](RESPONSAVEL_UNICO_2026-11-02.md). Os parágrafos abaixo registram as etapas anteriores.
+
 Nesta entrega, a migração 0010 foi aplicada apenas em bancos exclusivos de teste e navegador. O banco real e o Render foram preservados, portanto o retorno atual não precisa desfazer dados de operação.
 
 **Atualização durante a inicialização local solicitada em 02/11:** o PostgreSQL de desenvolvimento estava desligado e o banco local ainda estava na migração 0006. O serviço foi religado e as migrações 0007–0010 foram aplicadas para permitir o teste da branch. Antes disso foi criado e validado um backup em `.local/antes-iniciar-uiux-20261102-224336/`, contendo `database.dump`, mídia e manifesto com hashes/contagens. As contagens das tabelas anteriores foram conferidas após a atualização e permaneceram iguais. O Render não foi acessado nem atualizado. O script de retorno continua restaurando somente arquivos; para voltar também os dados locais, preserve esse backup e restaure o dump em outro banco vazio, sem apagar o atual.

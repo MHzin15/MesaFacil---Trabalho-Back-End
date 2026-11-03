@@ -8,6 +8,7 @@
   const billUrl = id => `/api/sessoes/${id}/conta/`;
   let reviewedBill = null, currentBill = null;
   let tablesCache = [], tableFilter = '';
+  let transferRequest = null;
 
   function renderTables() {
     const expanded = new Set([...document.querySelectorAll('[data-table-details][open]')].map(d => d.dataset.tableDetails));
@@ -15,7 +16,7 @@
     const visible = tablesCache.filter(t => (!tableFilter || t.status === tableFilter) && String(t.numero).includes(search));
     const free = tablesCache.filter(t => t.status === 'livre').length;
     byId('mesas-summary').textContent = `${visible.length} de ${tablesCache.length} mesas · ${free} livres`;
-    byId('mapa-mesas').innerHTML = visible.map(t => `<article class="surface table-card table-${t.status}"><div class="section-title"><h3>Mesa ${String(t.numero).padStart(2,'0')}</h3><span class="status-label">${labels[t.status]}</span></div><p class="table-hint">${t.comandas_abertas.length ? `${t.comandas_abertas.length} comanda(s) · ${t.comandas_abertas.filter(c => c.conta_solicitada).length} em fechamento` : 'Livre · o primeiro pedido abre a comanda'}</p>${t.comandas_abertas.length ? `<details data-table-details="${t.id}" ${expanded.has(String(t.id)) ? 'open' : ''}><summary>Ver comandas (${t.comandas_abertas.length})</summary><div class="table-actions">${t.comandas_abertas.map(c => `<button class="btn btn-outline-primary" data-bill="${c.id}">#${c.id} · ${c.conta_solicitada ? 'Conta solicitada' : 'Conferir'}</button>`).join('')}</div></details>` : ''}<a class="text-link table-menu-link" href="/mesa/${escape(t.token_uuid)}/" target="_blank" rel="noopener">Consultar cardápio ↗</a></article>`).join('') || '<div class="surface workspace-empty"><h3>Nenhuma mesa encontrada</h3><p>Tente outro número ou situação.</p><button type="button" class="btn btn-outline-primary" data-clear-tables>Limpar filtros</button></div>';
+    byId('mapa-mesas').innerHTML = visible.map(t => `<article class="surface table-card table-${t.status}"><div class="section-title"><h3>Mesa ${String(t.numero).padStart(2,'0')}</h3><span class="status-label">${labels[t.status]}</span></div><p class="table-hint">${t.comandas_abertas.length ? (t.comandas_abertas.length === 1 ? (t.comandas_abertas[0].conta_solicitada ? 'Conta solicitada · confira o fechamento' : 'Atendimento em andamento') : `${t.comandas_abertas.length} contas da versão anterior`) : (t.status === 'livre' ? 'Livre · aguardando o próximo grupo' : 'Responsável escolhendo os produtos')}</p>${(t.transferencias_pendentes || []).map(r => `<div class="transfer-request"><p>Troca de responsável · <strong>${escape(r.codigo)}</strong></p><button class="btn btn-outline-primary" data-transferir="${r.id}" data-transfer-codigo="${escape(r.codigo)}" data-transfer-mesa="${t.numero}">Autorizar este aparelho</button></div>`).join('')}${t.comandas_abertas.length > 1 ? '<p class="small">Contas da versão anterior: finalize-as até restar um atendimento antes de transferir.</p>' : ''}${t.comandas_abertas.length ? `<details data-table-details="${t.id}" ${expanded.has(String(t.id)) ? 'open' : ''}><summary>${t.comandas_abertas.length === 1 ? 'Ver conta da mesa' : `Ver contas anteriores (${t.comandas_abertas.length})`}</summary><div class="table-actions">${t.comandas_abertas.map(c => `<button class="btn btn-outline-primary" data-bill="${c.id}">#${c.id} · ${c.conta_solicitada ? 'Conta solicitada' : 'Conferir'}</button>`).join('')}</div></details>` : ''}<a class="text-link table-menu-link" href="/mesa/${escape(t.token_uuid)}/" target="_blank" rel="noopener">Consultar cardápio ↗</a></article>`).join('') || '<div class="surface workspace-empty"><h3>Nenhuma mesa encontrada</h3><p>Tente outro número ou situação.</p><button type="button" class="btn btn-outline-primary" data-clear-tables>Limpar filtros</button></div>';
   }
 
   function renderDeliveries(orders) {
@@ -103,6 +104,15 @@
   }
 
   document.addEventListener('click', async event => {
+    const transfer = event.target.closest('[data-transferir]');
+    if (transfer) {
+      if (busy) return;
+      transferRequest = {id:Number(transfer.dataset.transferir), mesa:transfer.dataset.transferMesa, codigo:transfer.dataset.transferCodigo};
+      byId('transferencia-mesa').textContent = `Mesa ${transferRequest.mesa}`;
+      byId('transferencia-codigo').textContent = transferRequest.codigo;
+      MF.openDialog(byId('transferencia-dialog'));
+      return;
+    }
     const filter = event.target.closest('[data-table-filter], [data-clear-tables]');
     if (filter) {
       tableFilter = filter.dataset.tableFilter || '';
@@ -129,6 +139,18 @@
     } catch (error) { feedback(error.message, true); }
   });
   byId('buscar-mesa').addEventListener('input', renderTables);
+  byId('confirmar-transferencia').addEventListener('click', async () => {
+    if (busy || !transferRequest) return;
+    const reviewed = {...transferRequest};
+    byId('confirmar-transferencia').disabled = true;
+    try {
+      await action(async () => {
+        await api(`/api/garcom/trocas-responsavel/${reviewed.id}/autorizar/`, {method:'POST'});
+        byId('transferencia-dialog').close();
+      }, 'Responsável transferido. O aparelho anterior foi bloqueado e os pedidos foram mantidos.');
+    } finally { byId('confirmar-transferencia').disabled = false; }
+  });
+  byId('transferencia-dialog').addEventListener('close', () => { transferRequest = null; });
   byId('meio-pagamento').addEventListener('change', () => { if (currentBill) showBill(currentBill); });
   byId('conta-dialog').addEventListener('close', () => {
     if (byId('conta-dialog').open) return;
@@ -149,7 +171,7 @@
   });
   byId('retomar-atendimento').addEventListener('click', () => billAction('retomar', 'Atendimento retomado. Confira a conta novamente antes de cobrar.'));
   byId('solicitar-conta').addEventListener('click', () => billAction('solicitar-conta', 'Conta solicitada.'));
-  byId('fechar-sem-cobranca').addEventListener('click', () => billAction('fechar', 'Comanda encerrada. As outras comandas da mesa continuam abertas.', true));
+  byId('fechar-sem-cobranca').addEventListener('click', () => billAction('fechar', 'Atendimento encerrado. A mesa fica livre quando não há outra conta antiga aberta.', true));
   byId('pagamento-form').addEventListener('submit', event => {
     event.preventDefault();
     if (!byId('pagamento-form').reportValidity() || !reviewedBill || !currentBill || currentBill.sessao_id !== selected || reviewedBill.sessao_id !== selected || reviewedBill.versao_conta !== currentBill.versao_conta || reviewedBill.total_esperado !== currentBill.valor_total) return;

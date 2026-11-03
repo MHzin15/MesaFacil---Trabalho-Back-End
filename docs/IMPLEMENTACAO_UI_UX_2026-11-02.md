@@ -1,5 +1,7 @@
 # Implementação de UI/UX — MesaFácil
 
+> A simplificação posterior substituiu compartilhamento e contas separadas por [um responsável por mesa](RESPONSAVEL_UNICO_2026-11-02.md). O documento vinculado contém a regra vigente, migração e validação atual. Abaixo permanece o registro da primeira entrega de UI/UX.
+
 Data: 02/11/2026. Base preservada: `873e9f8`, incluindo todas as alterações locais anteriores. Implementação isolada em `codex/ui-ux-20261102`.
 
 Esta entrega aplica a [auditoria aprovada](AUDITORIA_UI_UX_2026-11-02.md) ao aplicativo Django. O protótipo continua separado da aplicação. O Render ativo permanece Free, sem novas dependências, disco pago, gateway ou serviços contratados.

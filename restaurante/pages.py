@@ -11,7 +11,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from PIL import Image, UnidentifiedImageError
 
 from .models import Mesa
-from .security import vincular_mesa, usuario_garcom
+from .security import vincular_mesa, usuario_garcom, equipe_mesa
 
 
 def foto_produto(request, path):
@@ -55,10 +55,23 @@ def inicio(request):
 @ensure_csrf_cookie
 def cliente(request, uuid, tela='cardapio'):
     mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
-    modo_garcom = usuario_garcom(request.user)
+    modo_garcom = equipe_mesa(request.user)
     if modo_garcom and tela == 'carrinho':
         return redirect('cliente-pedidos', uuid=mesa.token_uuid)
-    vincular_mesa(request, mesa)
+    if request.GET.get('bloqueado') != '1':
+        vincular_mesa(request, mesa)
+    mesa.refresh_from_db()
+    from .security import acesso_mesa, chave_comanda, comanda_cliente
+    from .atendimento import ocupada, revogado
+    if not modo_garcom and not acesso_mesa(request, mesa):
+        antiga = comanda_cliente(request, mesa)
+        response = render(request, 'restaurante/mesa_ocupada.html', {
+            'mesa': mesa, 'ocupada': ocupada(mesa),
+            'encerrado': bool((antiga and not antiga.ativa) or revogado(mesa, chave_comanda(request, mesa))),
+        })
+        response['Cache-Control'] = 'no-store'
+        response['Referrer-Policy'] = 'same-origin'
+        return response
     titulos = {
         'cardapio': ('Cardápio', 'Escolha seus produtos e personalize cada item.'),
         'carrinho': ('Seu carrinho', 'Confira as quantidades e os adicionais antes de enviar.'),
@@ -108,7 +121,7 @@ def painel(request):
 @ensure_csrf_cookie
 def garcom(request, tela='mesas'):
     telas = {
-        'mesas': ('Mesas do salão', 'Abra o atendimento e acompanhe a situação de cada mesa.'),
+        'mesas': ('Mesas do salão', 'O cliente começa pelo QR. Acompanhe as mesas e confira cada conta.'),
         'entregas': ('Entregas', 'Retire os pedidos prontos e confirme quando chegarem à mesa.'),
         'contas': ('Contas solicitadas', 'Confira os pedidos da mesa e finalize o atendimento.'),
     }

@@ -24,7 +24,7 @@ class ImmutableOrderTests(TestCase):
     setUp = fixtures.PrivateTabsTests.setUp
     visitante = fixtures.PrivateTabsTests.visitante
     post = fixtures.PrivateTabsTests.post
-    def test_retry_keeps_original_command_when_another_tab_selects_a_new_draft(self):
+    def test_retry_keeps_original_session_and_cannot_open_another_while_in_use(self):
         context = self.a.get(self.base).data
         data = {'mesa_uuid': str(self.mesa.token_uuid), 'sessao_id': None,
                 'atendimento_id': context['atendimento_id'], 'chave_envio': str(uuid4()),
@@ -33,7 +33,7 @@ class ImmutableOrderTests(TestCase):
         self.assertEqual(first.status_code, 201)
         self.post(self.a, self.base + 'novo-atendimento/')
         second_context = self.a.get(self.base).data
-        self.assertNotEqual(context['atendimento_id'], second_context['atendimento_id'])
+        self.assertEqual(context['atendimento_id'], second_context['atendimento_id'])
         retry = self.post(self.a, '/api/pedidos/criar/', data)
         self.assertEqual(retry.status_code, 201, retry.data)
         self.assertEqual(retry.data['id'], first.data['id'])
@@ -44,7 +44,7 @@ class ImmutableOrderTests(TestCase):
         self.assertEqual(self.a.get(self.base + 'conta/' + own).data['sessao_id'], first.data['sessao'])
         self.assertEqual(self.post(self.a, self.base + 'solicitar-conta/' + own).status_code, 200)
         self.assertTrue(SessaoMesa.objects.get().conta_solicitada)
-        self.assertIsNone(self.a.get(self.base).data['sessao_id'])
+        self.assertEqual(self.a.get(self.base).data['sessao_id'], first.data['sessao'])
         self.assertEqual(self.post(self.b, '/api/pedidos/criar/', data).status_code, 403)
 
     def test_old_first_order_without_immutable_identity_requires_reload(self):

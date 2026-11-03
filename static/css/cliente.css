@@ -127,9 +127,6 @@ body[data-client-view=cardapio] .feedback{bottom:104px}
   body[data-page=cliente] .site-footer{display:none}
 }
 
-.private-tab-bar{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:24px}
-.private-tab-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.private-tab-actions label{font-size:.8rem}
-.share-dialog{text-align:center}.share-qr{display:block;max-width:100%;width:240px;height:240px;object-fit:contain;margin:16px auto}.share-dialog input{font-size:.8rem}
 
 /* Hierarquia compacta; contexto privado sempre próximo do cardápio. */
 body[data-page=cliente]{font-size:16px}
@@ -138,12 +135,6 @@ body[data-page=cliente] .client-heading{padding:20px 0 12px;gap:16px}
 .client-heading h1{font-size:2.2rem;margin-bottom:5px}
 .client-heading .table-tag{min-width:110px;padding:8px 12px}
 .client-heading .table-tag span{font-size:.72rem}
-.private-tab-bar{position:relative;display:flex;align-items:center;padding:12px 0;margin:0 0 16px;border-bottom:1px solid var(--line);gap:12px}
-.private-tab-bar>strong{font-size:.95rem}
-.private-tab-help{max-width:600px;font-size:.9rem}
-.private-tab-help summary{cursor:pointer;color:var(--accent);min-height:44px;display:flex;align-items:center;list-style:revert}
-.private-tab-help[open]{flex-basis:100%}
-.private-tab-actions{gap:12px;margin:12px 0}
 .menu-toolbar{justify-content:flex-end;margin-bottom:10px}
 .menu-search-field{width:100%;max-width:none}
 .cart-item-actions{display:flex;align-items:center;gap:12px}
@@ -172,10 +163,6 @@ body[data-page=cliente] .feedback{position:static;bottom:auto;left:auto;transfor
   .client-heading .table-tag{min-width:100px;padding:6px 8px;font-size:.6rem}
   .client-heading .table-tag strong{font-size:1.4rem}
   .client-heading .table-tag span{font-size:.66rem}
-  .private-tab-bar{gap:0;margin-bottom:12px;padding:0 0 8px}
-  .private-tab-bar>strong{font-size:.85rem}
-  .private-tab-help{font-size:.85rem}
-  .private-tab-help summary{min-height:36px}
   .client-heading .table-tag{min-width:116px;padding:6px 8px;line-height:1.4}
   .client-heading .table-tag strong{display:inline;font-size:1.2rem;margin-left:5px}
   .client-heading .table-tag span{font-size:.6rem;margin-top:2px}
@@ -195,3 +182,4 @@ body[data-page=cliente] .feedback{position:static;bottom:auto;left:auto;transfor
   .checkout-summary{padding:20px}
   .orders-grid .order-item{font-size:1rem}
 }
+.responsavel-nota{font-size:.85rem;line-height:1.5;padding:12px 16px;margin-bottom:16px;border-left:3px solid var(--accent);background:#f0ece3;border-radius:0 8px 8px 0}.responsavel-nota strong{display:block;margin-bottom:4px}.blocked-table{max-width:640px;margin:40px auto;text-align:center}.blocked-table h1{font-size:clamp(1.8rem,4vw,2.6rem);line-height:1.2}.blocked-table h2{font-size:1.1rem}.blocked-symbol{font-size:2.5rem;color:var(--accent);display:block;margin-bottom:12px}.blocked-note{font-size:.9rem;padding:12px;background:#f0f0e5;border-radius:8px}.blocked-table hr{margin:28px 0}.transfer-code{display:block;letter-spacing:.16em;font-size:1.6rem;margin:18px 0;padding:14px;background:#f0ece3;border:1px dashed var(--accent);border-radius:8px}@media(max-width:600px){.blocked-table{margin:24px auto;padding:22px 18px}.blocked-table .btn{width:100%}.blocked-table p{font-size:.95rem}}

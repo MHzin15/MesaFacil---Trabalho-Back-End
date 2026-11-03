@@ -10,7 +10,7 @@ Para ligar o projeto, conectar o pgAdmin e ensaiar cada papel pelas telas, siga
 Para publicar uma versão de testes com deploy automático a cada push,
 siga [o guia do Render Free](docs/RENDER.md). O plano permanece gratuito até nova autorização; a configuração paga fica apenas como exemplo futuro.
 Consulte também a [auditoria de requisitos, domínio e decisões técnicas de 28/10](docs/RELATORIO_TECNICO_E_PRODUTO_2026-10-28.md)
-como registro histórico. A regra vigente está em [comandas privadas](docs/COMANDAS_PRIVADAS.md).
+como registro histórico. A regra vigente está em [um responsável por mesa](docs/RESPONSAVEL_UNICO_2026-11-02.md).
 As correções de segurança, evidências e orientações de atualização estão na
 [auditoria de segurança de 01/11](docs/AUDITORIA_SEGURANCA_2026-11-01.md).
 A administração agora oferece um [painel de gestão do restaurante](docs/GESTAO_RESTAURANTE.md),

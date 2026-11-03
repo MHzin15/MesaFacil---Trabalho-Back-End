@@ -23,7 +23,15 @@ class MensagemSerializer(serializers.Serializer):
     mensagem = serializers.CharField()
 
 
+class TrocaResponsavelSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    codigo = serializers.CharField()
+    expira_em = serializers.DateTimeField()
+
+
 class MesaContextoSerializer(MesaClienteSerializer):
+    mesa_em_uso = serializers.BooleanField()
+    reserva_expirada = serializers.BooleanField()
     sessao_ativa = serializers.BooleanField()
     sessao_id = serializers.IntegerField(allow_null=True)
     acesso_liberado = serializers.BooleanField()
@@ -32,7 +40,7 @@ class MesaContextoSerializer(MesaClienteSerializer):
     comandas = ComandaAcessivelSerializer(many=True)
 
     class Meta(MesaClienteSerializer.Meta):
-        fields = MesaClienteSerializer.Meta.fields + ['sessao_ativa', 'sessao_id', 'acesso_liberado', 'atendimento_encerrado', 'atendimento_id', 'comandas']
+        fields = MesaClienteSerializer.Meta.fields + ['sessao_ativa', 'sessao_id', 'acesso_liberado', 'atendimento_encerrado', 'atendimento_id', 'comandas', 'mesa_em_uso', 'reserva_expirada']
 
 
 class ContaMesaSerializer(serializers.Serializer):

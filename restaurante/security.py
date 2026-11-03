@@ -59,11 +59,9 @@ def guardar_comanda(request, mesa, chave):
 
 
 def vincular_mesa(request, mesa, *, novo=False):
-    """O QR cria somente um rascunho privado, nunca concede contas da mesa."""
-    from uuid import uuid4
-    chave = chave_comanda(request, mesa)
-    if novo or not chave:
-        guardar_comanda(request, mesa, uuid4())
+    from .atendimento import assumir, reconhecer_transferencia
+    reconhecer_transferencia(request, mesa)
+    assumir(request, mesa, novo=novo)
     get_token(request)
     return comanda_cliente(request, mesa)
 
@@ -77,8 +75,9 @@ def comandas_acessiveis(request, mesa):
 
 
 def acesso_mesa(request, mesa):
+    from .atendimento import dono
     sessao = comanda_cliente(request, mesa)
-    return bool(chave_comanda(request, mesa)) and (not sessao or sessao.ativa)
+    return dono(mesa, chave_comanda(request, mesa)) and (not sessao or sessao.ativa)
 
 
 def destino_comanda(request, mesa, atendimento_id=None):
@@ -97,10 +96,12 @@ def destino_comanda(request, mesa, atendimento_id=None):
 
 
 def validar_mesa(request, mesa, sessao_id=None, *, atendimento_id=None):
+    from .atendimento import validar_responsavel
     chave = destino_comanda(request, mesa, atendimento_id)
     sessao = comanda_cliente(request, mesa, chave)
     if sessao and not sessao.ativa:
         raise PermissionDenied('Esta comanda foi encerrada. Comece uma nova comanda para pedir novamente.')
+    validar_responsavel(mesa, chave)
     if sessao_id is not None and (not sessao or sessao.pk != sessao_id):
         raise PermissionDenied('Este pedido pertence a outra comanda.')
     return sessao

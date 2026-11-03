@@ -55,6 +55,7 @@ class WaiterTests(TestCase):
 
     def test_guest_keeps_cart_and_can_send_order(self):
         sessao = services.abrir(self.mesa.pk, self.garcom)
+        entrar_cliente(self.client,self.mesa)
         response = self.client.get(f'/mesa/{self.mesa.token_uuid}/carrinho/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'data-client-link="carrinho"')

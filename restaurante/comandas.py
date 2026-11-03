@@ -1,95 +1,64 @@
-"""Compartilhamento explícito; o QR público da mesa não é uma credencial de conta."""
-from datetime import timedelta
-from io import BytesIO
-
-import qrcode
-from django.db import transaction
-from django.http import HttpResponse, Http404
-from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
-from django.utils import timezone
-from django.views.decorators.csrf import ensure_csrf_cookie
-from drf_spectacular.utils import extend_schema, OpenApiTypes
+"""Compatibilidade de rotas antigas e transferência exclusiva autorizada pela equipe."""
+from django.shortcuts import get_object_or_404, render
+from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import ValidationError, PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from .models import Mesa
+from .permissions import IsGarcomOuAdmin
+from .api_schema import MensagemSerializer, TrocaResponsavelSerializer, ERROS
+from .security import destino_comanda
+from . import atendimento
 
-from . import services
-from .api_schema import ERROS, CompartilharSerializer, MensagemSerializer, SelecionarComandaSerializer
-from .models import ConviteComanda, Mesa
-from .security import validar_mesa, guardar_comanda, comandas_acessiveis
 
-
-@extend_schema(request=None, responses={200: CompartilharSerializer, **ERROS})
+@extend_schema(request=None, responses={410: MensagemSerializer})
 @api_view(['POST'])
 @permission_classes([AllowAny])
-@transaction.atomic
 def compartilhar(request, uuid):
-    mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
-    sessao = validar_mesa(request, mesa)
-    if not sessao:
-        raise ValidationError({'erro': 'Envie o primeiro pedido antes de compartilhar a comanda.'})
-    sessao = services.sessao_bloqueada(sessao.pk)
-    if not sessao.ativa:
-        raise ValidationError({'erro': 'Esta comanda foi encerrada.'})
-    convite = sessao.convites.filter(expira_em__gt=timezone.now()).first()
-    if not convite:
-        convite = ConviteComanda.objects.create(sessao=sessao, expira_em=timezone.now() + timedelta(minutes=15))
-    return Response({
-        'url': request.build_absolute_uri(reverse('convite-comanda', args=[convite.token])),
-        'qr_url': reverse('convite-qr', args=[uuid, convite.token]) + f'?atendimento_id={sessao.acesso_uuid}',
-        'expira_em': convite.expira_em,
-    })
+    return Response({'mensagem': 'Convites foram desativados. A mesa tem um único responsável.'}, status=410)
 
 
-@extend_schema(request=None, responses={200: OpenApiTypes.BINARY, **ERROS})
+@extend_schema(request=None, responses={410: MensagemSerializer})
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def convite_qr(request, uuid, token):
-    mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
-    try:
-        sessao = validar_mesa(request, mesa)
-    except PermissionDenied:
-        raise Http404 from None
-    convite = get_object_or_404(ConviteComanda, token=token, sessao=sessao,
-                               sessao__ativa=True, expira_em__gt=timezone.now())
-    stream = BytesIO()
-    qrcode.make(request.build_absolute_uri(reverse('convite-comanda', args=[convite.token]))).save(stream, format='PNG')
-    response = HttpResponse(stream.getvalue(), content_type='image/png')
-    response['Cache-Control'] = 'no-store'
-    return response
+    return Response({'mensagem': 'Este convite não é mais válido.'}, status=410)
 
 
-@extend_schema(request=SelecionarComandaSerializer, responses={200: MensagemSerializer, **ERROS})
+@extend_schema(request=None, responses={410: MensagemSerializer})
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def selecionar(request, uuid):
-    mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
-    serializer = SelecionarComandaSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    sessao = get_object_or_404(comandas_acessiveis(request, mesa), pk=serializer.validated_data['comanda_id'])
-    guardar_comanda(request, mesa, sessao.acesso_uuid)
-    return Response({'mensagem': 'Comanda selecionada.'})
+    return Response({'mensagem': 'A troca de responsável é feita somente pela equipe.'}, status=410)
 
 
-@ensure_csrf_cookie
 def convite(request, token):
-    # Uma prévia de link ou GET não inscreve a pessoa nem troca sua comanda atual.
-    obj = ConviteComanda.objects.select_related('sessao__mesa').filter(token=token,
-        sessao__ativa=True, sessao__mesa__ativa=True, expira_em__gt=timezone.now()).first()
-    if request.method == 'POST' and obj:
-        with transaction.atomic():
-            sessao = services.sessao_bloqueada(obj.sessao_id)
-            if not sessao.ativa or not sessao.mesa.ativa or obj.expira_em <= timezone.now():
-                obj = None
-            else:
-                guardar_comanda(request, sessao.mesa, sessao.acesso_uuid)
-                response = redirect('cliente', uuid=sessao.mesa.token_uuid)
-                response['Referrer-Policy'] = 'same-origin'
-                return response
-    response = render(request, 'restaurante/convite.html', {'convite': obj}, status=200 if obj else 410)
+    response = render(request, 'restaurante/convite_desativado.html', status=410)
     response['Cache-Control'] = 'no-store'
-    response['Referrer-Policy'] = 'same-origin'
-    response['X-Robots-Tag'] = 'noindex, nofollow'
     return response
+
+
+@extend_schema(request=None, responses={200: MensagemSerializer, **ERROS})
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def atividade(request, uuid):
+    mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
+    atendimento.registrar_atividade(mesa, destino_comanda(request, mesa))
+    return Response({'mensagem': 'Atividade registrada.'})
+
+
+@extend_schema(request=None, responses={200: TrocaResponsavelSerializer, **ERROS})
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def solicitar_transferencia(request, uuid):
+    mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
+    troca = atendimento.solicitar_troca(request, mesa)
+    return Response({'id': troca.pk, 'codigo': troca.codigo, 'expira_em': troca.expira_em})
+
+
+@extend_schema(request=None, responses={200: MensagemSerializer, **ERROS})
+@api_view(['POST'])
+@permission_classes([IsGarcomOuAdmin])
+def autorizar_transferencia(request, pk):
+    atendimento.autorizar_troca(pk, request.user)
+    return Response({'mensagem': 'Novo responsável autorizado. O aparelho anterior perdeu o acesso; os pedidos foram mantidos.'})

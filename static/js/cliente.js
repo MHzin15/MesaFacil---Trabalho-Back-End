@@ -79,7 +79,7 @@
     byId('revisar').disabled = !cart.length || !access || closing || !navigator.onLine || sending || ((!menuReady || !cartAvailable()) && !attempt);
     byId('cart-warning').hidden = !cart.length || cartAvailable();
     byId('cart-warning').textContent = 'Há itens ou escolhas que mudaram. Edite os itens sinalizados ou remova-os para continuar.';
-    byId('pedido-destino').textContent = `${sessionId ? `Comanda #${sessionId}` : 'Nova comanda privada'} · Mesa ${document.querySelector('.table-tag strong').textContent}`;
+    byId('pedido-destino').textContent = `${sessionId ? `Atendimento #${sessionId}` : 'Novo atendimento'} · Mesa ${document.querySelector('.table-tag strong').textContent}`;
     byId('cart-undo').hidden = !removedItem || Boolean(attempt);
     byId('revisar').textContent = sending ? 'Enviando…' : attempt ? 'Conferir envio pendente' : `Enviar pedido · ${money(total())}`;
     byId('revisar-help').textContent = closing ? 'Conta em fechamento. Peça à equipe para retomar o atendimento se quiser pedir mais.' : !access ? 'Inicie um novo atendimento para continuar.' : !navigator.onLine ? 'Reconecte para revisar e enviar o pedido.' : attempt ? 'Há um envio sem confirmação. Esta ação consulta os pedidos e repete somente a mesma tentativa, sem criar outro pedido.' : !cart.length ? 'Adicione um produto para continuar.' : !cartAvailable() ? 'Edite as escolhas que mudaram ou remova o item indisponível.' : 'Ao enviar, você confirma os itens e o total exibidos neste carrinho.';
@@ -163,6 +163,7 @@
     try {
     const mesa = await api(base);
     access = mesa.acesso_liberado;
+    if (!access) { location.replace(mesaPath + '?bloqueado=1'); return; }
     if (!ended && mesa.atendimento_encerrado) feedback('Seu atendimento foi encerrado. Obrigado pela visita!');
     ended = mesa.atendimento_encerrado;
     byId('novo-atendimento').hidden = !ended;
@@ -173,7 +174,6 @@
       byId('lista-pedidos').textContent = 'Carregando os pedidos desta comanda…';
       byId('conta-total').textContent = money(0);
       lastOrders = ''; lastBill = '';
-      if (byId('compartilhar-dialog').open) byId('compartilhar-dialog').close();
       draftId = mesa.atendimento_id;
       attempt = null;
       cart = []; removedItem = null;
@@ -197,22 +197,8 @@
     const previousSessionId = sessionId;
     sessionId = mesa.sessao_id;
     if (previousSessionId !== sessionId) renderCart();
-    byId('comanda-label').textContent = sessionId ? `Comanda #${sessionId} · Mesa ${document.querySelector('.table-tag strong').textContent}` : ended ? 'Sua comanda foi encerrada' : 'Sua comanda privada';
-    byId('compartilhar-comanda').disabled = !sessionId || !access;
-    byId('compartilhar-comanda').hidden = !sessionId || !access;
-    byId('comanda-help').textContent = sessionId ? `Convide quem vai consumir com você na comanda #${sessionId}. Só entra quem confirmar o convite privado. As outras pessoas da mesa têm suas próprias comandas.` : 'Seu primeiro pedido abre uma comanda só sua. Para consumir junto, entre pelo convite de alguém da sua família que já fez um pedido.';
-    byId('compartilhar-comanda').title = sessionId ? 'Convidar sua família para esta comanda' : 'Envie o primeiro pedido para compartilhar';
-    byId('separar-comanda').hidden = !sessionId;
-    const ownTabs = mesa.comandas || [];
-    byId('minhas-comandas-label').hidden = ownTabs.length < 2 && !(ownTabs.length && !sessionId);
-    const tabsSignature = JSON.stringify([sessionId, ownTabs]);
-    if (byId('minhas-comandas').dataset.signature !== tabsSignature) {
-      byId('minhas-comandas').innerHTML = (!sessionId ? '<option value="">Novo pedido separado</option>' : '') + ownTabs.map(tab => `<option value="${tab.id}">Comanda #${tab.id}${tab.conta_solicitada ? ' · em fechamento' : ''}</option>`).join('');
-      byId('minhas-comandas').value = sessionId || '';
-      byId('minhas-comandas').dataset.signature = tabsSignature;
-    }
     loadedContext = true;
-    byId('session-label').textContent = sessionId ? `Comanda #${sessionId}` : ended ? 'Comanda encerrada' : 'Peça sem chamar a equipe';
+    byId('session-label').textContent = sessionId ? `Atendimento #${sessionId}` : ended ? 'Comanda encerrada' : 'Peça sem chamar a equipe';
     byId('session-warning').hidden = true;
     byId('session-warning').querySelector('strong').textContent = ended ? 'Atendimento encerrado' : 'Mesa sem sessão aberta';
     byId('client-error').hidden = true;
@@ -233,7 +219,7 @@
     if (bill.sessao_id !== sessionId || orders.some(p => p.sessao !== sessionId)) throw new Error('A comanda mudou. Atualize a página.');
     if (closing !== bill.conta_solicitada) { closing = bill.conta_solicitada; renderCart(); renderProducts(); }
     byId('fechamento-aviso').hidden = !closing;
-    byId('session-label').textContent = closing ? `Comanda #${sessionId} · em fechamento` : `Comanda #${sessionId}`;
+    byId('session-label').textContent = closing ? `Comanda #${sessionId} · em fechamento` : `Atendimento #${sessionId}`;
     if (attempt && orders.some(p => p.chave_envio === attempt.chave_envio)) {
       attempt = null; saveAttempt(); cart = []; removedItem = null; byId('observacao-pedido').value = ''; saveCart(); renderCart();
       feedback('Pedido recebido pela cozinha.');
@@ -374,7 +360,7 @@
       await loadMenu().catch(() => {});
     } finally { sending = false; renderCart(); refresh().catch(e => feedback(e.message, true)); }
   });
-  async function iniciarSeparado() {
+  async function iniciarAtendimento() {
     byId('iniciar-atendimento').disabled = true;
     try {
       await api(`${base}novo-atendimento/`, {method:'POST'});
@@ -383,40 +369,19 @@
     } catch (error) { feedback(error.message, true); }
     finally { byId('iniciar-atendimento').disabled = false; }
   }
-  byId('iniciar-atendimento').addEventListener('click', iniciarSeparado);
-  byId('separar-comanda').addEventListener('click', iniciarSeparado);
-  byId('minhas-comandas').addEventListener('change', async event => {
-    if (!event.target.value) return;
-    try {
-      await api(`${base}selecionar-comanda/`, {method:'POST', body:JSON.stringify({comanda_id:Number(event.target.value)})});
-      loadedContext = false; await refresh();
-    } catch (error) { feedback(error.message, true); }
-  });
-  byId('compartilhar-comanda').addEventListener('click', async () => {
-    byId('compartilhar-comanda').disabled = true;
-    try {
-      const invite = await api(privateUrl('compartilhar/'), {method:'POST'});
-      byId('compartilhar-link').value = invite.url;
-      byId('compartilhar-qr').src = invite.qr_url;
-      byId('compartilhar-validade').textContent = `Convite válido até ${new Date(invite.expira_em).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo'})}. Após o pagamento ele deixa de funcionar.`;
-      byId('enviar-convite').hidden = !navigator.share;
-      MF.openDialog(byId('compartilhar-dialog'));
-    } catch (error) { feedback(error.message, true); }
-    finally { byId('compartilhar-comanda').disabled = !sessionId || !access; }
-  });
-  byId('copiar-convite').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(byId('compartilhar-link').value); feedback('Link copiado. Envie somente à sua família.'); }
-    catch { byId('compartilhar-link').select(); feedback('Selecione e copie o link para enviar à sua família.'); }
-  });
-  byId('enviar-convite').addEventListener('click', async () => {
-    try { await navigator.share({title:'Nossa comanda · MesaFácil', text:'Entre na nossa comanda para pedir junto.', url:byId('compartilhar-link').value}); }
-    catch (error) { if (error.name !== 'AbortError') feedback('Não foi possível compartilhar. Copie o link.', true); }
-  });
+  byId('iniciar-atendimento').addEventListener('click', iniciarAtendimento);
   byId('pedir-conta').addEventListener('click', async () => {
     byId('pedir-conta').disabled = true;
     try { await api(privateUrl('solicitar-conta/'), {method:'POST'}); feedback('Conta solicitada. O garçom vem ajudar você.'); await refresh(); }
     catch (error) { feedback(error.message,true); byId('pedir-conta').disabled = false; }
   });
+  let lastActivity = 0;
+  function activity() {
+    if (!access || !draftId || sessionId || sending || !navigator.onLine || Date.now() - lastActivity < 30000) return;
+    lastActivity = Date.now();
+    api(privateUrl('atividade/'), {method:'POST'}).catch(() => refreshContext().catch(() => {}));
+  }
+  ['pointerdown','keydown','input'].forEach(type => document.addEventListener(type, activity, {passive:true}));
   window.addEventListener('offline', renderCart);
   window.addEventListener('online', () => { renderCart(); refresh().catch(e => feedback(e.message,true)); });
   document.documentElement.style.scrollBehavior = 'auto';

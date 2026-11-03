@@ -145,17 +145,21 @@ def mesa_por_uuid(request, uuid):
     Não requer login (cliente acessa).
     """
     mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
+    from .atendimento import dono, ocupada, reconhecer_transferencia, revogado
+    reconhecer_transferencia(request, mesa)
     equipe = visao_equipe(request)
     sessao = mesa.sessao_ativa if equipe else comanda_cliente(request, mesa)
 
     data = MesaClienteSerializer(mesa).data
     data['sessao_ativa'] = bool(sessao and sessao.ativa)
-    acesso = equipe or bool(chave_comanda(request, mesa)) and (not sessao or sessao.ativa)
+    acesso = equipe or dono(mesa, chave_comanda(request, mesa)) and (not sessao or sessao.ativa)
     data['acesso_liberado'] = acesso
     data['atendimento_id'] = chave_comanda(request, mesa) if acesso and not equipe else None
     data['sessao_id'] = sessao.id if sessao and sessao.ativa and acesso else None
-    data['atendimento_encerrado'] = bool(not equipe and sessao and not sessao.ativa)
-    data['comandas'] = [] if equipe else list(comandas_acessiveis(request, mesa).values('id', 'conta_solicitada'))
+    data['atendimento_encerrado'] = bool(not equipe and ((sessao and not sessao.ativa) or revogado(mesa, chave_comanda(request, mesa))))
+    data['comandas'] = []  # Compatibilidade de leitura; não existe troca de comandas pelo cliente.
+    data['mesa_em_uso'] = bool(not equipe and not acesso and ocupada(mesa))
+    data['reserva_expirada'] = bool(not equipe and not acesso and not data['atendimento_encerrado'] and not data['mesa_em_uso'])
 
     return Response(data)
 
@@ -166,6 +170,9 @@ def mesa_por_uuid(request, uuid):
 def novo_atendimento(request, uuid):
     mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
     vincular_mesa(request, mesa, novo=True)
+    mesa.refresh_from_db()
+    from .atendimento import validar_responsavel
+    validar_responsavel(mesa, chave_comanda(request, mesa))
     return Response({'mensagem': 'Novo atendimento iniciado. Escolha e confirme seu pedido.'})
 
 
@@ -266,9 +273,10 @@ def alterar_status_pedido(request, pedido_id):
 @extend_schema(request=None, responses={200: PedidoSerializer(many=True), **ERROS})
 @api_view(['GET'])
 @permission_classes([AllowAny])
+@transaction.atomic
 def pedidos_da_mesa(request, uuid):
     """RF12 — Cliente acompanha os pedidos da mesa pela UUID."""
-    mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
+    mesa = get_object_or_404(Mesa.objects.select_for_update(), token_uuid=uuid, ativa=True)
     equipe = visao_equipe(request)
     sessao = mesa.sessao_ativa if equipe else validar_mesa(request, mesa)
 
@@ -362,9 +370,10 @@ def mapa_mesas(request):
 @extend_schema(request=None, responses={200: ContaMesaSerializer, **ERROS})
 @api_view(['GET'])
 @permission_classes([AllowAny])
+@transaction.atomic
 def ver_conta(request, uuid):
     """RF19 — Cliente vê a conta da mesa com todos os pedidos."""
-    mesa = get_object_or_404(Mesa, token_uuid=uuid, ativa=True)
+    mesa = get_object_or_404(Mesa.objects.select_for_update(), token_uuid=uuid, ativa=True)
     equipe = visao_equipe(request)
     sessao = mesa.sessao_ativa if equipe else validar_mesa(request, mesa)
 
@@ -396,7 +405,7 @@ def solicitar_conta(request, uuid):
     sessao = validar_mesa(request, mesa)
     if not sessao:
         return Response({'erro': 'Nenhuma sessão ativa nesta mesa.'}, status=404)
-    services.pedir_conta(uuid, sessao.pk)
+    services.pedir_conta(uuid, sessao.pk, geracao=destino_comanda(request, mesa))
     return Response({'mensagem': 'Conta solicitada com sucesso.'})
 
 

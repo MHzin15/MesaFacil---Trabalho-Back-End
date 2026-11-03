@@ -657,6 +657,54 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/garcom/trocas-responsavel/{id}/autorizar/:
+    post:
+      operationId: garcom_trocas_responsavel_autorizar_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - garcom
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/mesa/{uuid}/:
     get:
       operationId: mesa_retrieve
@@ -710,9 +758,9 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
-  /api/mesa/{uuid}/compartilhar/:
+  /api/mesa/{uuid}/atividade/:
     post:
-      operationId: mesa_compartilhar_create
+      operationId: mesa_atividade_create
       parameters:
       - in: path
         name: uuid
@@ -730,7 +778,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Compartilhar'
+                $ref: '#/components/schemas/Mensagem'
           description: ''
         '400':
           content:
@@ -759,6 +807,28 @@ paths:
               schema:
                 type: object
                 additionalProperties: {}
+          description: ''
+  /api/mesa/{uuid}/compartilhar/:
+    post:
+      operationId: mesa_compartilhar_create
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - mesa
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '410':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
           description: ''
   /api/mesa/{uuid}/conta/:
     get:
@@ -833,40 +903,11 @@ paths:
       - cookieAuth: []
       - {}
       responses:
-        '200':
+        '410':
           content:
             application/json:
               schema:
-                type: string
-                format: binary
-          description: ''
-        '400':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
-        '403':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
-        '404':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
-        '409':
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
+                $ref: '#/components/schemas/Mensagem'
           description: ''
   /api/mesa/{uuid}/novo-atendimento/:
     post:
@@ -983,18 +1024,28 @@ paths:
         required: true
       tags:
       - mesa
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SelecionarComanda'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SelecionarComanda'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SelecionarComanda'
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '410':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+          description: ''
+  /api/mesa/{uuid}/solicitar-conta/:
+    post:
+      operationId: mesa_solicitar_conta_create
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
         required: true
+      tags:
+      - mesa
       security:
       - cookieAuth: []
       - {}
@@ -1033,9 +1084,9 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
-  /api/mesa/{uuid}/solicitar-conta/:
+  /api/mesa/{uuid}/transferencia/:
     post:
-      operationId: mesa_solicitar_conta_create
+      operationId: mesa_transferencia_create
       parameters:
       - in: path
         name: uuid
@@ -1053,7 +1104,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Mensagem'
+                $ref: '#/components/schemas/TrocaResponsavel'
           description: ''
         '400':
           content:
@@ -2091,9 +2142,8 @@ components:
           maxLength: 100
         ordem:
           type: integer
-          maximum: 9223372036854775807
-          minimum: -9223372036854775808
-          format: int64
+          maximum: 2147483647
+          minimum: -2147483648
           title: Ordem de Exibição
       required:
       - id
@@ -2110,9 +2160,8 @@ components:
           maxLength: 100
         ordem:
           type: integer
-          maximum: 9223372036854775807
-          minimum: -9223372036854775808
-          format: int64
+          maximum: 2147483647
+          minimum: -2147483648
           title: Ordem de Exibição
         produtos:
           type: array
@@ -2133,20 +2182,6 @@ components:
       required:
       - conta_solicitada
       - id
-    Compartilhar:
-      type: object
-      properties:
-        url:
-          type: string
-        qr_url:
-          type: string
-        expira_em:
-          type: string
-          format: date-time
-      required:
-      - expira_em
-      - qr_url
-      - url
     Conta:
       type: object
       properties:
@@ -2159,9 +2194,8 @@ components:
           title: Sessão
         mesa_numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
           readOnly: true
         valor_total:
@@ -2285,9 +2319,8 @@ components:
           readOnly: true
         quantidade:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
         preco_unitario:
           type: string
           format: decimal
@@ -2394,9 +2427,8 @@ components:
           readOnly: true
         numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
         token_uuid:
           type: string
@@ -2422,6 +2454,12 @@ components:
             type: object
             additionalProperties: {}
           readOnly: true
+        transferencias_pendentes:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
       required:
       - comandas_abertas
       - id
@@ -2430,6 +2468,7 @@ components:
       - sessao_ativa_id
       - status
       - token_uuid
+      - transferencias_pendentes
     MesaCliente:
       type: object
       description: Serializer para o cliente — não expõe dados sensíveis.
@@ -2439,9 +2478,8 @@ components:
           readOnly: true
         numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
         status:
           type: string
@@ -2460,9 +2498,8 @@ components:
           readOnly: true
         numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
         status:
           type: string
@@ -2485,13 +2522,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ComandaAcessivel'
+        mesa_em_uso:
+          type: boolean
+        reserva_expirada:
+          type: boolean
       required:
       - acesso_liberado
       - atendimento_encerrado
       - atendimento_id
       - comandas
       - id
+      - mesa_em_uso
       - numero
+      - reserva_expirada
       - sessao_ativa
       - sessao_id
       - status
@@ -2664,9 +2707,8 @@ components:
           maxLength: 100
         ordem:
           type: integer
-          maximum: 9223372036854775807
-          minimum: -9223372036854775808
-          format: int64
+          maximum: 2147483647
+          minimum: -2147483648
           title: Ordem de Exibição
     PatchedMesa:
       type: object
@@ -2676,9 +2718,8 @@ components:
           readOnly: true
         numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
         token_uuid:
           type: string
@@ -2699,6 +2740,12 @@ components:
           nullable: true
           readOnly: true
         comandas_abertas:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+        transferencias_pendentes:
           type: array
           items:
             type: object
@@ -2766,9 +2813,8 @@ components:
           title: Sessão
         mesa_numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
           readOnly: true
         status:
@@ -2823,9 +2869,8 @@ components:
           title: Sessão
         mesa_numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
           readOnly: true
         status:
@@ -3004,14 +3049,6 @@ components:
         * `ADMIN` - Administrador
         * `COZINHA` - Cozinha
         * `GARCOM` - Garçom
-    SelecionarComanda:
-      type: object
-      properties:
-        comanda_id:
-          type: integer
-          minimum: 1
-      required:
-      - comanda_id
     SessaoMesa:
       type: object
       properties:
@@ -3022,9 +3059,8 @@ components:
           type: integer
         mesa_numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
           readOnly: true
         ativa:
@@ -3072,9 +3108,8 @@ components:
           type: integer
         mesa_numero:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 1
-          format: int64
           title: Número da Mesa
           readOnly: true
         ativa:
@@ -3138,6 +3173,20 @@ components:
         * `A_CAMINHO` - A Caminho
         * `ENTREGUE` - Entregue
         * `CANCELADO` - Cancelado
+    TrocaResponsavel:
+      type: object
+      properties:
+        id:
+          type: integer
+        codigo:
+          type: string
+        expira_em:
+          type: string
+          format: date-time
+      required:
+      - codigo
+      - expira_em
+      - id
     Usuario:
       type: object
       properties:

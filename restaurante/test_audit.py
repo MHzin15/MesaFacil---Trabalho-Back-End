@@ -142,7 +142,7 @@ class QueryBudgetTests(TestCase):
                         ItemPedidoAdicional.objects.create(item_pedido=item, adicional=cls.extra, preco='0.25')
 
     def test_table_serialization_has_constant_query_count(self):
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(3):
             result = MesaSerializer(Mesa.objects.com_sessao_ativa(), many=True).data
         self.assertEqual(len(result), 10)
         self.assertEqual(result[0]['status'], 'aguardando_conta')

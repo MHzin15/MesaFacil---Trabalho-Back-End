@@ -1,4 +1,8 @@
-# Comandas privadas — 02/11/2026
+# Comandas privadas — registro histórico
+
+> Este documento descreve o modelo anterior. Compartilhamento, convites e contas
+> separadas foram substituídos por [um responsável por mesa](RESPONSAVEL_UNICO_2026-11-02.md).
+> Use esse novo documento como regra vigente.
 
 ## Experiência do cliente
 

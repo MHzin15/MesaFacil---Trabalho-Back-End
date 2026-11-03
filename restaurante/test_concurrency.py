@@ -44,6 +44,7 @@ class ConcurrencyTests(TransactionTestCase):
         payloads = [{'mesa_uuid': self.mesa.token_uuid, 'sessao_id': None, 'chave_envio': uuid4(),
             'itens': [{'produto_id': product.pk, 'quantidade': 1}]} for _ in range(2)]
         generation = str(uuid4())
+        Mesa.objects.filter(pk=self.mesa.pk).update(responsavel_uuid=generation)
         self.assertEqual(self.race([lambda: services.criar(payloads[0], self.admin, geracao=generation),
                                    lambda: services.criar(payloads[1], self.admin, geracao=generation)]), ['ok', 'ok'])
         self.assertEqual(SessaoMesa.objects.filter(mesa=self.mesa, ativa=True).count(), 1)
@@ -55,20 +56,22 @@ class ConcurrencyTests(TransactionTestCase):
         data = {'mesa_uuid': self.mesa.token_uuid, 'sessao_id': None, 'chave_envio': uuid4(),
             'itens': [{'produto_id': product.pk, 'quantidade': 1}]}
         generation = str(uuid4())
+        Mesa.objects.filter(pk=self.mesa.pk).update(responsavel_uuid=generation)
         self.assertEqual(self.race([lambda: services.criar(data, self.admin, geracao=generation)] * 2), ['ok', 'ok'])
         self.assertEqual(SessaoMesa.objects.filter(mesa=self.mesa, ativa=True).count(), 1)
         self.assertEqual(Pedido.objects.count(), 1)
 
-    def test_separate_families_simultaneously_create_separate_accounts(self):
+    def test_another_family_cannot_create_account_during_simultaneous_orders(self):
         from uuid import uuid4
         product = Produto.objects.create(categoria=Categoria.objects.create(nome='Auto'), nome='Item', preco='10.00')
         data = {'mesa_uuid': self.mesa.token_uuid, 'sessao_id': None,
             'itens': [{'produto_id': product.pk, 'quantidade': 1}]}
         keys = [str(uuid4()), str(uuid4())]
+        Mesa.objects.filter(pk=self.mesa.pk).update(responsavel_uuid=keys[0])
         self.assertEqual(self.race([lambda: services.criar(data, self.admin, geracao=keys[0]),
-                                   lambda: services.criar(data, self.admin, geracao=keys[1])]), ['ok', 'ok'])
-        self.assertEqual(SessaoMesa.objects.filter(mesa=self.mesa, ativa=True).count(), 2)
-        self.assertEqual(Pedido.objects.values('sessao_id').distinct().count(), 2)
+                                   lambda: services.criar(data, self.admin, geracao=keys[1])]), ['ok', 'rejeitado'])
+        self.assertEqual(SessaoMesa.objects.filter(mesa=self.mesa, ativa=True).count(), 1)
+        self.assertEqual(Pedido.objects.values('sessao_id').distinct().count(), 1)
 
     def test_same_transition_runs_once_with_one_audit_event(self):
         pedido = Pedido.objects.create(sessao=services.abrir(self.mesa.pk, self.admin))

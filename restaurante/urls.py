@@ -20,6 +20,9 @@ urlpatterns = [
     # Mesa via QR Code (UUID)
     path('mesa/<uuid:uuid>/', views.mesa_por_uuid, name='mesa-por-uuid'),
     path('mesa/<uuid:uuid>/novo-atendimento/', views.novo_atendimento, name='novo-atendimento'),
+    path('mesa/<uuid:uuid>/atividade/', comandas.atividade, name='atividade-mesa'),
+    path('mesa/<uuid:uuid>/transferencia/', comandas.solicitar_transferencia, name='solicitar-transferencia'),
+    path('garcom/trocas-responsavel/<int:pk>/autorizar/', comandas.autorizar_transferencia, name='autorizar-transferencia'),
     path('mesa/<uuid:uuid>/compartilhar/', comandas.compartilhar, name='compartilhar-comanda'),
     path('mesa/<uuid:uuid>/selecionar-comanda/', comandas.selecionar, name='selecionar-comanda'),
     path('mesa/<uuid:uuid>/convites/<uuid:token>/qr/', comandas.convite_qr, name='convite-qr'),

@@ -1,9 +1,11 @@
 """Preparação explícita dos novos contratos nos testes de integração."""
 def entrar_cliente(client, mesa):
-    # Testes de regras preparam uma comanda existente; a suíte de privacidade
-    # testa o ingresso real por convite, sem esta preparação de autorização.
+    # Testes de regras preparam explicitamente o responsável de uma sessão.
+    # A suíte de atendimento único exercita a leitura real do QR sem este atalho.
     sessao = mesa.sessao_ativa
     if sessao:
+        from .models import Mesa
+        Mesa.objects.filter(pk=mesa.pk).update(responsavel_uuid=sessao.acesso_uuid, reserva_ate=None)
         session = client.session
         session['comandas_privadas'] = {str(mesa.token_uuid): str(sessao.acesso_uuid)}
         session['acessos_comandas'] = {str(mesa.token_uuid): [str(sessao.acesso_uuid)]}

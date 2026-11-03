@@ -75,6 +75,14 @@ class CategoriaComProdutosSerializer(serializers.ModelSerializer):
 # Mesa
 # ============================================================
 class MesaSerializer(serializers.ModelSerializer):
+    transferencias_pendentes = serializers.SerializerMethodField()
+
+    def get_transferencias_pendentes(self, obj) -> list[dict]:
+        from django.utils import timezone
+        trocas = getattr(obj, '_trocas_pendentes', None)
+        if trocas is None:
+            trocas = obj.trocas_responsavel.filter(autorizada_em__isnull=True, expira_em__gt=timezone.now())
+        return [{'id': t.pk, 'codigo': t.codigo} for t in trocas]
     comandas_abertas = serializers.SerializerMethodField()
 
     def get_comandas_abertas(self, obj) -> list[dict]:
@@ -95,7 +103,7 @@ class MesaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Mesa
-        fields = ['id', 'numero', 'token_uuid', 'ativa', 'qr_code', 'status', 'sessao_ativa_id', 'comandas_abertas']
+        fields = ['id', 'numero', 'token_uuid', 'ativa', 'qr_code', 'status', 'sessao_ativa_id', 'comandas_abertas', 'transferencias_pendentes']
         read_only_fields = ['token_uuid', 'qr_code']
 
     def get_sessao_ativa_id(self, obj) -> int | None:

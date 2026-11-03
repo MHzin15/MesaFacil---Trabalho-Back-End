@@ -50,10 +50,12 @@ class Perfil(models.Model):
 # ============================================================
 class MesaQuerySet(models.QuerySet):
     def com_sessao_ativa(self):
+        from django.utils import timezone
         return self.prefetch_related(models.Prefetch(
             'sessoes', queryset=SessaoMesa.objects.filter(ativa=True),
             to_attr='_sessoes_ativas',
-        ))
+        ), models.Prefetch('trocas_responsavel', queryset=TrocaResponsavel.objects.filter(
+            autorizada_em__isnull=True, expira_em__gt=timezone.now()).order_by('pk'), to_attr='_trocas_pendentes'))
 
 
 class SessaoMesaQuerySet(models.QuerySet):
@@ -73,6 +75,8 @@ class SessaoMesaQuerySet(models.QuerySet):
 
 
 class Mesa(models.Model):
+    responsavel_uuid = models.UUIDField(null=True, blank=True, editable=False)
+    reserva_ate = models.DateTimeField(null=True, blank=True, editable=False)
     objects = MesaQuerySet.as_manager()
     numero = models.IntegerField(unique=True, verbose_name='Número da Mesa', validators=[MinValueValidator(1)])
     # UUID aleatório para garantir a segurança do QR Code (RNF05)
@@ -118,7 +122,8 @@ class Mesa(models.Model):
         """Retorna o status visual da mesa."""
         sessoes = self.sessoes_ativas
         if not sessoes:
-            return 'livre'
+            from django.utils import timezone
+            return 'ocupada' if self.responsavel_uuid and self.reserva_ate and self.reserva_ate > timezone.now() else 'livre'
         if any(sessao.conta_solicitada for sessao in sessoes):
             return 'aguardando_conta'
         return 'ocupada'
@@ -187,6 +192,15 @@ class ConviteComanda(models.Model):
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     sessao = models.ForeignKey(SessaoMesa, on_delete=models.CASCADE, related_name='convites')
     expira_em = models.DateTimeField()
+
+
+class TrocaResponsavel(models.Model):
+    mesa = models.ForeignKey(Mesa, on_delete=models.CASCADE, related_name='trocas_responsavel')
+    acesso_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    anterior_uuid = models.UUIDField(null=True, blank=True, editable=False)
+    codigo = models.CharField(max_length=8, editable=False)
+    expira_em = models.DateTimeField()
+    autorizada_em = models.DateTimeField(null=True, blank=True)
 
 
 class Categoria(models.Model):
