@@ -123,19 +123,13 @@ body[data-page=garcom] .site-footer,body[data-page=cozinha] .site-footer{display
 }
 
 /* Operação: informação de trabalho à frente do cabeçalho. */
-body[data-page=cozinha] .staff-workspace{grid-template-columns:minmax(0,1fr);gap:18px}
-body[data-page=cozinha] .staff-sidebar{position:static;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 14px;flex-wrap:wrap}
-body[data-page=cozinha] .staff-profile,body[data-page=cozinha] .staff-sidebar>.sidebar-caption,body[data-page=cozinha] .workspace-help{display:none}
-body[data-page=cozinha] .staff-nav{display:flex;gap:8px;flex-wrap:wrap}
-body[data-page=cozinha] .workspace-switch{display:flex;gap:8px;align-items:center;margin:0;padding:0;border:0}
-body[data-page=cozinha] .workspace-switch .sidebar-caption{display:none}
 .staff-heading{margin-bottom:18px;gap:16px;align-items:center}
 .staff-heading h1{font-size:2rem;margin-bottom:6px}
 .staff-heading .eyebrow{display:none}
 .staff-heading p.muted{font-size:.9rem}
 body[data-page=cozinha] .staff-heading #workspace-description{display:none}
-body[data-page=cozinha] .staff-heading{flex-wrap:nowrap}
-body[data-page=cozinha] .kitchen-main-search{flex:1;max-width:430px;width:auto}
+body[data-page=cozinha] .staff-heading{flex-wrap:wrap}
+body[data-page=cozinha] .kitchen-main-search{flex:1 1 240px;max-width:430px;min-width:0;width:auto}
 body[data-page=cozinha] .workspace-sync{max-width:none;flex-wrap:nowrap}
 body[data-staff-view=disponibilidade] .kitchen-main-search{display:none}
 .queue-caption{margin:0 0 12px}
@@ -146,7 +140,8 @@ body[data-staff-view=disponibilidade] .kitchen-main-search{display:none}
 .kitchen-stages [aria-pressed=true]{background:var(--ink);color:white}
 .kitchen-stages span{padding-left:6px;font-weight:700}
 .kitchen-preferences{max-width:300px;font-size:.85rem;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
-.kitchen-preferences summary{cursor:pointer;min-height:24px}
+.kitchen-preferences summary{cursor:pointer;min-height:24px;font-weight:600}
+.kitchen-attention-status{display:block;margin-top:6px;font-size:.75rem;color:var(--muted);font-weight:400}
 .kitchen-preferences label{display:block;margin:12px 0 6px}
 .kitchen-preferences p{margin:10px 0 0}
 .staff-main .kanban{align-items:start;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
@@ -182,7 +177,6 @@ body[data-staff-view=disponibilidade] .kitchen-main-search{display:none}
   .staff-sidebar .staff-profile,.staff-sidebar>.sidebar-caption,.staff-sidebar .workspace-help{display:none}
   .staff-sidebar .workspace-switch{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 0;padding:8px 0 0}
   .staff-sidebar .workspace-switch .sidebar-caption{display:none}
-  body[data-page=cozinha] .staff-sidebar .workspace-switch{margin:0;padding:0;border:0}
   .staff-heading{margin-bottom:16px;gap:10px}
   .staff-heading h1{font-size:1.8rem}
   body[data-page=cozinha] .staff-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px}

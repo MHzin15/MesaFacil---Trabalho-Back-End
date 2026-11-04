@@ -7,10 +7,17 @@
   let stage = window.matchMedia('(max-width:900px)').matches ? 'RECEBIDO' : 'TODOS';
   const preference = byId('kitchen-attention');
   try { preference.value = localStorage.getItem('mf-kitchen-attention') || '0'; } catch {}
+  if (!preference.value || !preference.validity.valid) preference.value = '0';
+  function attentionStatus() {
+    const minutes = Number(preference.value);
+    byId('kitchen-attention-status').textContent = minutes > 0 ? `Ativado · após ${minutes} min` : 'Desativado';
+    MF.updateAges();
+  }
+  attentionStatus();
   preference.addEventListener('change', () => {
     if (!preference.reportValidity()) return;
     try { localStorage.setItem('mf-kitchen-attention', preference.value); } catch {}
-    MF.updateAges();
+    attentionStatus();
   });
   document.querySelectorAll('[data-kitchen-stage]').forEach(button => button.addEventListener('click', () => {
     stage = button.dataset.kitchenStage; renderQueue();
