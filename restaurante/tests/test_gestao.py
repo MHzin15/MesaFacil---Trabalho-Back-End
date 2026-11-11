@@ -7,7 +7,7 @@ from django.test import TestCase
 from django.templatetags.static import static
 from django.urls import reverse
 from django.utils import timezone
-from ..models import Adicional, Categoria, Conta, ItemPedido, Mesa, Pedido, Perfil, Produto, SessaoMesa
+from ..models import Adicional, Categoria, Conta, HistoricoStatusPedido, ItemPedido, Mesa, Pedido, Perfil, Produto, SessaoMesa
 
 
 class GestaoTests(TestCase):
@@ -233,3 +233,9 @@ class GestaoTests(TestCase):
         self.assertContains(self.client.get('/admin/cardapio/', {'q': 'inexistente'}), 'Nenhum produto encontrado')
         self.assertContains(self.client.get('/admin/mesas/', {'q': 'x' * 2000}), 'Nenhuma mesa encontrada')
         self.assertContains(self.client.get('/admin/pedidos/', {'inicio': '2030-01-01', 'fim': '2020-01-01'}), 'data inicial')
+
+    def test_order_detail_renders_with_anonymous_customer_history(self):
+        HistoricoStatusPedido.objects.create(pedido=self.pedido, status_novo='RECEBIDO', alterado_por=None)
+        response = self.client.get(f'/admin/pedidos/{self.pedido.pk}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Cliente')

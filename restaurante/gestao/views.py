@@ -319,6 +319,10 @@ def pedido(request, pk):
     historico = list(obj.historico_status.select_related('alterado_por'))
     for evento in historico:
         evento.rotulo = dict(Pedido.STATUS_CHOICES).get(evento.status_novo, evento.status_novo)
+        if evento.alterado_por:
+            evento.autor_nome = evento.alterado_por.get_full_name() or evento.alterado_por.username
+        else:
+            evento.autor_nome = 'Cliente'
     return page(request, 'pedido', 'pedidos', f'Pedido #{obj.pk}',
                 f'Mesa {obj.sessao.mesa.numero} · {obj.get_status_display()}', pedido=obj,
                 historico=historico)
