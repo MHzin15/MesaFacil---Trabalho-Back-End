@@ -1,4 +1,4 @@
-from .test_support import conferencia
+from .support import conferencia
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 from unittest import skipUnless
@@ -7,8 +7,8 @@ from django.db import connection, connections
 from django.test import TransactionTestCase
 from django.http import Http404
 from rest_framework.exceptions import APIException
-from .models import Mesa, SessaoMesa, Perfil, Pedido, HistoricoStatusPedido, Produto, Categoria, Conta
-from . import services
+from ..models import Mesa, SessaoMesa, Perfil, Pedido, HistoricoStatusPedido, Produto, Categoria, Conta
+from .. import services
 
 
 @skipUnless(connection.vendor == 'postgresql', 'Locks reais exigem PostgreSQL')

@@ -7,7 +7,7 @@ from django.test import TestCase
 from django.templatetags.static import static
 from django.urls import reverse
 from django.utils import timezone
-from .models import Adicional, Categoria, Conta, ItemPedido, Mesa, Pedido, Perfil, Produto, SessaoMesa
+from ..models import Adicional, Categoria, Conta, ItemPedido, Mesa, Pedido, Perfil, Produto, SessaoMesa
 
 
 class GestaoTests(TestCase):

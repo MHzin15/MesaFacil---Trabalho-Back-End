@@ -4,7 +4,7 @@ def entrar_cliente(client, mesa):
     # A suíte de atendimento único exercita a leitura real do QR sem este atalho.
     sessao = mesa.sessao_ativa
     if sessao:
-        from .models import Mesa
+        from ..models import Mesa
         Mesa.objects.filter(pk=mesa.pk).update(responsavel_uuid=sessao.acesso_uuid, reserva_ate=None)
         session = client.session
         session['comandas_privadas'] = {str(mesa.token_uuid): str(sessao.acesso_uuid)}

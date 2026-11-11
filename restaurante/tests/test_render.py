@@ -16,14 +16,14 @@ from django.test import SimpleTestCase, TestCase
 from django.contrib.staticfiles import finders
 from PIL import Image
 
-from .demo_images import criar_imagens
-from .models import Mesa, Produto
-from .serializers import FOTOS_EXEMPLO, ProdutoSerializer
+from ..demo_images import criar_imagens
+from ..models import Mesa, Produto
+from ..serializers import FOTOS_EXEMPLO, ProdutoSerializer
 
 
 class RenderBootstrapTests(TestCase):
     def setUp(self):
-        temp_root = Path(__file__).resolve().parents[1] / '.tmp'
+        temp_root = Path(__file__).resolve().parents[2] / '.tmp'
         temp_root.mkdir(exist_ok=True)
         directory = TemporaryDirectory(dir=temp_root)
         self.assertTrue(Path(directory.name).resolve().is_relative_to(temp_root.resolve()))
@@ -155,7 +155,7 @@ print(json.dumps({key: getattr(settings, key, None) for key in (
     'SECURE_PROXY_SSL_HEADER', 'SECURE_SSL_REDIRECT', 'SESSION_COOKIE_SECURE',
     'CSRF_COOKIE_SECURE', 'SECURE_HSTS_SECONDS', 'DATABASES')}))
 """
-        result = subprocess.run([sys.executable, '-c', script], cwd=Path(__file__).resolve().parents[1],
+        result = subprocess.run([sys.executable, '-c', script], cwd=Path(__file__).resolve().parents[2],
                                 env=environment, capture_output=True, text=True, check=True)
         return json.loads(result.stdout)
 

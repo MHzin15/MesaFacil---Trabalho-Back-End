@@ -7,7 +7,7 @@ import environ
 import psycopg
 from psycopg import sql
 
-root = Path(__file__).resolve().parents[1]
+root = Path(__file__).resolve().parents[2]
 environ.Env.read_env(root / '.env')
 if urlsplit(os.environ['DATABASE_URL']).hostname not in ('127.0.0.1', 'localhost'):
     raise SystemExit('Use somente um servidor PostgreSQL local de desenvolvimento.')

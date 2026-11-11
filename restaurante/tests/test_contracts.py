@@ -1,8 +1,8 @@
-from .test_support import entrar_cliente, conferencia
+from .support import entrar_cliente, conferencia
 from uuid import uuid4
 from django.test import TestCase
 from rest_framework.test import APIClient
-from .models import Mesa, SessaoMesa, Produto, Categoria, Pedido, HistoricoStatusPedido
+from ..models import Mesa, SessaoMesa, Produto, Categoria, Pedido, HistoricoStatusPedido
 
 
 class ContractTests(TestCase):

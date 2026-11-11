@@ -2,7 +2,7 @@
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
-root = Path(__file__).resolve().parents[1] / 'static/icons'
+root = Path(__file__).resolve().parents[2] / 'static/icons'
 root.mkdir(parents=True, exist_ok=True)
 for name, size, padding in [('icon-192.png', 192, 0.14), ('icon-512.png', 512, 0.14), ('maskable-512.png', 512, 0.24)]:
     image = Image.new('RGB', (size, size), '#ae452c')

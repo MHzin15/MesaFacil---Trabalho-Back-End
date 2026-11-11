@@ -7,7 +7,7 @@ Não inclui disco pago, mudança de plano ou `MEDIA_ROOT` dependente de volume.
 ## Configuração atual
 
 - Web Python e PostgreSQL `plan: free`, região Virginia e PostgreSQL 18.
-- Build: `bash scripts/render-build.sh`; start: `bash scripts/render-start.sh`.
+- Build: `bash scripts/deploy/render-build.sh`; start: `bash scripts/deploy/render-start.sh` (com wrappers retrocompatíveis em `scripts/`).
 - `DEBUG=False`, `SECRET_KEY` gerada pelo Render e conexão ao banco existente.
 - Gunicorn com 1 worker/2 threads e redação de tokens nos logs.
 - Health check em `/health/ready/`; `/health/live/` verifica apenas o processo.

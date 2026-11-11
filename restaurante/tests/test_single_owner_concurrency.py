@@ -5,7 +5,7 @@ from unittest import skipUnless
 from django.db import connection, connections
 from django.test import TransactionTestCase
 from rest_framework.test import APIClient
-from .models import Mesa, SessaoMesa
+from ..models import Mesa, SessaoMesa
 
 
 @skipUnless(connection.vendor == 'postgresql', 'Locks reais exigem PostgreSQL')

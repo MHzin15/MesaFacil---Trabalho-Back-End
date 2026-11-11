@@ -3,7 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-root = Path(__file__).resolve().parents[1]
+root = Path(__file__).resolve().parents[2]
 commands = [
     ['manage.py', 'check'],
     ['manage.py', 'makemigrations', '--check', '--dry-run'],

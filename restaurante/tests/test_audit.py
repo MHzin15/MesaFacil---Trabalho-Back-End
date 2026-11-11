@@ -16,11 +16,11 @@ from django.utils import timezone
 from PIL import Image
 from rest_framework.test import APIClient
 
-from .models import (
+from ..models import (
     Adicional, Categoria, Conta, ItemPedido, ItemPedidoAdicional, LoginRateBucket,
     Mesa, Pedido, Produto, SessaoMesa,
 )
-from .serializers import MesaSerializer, PedidoSerializer, ProdutoSerializer
+from ..serializers import MesaSerializer, PedidoSerializer, ProdutoSerializer
 
 
 class PasswordPolicyTests(SimpleTestCase):
@@ -55,7 +55,7 @@ class AuditSecurityTests(TestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_images_use_content_mime_and_legacy_html_cannot_execute(self):
-        temp_root = Path(__file__).resolve().parents[1] / '.tmp'
+        temp_root = Path(__file__).resolve().parents[2] / '.tmp'
         temp_root.mkdir(exist_ok=True)
         with TemporaryDirectory(dir=temp_root) as directory, self.settings(MEDIA_ROOT=Path(directory)):
             self.assertTrue(Path(directory).resolve().is_relative_to(temp_root.resolve()))

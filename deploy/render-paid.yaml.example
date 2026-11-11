@@ -7,8 +7,8 @@ services:
     region: virginia
     branch: main
     autoDeployTrigger: commit
-    buildCommand: bash scripts/render-build.sh
-    startCommand: bash scripts/render-start.sh
+    buildCommand: bash scripts/deploy/render-build.sh
+    startCommand: bash scripts/deploy/render-start.sh
     healthCheckPath: /health/ready/
     disk:
       name: mesafacil-media

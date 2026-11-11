@@ -2,7 +2,7 @@ from io import StringIO
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.test import TestCase, override_settings
-from .models import Mesa, Produto
+from ..models import Mesa, Produto
 
 
 class SeedTests(TestCase):

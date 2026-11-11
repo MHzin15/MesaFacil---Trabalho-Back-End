@@ -8,9 +8,9 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from . import services
-from .models import Adicional, Categoria, ItemPedido, ItemPedidoAdicional, Mesa, Pedido, Perfil, Produto, SessaoMesa
-from .opcoes import escolhas_exemplo, validar_grupos_opcoes
+from .. import services
+from ..models import Adicional, Categoria, ItemPedido, ItemPedidoAdicional, Mesa, Pedido, Perfil, Produto, SessaoMesa
+from ..opcoes import escolhas_exemplo, validar_grupos_opcoes
 
 
 class EscolhasEOperacaoTests(TestCase):

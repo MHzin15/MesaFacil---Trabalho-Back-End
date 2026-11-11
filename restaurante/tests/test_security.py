@@ -1,4 +1,4 @@
-from .test_support import entrar_cliente, conferencia
+from .support import entrar_cliente, conferencia
 from io import BytesIO
 from decimal import Decimal
 from django.contrib.auth.models import User
@@ -6,8 +6,8 @@ from django.db import IntegrityError, transaction
 from django.test import TestCase
 from PIL import Image
 from rest_framework.test import APIClient
-from .models import Mesa, SessaoMesa, Categoria, Produto, Pedido, ItemPedido, Conta, Perfil
-from . import services
+from ..models import Mesa, SessaoMesa, Categoria, Produto, Pedido, ItemPedido, Conta, Perfil
+from .. import services
 
 
 class SecurityTests(TestCase):

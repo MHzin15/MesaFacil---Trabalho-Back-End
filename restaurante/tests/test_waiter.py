@@ -1,11 +1,11 @@
-from .test_support import entrar_cliente, conferencia
+from .support import entrar_cliente, conferencia
 from decimal import Decimal
 from unittest.mock import patch
 from django.contrib.auth.models import User
 from django.test import TestCase
 from rest_framework.test import APIClient
-from .models import Mesa, SessaoMesa, Categoria, Produto, Adicional, Pedido, ItemPedido, Conta, Perfil
-from . import services
+from ..models import Mesa, SessaoMesa, Categoria, Produto, Adicional, Pedido, ItemPedido, Conta, Perfil
+from .. import services
 
 
 class WaiterTests(TestCase):

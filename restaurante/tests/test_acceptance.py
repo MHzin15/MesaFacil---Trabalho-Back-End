@@ -1,4 +1,4 @@
-from .test_support import entrar_cliente, conferencia
+from .support import entrar_cliente, conferencia
 from decimal import Decimal
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -8,7 +8,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from PIL import Image
 from rest_framework.test import APIClient
-from .models import Mesa, SessaoMesa, Categoria, Produto, Pedido, HistoricoStatusPedido, Perfil
+from ..models import Mesa, SessaoMesa, Categoria, Produto, Pedido, HistoricoStatusPedido, Perfil
 
 
 class AcceptanceTests(TestCase):
@@ -43,7 +43,7 @@ class AcceptanceTests(TestCase):
         self.assertTrue(self.mesa.ativa)
 
     def test_photos_work_with_debug_false_and_qr_directory_stays_private(self):
-        temp_root = Path(__file__).resolve().parents[1] / '.tmp'
+        temp_root = Path(__file__).resolve().parents[2] / '.tmp'
         temp_root.mkdir(exist_ok=True)
         with TemporaryDirectory(dir=temp_root) as directory, override_settings(MEDIA_ROOT=Path(directory), DEBUG=False):
             self.assertTrue(Path(directory).resolve().is_relative_to(temp_root.resolve()))

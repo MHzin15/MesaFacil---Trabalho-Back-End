@@ -15,8 +15,8 @@ from django.test import TestCase, override_settings
 from PIL import Image
 from rest_framework.test import APIClient
 
-from .logging import PrivateTokenFilter, redact
-from .models import Categoria, Mesa, Pedido, Perfil, Produto, SessaoMesa
+from ..logging import PrivateTokenFilter, redact
+from ..models import Categoria, Mesa, Pedido, Perfil, Produto, SessaoMesa
 from . import test_private_tabs as fixtures
 
 

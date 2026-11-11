@@ -6,9 +6,9 @@ from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework.exceptions import PermissionDenied
-from . import services
-from .models import Categoria, ConviteComanda, Mesa, Pedido, Perfil, Produto, SessaoMesa, TrocaResponsavel
-from .test_support import conferencia
+from .. import services
+from ..models import Categoria, ConviteComanda, Mesa, Pedido, Perfil, Produto, SessaoMesa, TrocaResponsavel
+from .support import conferencia
 
 
 class PrivateTabsTests(TestCase):

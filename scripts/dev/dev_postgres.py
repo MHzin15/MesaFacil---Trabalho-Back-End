@@ -10,7 +10,7 @@ import environ
 import psycopg
 from psycopg import sql
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('action', choices=['start', 'stop'])
 parser.add_argument('--bin', default=os.environ.get('PG_BIN', r'C:\Program Files\PostgreSQL\18\bin'))

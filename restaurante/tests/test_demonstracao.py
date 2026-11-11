@@ -7,7 +7,7 @@ from django.db import connection
 from django.test import TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 
-from .models import Adicional, Categoria, Mesa, Perfil, Produto
+from ..models import Adicional, Categoria, Mesa, Perfil, Produto
 
 
 @override_settings(PUBLIC_BASE_URL='http://localhost:8000', ALLOWED_HOSTS=['localhost'],

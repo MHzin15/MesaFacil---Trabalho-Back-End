@@ -6,9 +6,9 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.test import APIClient
-from . import services
-from .models import Categoria, Conta, Mesa, Pedido, Perfil, Produto
-from .test_support import entrar_cliente, conferencia
+from .. import services
+from ..models import Categoria, Conta, Mesa, Pedido, Perfil, Produto
+from .support import entrar_cliente, conferencia
 
 
 class FlowSafetyTests(TestCase):
