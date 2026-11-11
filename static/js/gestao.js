@@ -62,10 +62,6 @@ document.querySelectorAll('[data-photo-editor]').forEach(editor => {
   });
   window.addEventListener('pagehide', () => { if (localUrl) URL.revokeObjectURL(localUrl); });
 });
-const gallery = document.getElementById('catalog-gallery');
-gallery?.addEventListener('change', () => {
-  document.getElementById('catalog-products').classList.toggle('gallery', gallery.checked);
-});
 if (/^#(?:produto|pessoa)-\d+$/.test(location.hash)) {
   const target = document.querySelector(location.hash);
   if (target) { target.setAttribute('tabindex','-1'); target.focus({preventScroll:true}); }

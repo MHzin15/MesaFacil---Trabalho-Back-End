@@ -159,8 +159,6 @@ body[data-page=gestao] .topbar {padding:0 4vw}
 .g-quick>a{flex:1;min-width:180px;display:grid;grid-template-columns:24px 1fr;gap:4px 10px;padding:14px 16px}
 .g-quick span{grid-row:span 2;margin:0;font-size:1.2rem}
 .g-quick strong{margin:0}
-.g-catalog-preview{font-size:.85rem;margin:0 0 18px}
-.g-catalog-preview summary{cursor:pointer;min-height:44px;color:var(--accent)}
 .g-products{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
 .g-product{display:grid;grid-template-columns:84px minmax(0,1fr);gap:18px;padding:16px;align-items:center}
 .g-product>img,.g-product-placeholder{width:84px;height:84px;min-height:0;object-fit:cover;border-radius:8px}
